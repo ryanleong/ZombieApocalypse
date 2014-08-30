@@ -10,12 +10,25 @@ typedef enum {
     MALE, FEMALE;
 } gender_t;
 
+typedef enum {
+	CLEAN, INFECTED, DEAD
+} status_t
+
+typedef enum {
+	NONE, AXE
+} weapon_t
+
 /**
  *  Humans have a gender, age,
  */
 typedef struct {
     gender_t gender;
     int age;
+
+    status_t status;
+    weapon_t weapon;
+    int rest;	// Keep track of humans lack of sleep
+
 
     // other properties might include velocity (x and y components), although
     // position is implicit in the 2D grid of the simulation world. Maybe a
