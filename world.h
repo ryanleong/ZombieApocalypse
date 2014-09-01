@@ -3,24 +3,37 @@
  *  simulating a zombie outbreak.
  */
 
-#ifndef WORLD_H
-#define WORLD_H
+#ifndef WORLD_H_
+#define WORLD_H_
 
-// TODO: define how many rows/columns in the simulation area (NT).
-#define GRID_ROWS 0
-#define GRID_COLUMNS 0
+#include <stdlib.h>
 
+#include "clock.h"
+#include "agent.h"
 
-typedef struct {
-    // linked lists to represent all the humans and zombies in a particular 
-    // square.
-    human_t *humans;
-    zombie_t *zombies;
-} world_t;
+typedef struct Tile {
+	// linked lists to represent all the humans and zombies in a particular tile
+	LivingEntity * living;
+	Zombie * zombies;
+} Tile;
 
-world_t simulation_grid [GRID_ROWS] [GRID_COLUMNS];
+typedef struct World {
+	simClock clock;
+	Tile ** map;
+	unsigned int width;
+	unsigned int height;
+} World;
 
+World * newWorld(unsigned int width, unsigned int height);
 
-#endif // WORLD_H
+void destoyWorld(World * world);
+
+void initTile(Tile * tile);
+
+void resetTile(Tile * tile);
+
+void destoyTile(Tile * tile);
+
+#endif // WORLD_H_
 
 // vim: ts=4 sw=4 et

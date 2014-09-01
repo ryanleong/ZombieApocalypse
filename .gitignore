@@ -24,3 +24,7 @@
 
 # ignore Vim's swap files.
 *.swp
+
+# Eclipse project
+.project
+.cproject
