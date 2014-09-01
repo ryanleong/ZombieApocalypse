@@ -28,3 +28,6 @@
 # Eclipse project
 .project
 .cproject
+
+# ignore the built executable.
+apocalypse
