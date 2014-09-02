@@ -2,7 +2,7 @@ SRC = apocalypse.c entity.c random.c simulation.c world.c
 OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
-CFLAGS = --std=gnu99 -O2 -g -Wall -fopenmp
+CFLAGS = --std=gnu99 -O0 -g -Wall -fopenmp
 LIBS = -lm -lgomp -lpng
 
 all: dependencies apocalypse
@@ -14,7 +14,10 @@ clean:
 	rm -f $(OBJS)
 
 clobber: clean
-	rm -f apocalypse dependencies cscope.out
+	rm -f apocalypse
+	rm -f dependencies
+	rm -f cscope.out
+	rm -rf images/
 
 dependencies:
 	gcc $(CFLAGS) -MM $(SRC) > dependencies
