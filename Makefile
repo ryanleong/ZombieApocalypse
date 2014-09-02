@@ -1,22 +1,28 @@
+SRC = simulation.c random.c world.c apocalypse.c
+OBJS = $(SRC:%.c=%.o)
 
-CFLAGS=--std=gnu99 -O2 -g -Wall # -fopenmp
-LDFLAGS=-lm -lgomp
+CC = gcc
+CFLAGS = --std=gnu99 -O2 -g -Wall
+LIBS = -lm
 
 all: apocalypse
 
-apocalypse: apocalypse.o random.o simulation.o world.o bitarray.o entity.o
-
-apocalypse.o: world.h entity.h random.h simulation.h
-
-simulation.o: simulation.c simulation.h common.h bitarray.h
-
-random.o: random.c random.h clock.h
-
-world.o: world.c world.h clock.h entity.h
-
-entity.o: entity.c entity.h clock.h common.h constants.h
-
-bitarray.o: bitarray.c bitarray.h
+apocalypse: $(OBJS)
+	$(CC) $(CFLAGS) -o apocalypse $(OBJS) $(LIBS)
 
 clean:
-	rm -f *.o apocalypse
+	rm -f $(OBJS)
+
+clobber:	clean
+	rm -f apocalypse
+
+depend:
+	gcc $(CFLAGS) -MM $(SRC) > Dependencies
+
+tags:
+	cscope -b
+
+.PHONY:		all clean clobber depend tags
+
+
+include Dependencies

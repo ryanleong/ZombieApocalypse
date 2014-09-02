@@ -1,0 +1,4 @@
+simulation.o: simulation.c world.h clock.h agent.h
+random.o: random.c random.h clock.h
+world.o: world.c world.h clock.h agent.h
+apocalypse.o: apocalypse.c world.h clock.h agent.h random.h simulation.h
