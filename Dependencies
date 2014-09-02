@@ -1,4 +1,7 @@
-simulation.o: simulation.c world.h clock.h agent.h
+simulation.o: simulation.c simulation.h world.h clock.h entity.h common.h \
+ bitarray.h
 random.o: random.c random.h clock.h
-world.o: world.c world.h clock.h agent.h
-apocalypse.o: apocalypse.c world.h clock.h agent.h random.h simulation.h
+world.o: world.c world.h clock.h entity.h
+apocalypse.o: apocalypse.c world.h clock.h entity.h random.h simulation.h
+bitarray.o: bitarray.c bitarray.h
+entity.o: entity.c entity.h clock.h common.h random.h constants.h

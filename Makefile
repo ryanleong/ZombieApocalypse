@@ -1,8 +1,8 @@
-SRC = simulation.c random.c world.c apocalypse.c
+SRC = simulation.c random.c world.c apocalypse.c bitarray.c entity.c
 OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
-CFLAGS = --std=gnu99 -O2 -g -Wall
+CFLAGS = --std=gnu99 -O0 -g -Wall
 LIBS = -lm
 
 all: apocalypse
@@ -15,6 +15,7 @@ clean:
 
 clobber:	clean
 	rm -f apocalypse
+	rm -f cscope.out
 
 depend:
 	gcc $(CFLAGS) -MM $(SRC) > Dependencies
