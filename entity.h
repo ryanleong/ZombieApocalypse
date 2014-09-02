@@ -65,6 +65,8 @@ typedef struct Entity {
 	simClock willDie; \
 	simClock lastSlept; \
 	double tiredness; \
+	simClock fertilityStart; \
+	simClock fertilityEnd; \
 	Unborn * fetuses; \
 	// put properties of living entities here
 
@@ -101,40 +103,107 @@ struct Unborn {
 // put unborn-only properties here
 };
 
+/**
+ * Use only at the start of the simulation (clock should be 0)
+ * Creates a new random human who lives prior to start of the simulation.
+ * If the human is a female, she can be pregnant.
+ */
 Human * newHuman(simClock clock);
 
+/**
+ * Use only at the start of the simulation (clock should be 0)
+ * Creates a new zombie which will eventually decompose.
+ */
 Zombie * newZombie(simClock clock);
 
+/**
+ * Converts a human into infected.
+ * All attributes are preserved and becoming zombie is planned.
+ * The human is disposed.
+ */
 Infected * toInfected(Human * human, simClock clock);
 
+/**
+ * Converts an infected into zombie.
+ * The infected is disposed.
+ */
 Zombie * toZombie(Infected * infected, simClock clock);
 
+/**
+ * Copies human into a new entity, preserves all attributes.
+ */
 Human * copyHuman(Human * human);
 
+/**
+ * Copies infected into a new entity, preserves all attributes.
+ */
 Infected * copyInfected(Infected * infected);
 
+/**
+ * Copies zombie into a new entity, preserves all attributes.
+ */
 Zombie * copyZombie(Zombie * zombie);
 
+/**
+ * Copies unborn into a new entity, preserves all attributes.
+ */
 Unborn * copyUnborn(Unborn * unborn);
 
+/**
+ * Copies general entity into a new entity, preserves all attributes.
+ */
 Entity * copyEntity(Entity * entity);
 
+/**
+ * Copies general living entity into a new living entity, preserves all attributes.
+ */
+LivingEntity * copyLiving(LivingEntity * living);
+
+/**
+ * Conceives up to three children in mother's body.
+ */
 void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock);
 
+/**
+ * Mother gives birth to all her children when they are scheduled.
+ * Type of children depends on mother's health condition.
+ */
 LivingEntity * giveBirth(LivingEntity * mother, simClock clock);
 
+/**
+ * Returns the human back to allocator.
+ */
 void disposeHuman(Human * human);
 
+/**
+ * Returns the infected back to allocator.
+ */
 void disposeInfected(Infected * infected);
 
+/**
+ * Returns the zombie back to allocator.
+ */
 void disposeZombie(Zombie * zombie);
 
+/**
+ * Returns the unborn back to allocator.
+ */
 void disposeUnborn(Unborn * unborn);
 
+/**
+ * Returns the entity back to allocator.
+ */
 void disposeEntity(Entity * entity);
 
+/**
+ * Returns the whole chain of entities back to allocator.
+ * Argument may be NULL.
+ */
 void disposeEntities(Entity * entities);
 
+/**
+ * Frees all used memory by allocator.
+ */
 void destroyUnused();
 
 #endif /* ENTITY_H_ */

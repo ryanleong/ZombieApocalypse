@@ -23,7 +23,9 @@ EntityAllocator allocator = { NULL, NULL, NULL, NULL };
  */
 Entity * newEntity(EntityType type) {
 	Entity * entity = NULL;
+#ifdef _OPENMP
 #pragma omp critical (EntityAllocatorRegion)
+#endif
 	{
 		switch (type) {
 		case HUMAN:
@@ -31,7 +33,7 @@ Entity * newEntity(EntityType type) {
 				entity = allocator.humans->asEntity;
 				allocator.humans = entity->nextHuman;
 			} else {
-				entity = ((Human *) malloc(sizeof(Human)))->asEntity;
+				entity = ((Entity *) malloc(sizeof(Human)));
 			}
 			break;
 		case INFECTED:
@@ -39,7 +41,7 @@ Entity * newEntity(EntityType type) {
 				entity = allocator.infected->asEntity;
 				allocator.infected = entity->nextInfected;
 			} else {
-				entity = ((Infected*) malloc(sizeof(Infected)))->asEntity;
+				entity = ((Entity *) malloc(sizeof(Infected)));
 			}
 			break;
 		case ZOMBIE:
@@ -47,7 +49,7 @@ Entity * newEntity(EntityType type) {
 				entity = allocator.zombies->asEntity;
 				allocator.zombies = entity->nextZombie;
 			} else {
-				entity = ((Zombie*) malloc(sizeof(Zombie)))->asEntity;
+				entity = ((Entity *) malloc(sizeof(Zombie)));
 			}
 			break;
 		case UNBORN:
@@ -55,7 +57,7 @@ Entity * newEntity(EntityType type) {
 				entity = allocator.unborn->asEntity;
 				allocator.unborn = entity->nextUnborn;
 			} else {
-				entity = ((Unborn*) malloc(sizeof(Unborn)))->asEntity;
+				entity = ((Entity *) malloc(sizeof(Unborn)));
 			}
 			break;
 		}
@@ -105,16 +107,13 @@ Unborn * newUnborn(int count, simClock clock, bool already) {
 	return chain;
 }
 
-/**
- * Use only at the start of the simulation (clock should be 0)
- * Creates a new random human who lives prior to start of the simulation.
- * If the human is a female, she can be pregnant.
- */
 Human * newHuman(simClock clock) {
 	Human * human = newEntity(HUMAN)->asHuman;
 
 	double rnd = randomDouble();
 	simClock age;
+	simClock fertilityStart;
+	simClock fertilityEnd;
 	if (rnd < MALE_FEMALE_RATE) {
 		human->gender = FEMALE;
 
@@ -127,27 +126,38 @@ Human * newHuman(simClock clock) {
 
 		age = randomEvent(LIFE_EXPECTANCY_FEMALE_MEAN,
 		LIFE_EXPECTANCY_FEMALE_STD_DEV);
+		fertilityStart = randomEvent(FERTILITY_START_FEMALE_MEAN,
+		FERTILITY_START_FEMALE_STD_DEV);
+		fertilityEnd = randomEvent(FERTILITY_END_FEMALE_MEAN,
+		FERTILITY_END_FEMALE_STD_DEV);
 	} else {
 		human->gender = MALE;
 		human->fetuses = NULL;
 
 		age = randomEvent(LIFE_EXPECTANCY_MALE_MEAN,
 		LIFE_EXPECTANCY_MALE_STD_DEV);
+		fertilityStart = randomEvent(FERTILITY_START_MALE_MEAN,
+		FERTILITY_START_MALE_STD_DEV);
+		fertilityEnd = randomEvent(FERTILITY_END_MALE_MEAN,
+		FERTILITY_END_MALE_STD_DEV);
 	}
 
 	double ageRate = randomDouble();
 	human->wasBorn = clock - ageRate * age;
 	human->willDie = MAX(1, clock + (1 - ageRate) * age); // in future!
 
-	// TODO lastSlept, tiredness
+	// may or may not be in future
+	human->fertilityStart = human->wasBorn + fertilityStart;
+	human->fertilityStart = human->wasBorn + fertilityEnd;
+
+	// the simulation start with a nice morning
+	// when everybody woke up and nobody is tired
+	human->lastSlept = clock;
+	human->tiredness = 0;
 
 	return human;
 }
 
-/**
- * Use only at the start of the simulation (clock should be 0)
- * Creates a new zombie which will eventually decompose.
- */
 Zombie * newZombie(simClock clock) {
 	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
 
@@ -159,11 +169,6 @@ Zombie * newZombie(simClock clock) {
 	return zombie;
 }
 
-/**
- * Converts a human into infected.
- * All attributes are preserved and becoming zombie is planned.
- * The human is disposed.
- */
 Infected * toInfected(Human * human, simClock clock) {
 	Infected * infected = newEntity(INFECTED)->asInfected;
 
@@ -186,10 +191,6 @@ Infected * toInfected(Human * human, simClock clock) {
 	return infected;
 }
 
-/**
- * Converts an infected into zombie.
- * The infected is disposed.
- */
 Zombie * toZombie(Infected * infected, simClock clock) {
 	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
 
@@ -203,14 +204,20 @@ Zombie * toZombie(Infected * infected, simClock clock) {
 	return zombie;
 }
 
-/**
- * Copies human into a new entity, preserves all attributes.
- */
 Human * copyHuman(Human * human) {
 	Human * h = newEntity(HUMAN)->asHuman;
 
 	h->gender = human->gender;
-	h->fetuses = human->fetuses;
+	h->fertilityStart = human->fertilityStart;
+	h->fertilityEnd = human->fertilityEnd;
+
+	h->fetuses = NULL;
+	for (Unborn * u = human->fetuses; u != NULL; u = u->nextUnborn) {
+		Unborn * u_ = copyUnborn(u);
+		u_->nextUnborn = h->fetuses;
+		h->fetuses = u_;
+	}
+
 	h->lastSlept = human->lastSlept;
 	h->tiredness = human->tiredness;
 	h->wasBorn = human->wasBorn;
@@ -219,14 +226,20 @@ Human * copyHuman(Human * human) {
 	return h;
 }
 
-/**
- * Copies infected into a new entity, preserves all attributes.
- */
 Infected * copyInfected(Infected * infected) {
 	Infected * i = newEntity(INFECTED)->asInfected;
 
 	i->gender = infected->gender;
-	i->fetuses = infected->fetuses;
+	i->fertilityStart = infected->fertilityStart;
+	i->fertilityEnd = infected->fertilityEnd;
+
+	i->fetuses = NULL;
+	for (Unborn * u = infected->fetuses; u != NULL; u = u->nextUnborn) {
+		Unborn * u_ = copyUnborn(u);
+		u_->nextUnborn = i->fetuses;
+		i->fetuses = u_;
+	}
+
 	i->lastSlept = infected->lastSlept;
 	i->tiredness = infected->tiredness;
 	i->wasBorn = infected->wasBorn;
@@ -237,9 +250,6 @@ Infected * copyInfected(Infected * infected) {
 	return i;
 }
 
-/**
- * Copies zombie into a new entity, preserves all attributes.
- */
 Zombie * copyZombie(Zombie * zombie) {
 	Zombie * z = newEntity(ZOMBIE)->asZombie;
 
@@ -249,9 +259,6 @@ Zombie * copyZombie(Zombie * zombie) {
 	return z;
 }
 
-/**
- * Copies unborn into a new entity, preserves all attributes.
- */
 Unborn * copyUnborn(Unborn * unborn) {
 	Unborn * u = newEntity(UNBORN)->asUnborn;
 
@@ -261,9 +268,6 @@ Unborn * copyUnborn(Unborn * unborn) {
 	return u;
 }
 
-/**
- * Copies general entity into a new entity, preserves all attributes.
- */
 Entity * copyEntity(Entity * entity) {
 	switch (entity->type) {
 	case HUMAN:
@@ -279,21 +283,24 @@ Entity * copyEntity(Entity * entity) {
 	}
 }
 
-/**
- * Conceives up to three children in mother's body.
- */
+LivingEntity * copyLiving(LivingEntity * living) {
+	return copyEntity(living->asEntity)->asLiving;
+}
+
 void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock) {
+	// correct gender and not pregnant
 	if (mother->gender == FEMALE && mother->fetuses == NULL
 			&& father->gender == MALE) {
-		int count = randomCountOfUnborn();
-		mother->fetuses = newUnborn(count, clock, false);
+		// both are fertile
+		if (clock >= mother->fertilityStart && clock < mother->fertilityEnd
+				&& clock >= father->fertilityStart
+				&& clock < father->fertilityEnd) {
+			int count = randomCountOfUnborn();
+			mother->fetuses = newUnborn(count, clock, false);
+		}
 	}
 }
 
-/**
- * Mother gives birth to all her children when they are scheduled.
- * Type of children depends on mother's health condition.
- */
 LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 	LivingEntity * chain = NULL;
 	while (mother->fetuses != NULL) {
@@ -317,14 +324,24 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 
 		double rnd = randomDouble();
 		simClock age;
+		simClock fertilityStart;
+		simClock fertilityEnd;
 		if (rnd < MALE_FEMALE_RATE) {
 			born->gender = FEMALE;
 			age = randomEvent(LIFE_EXPECTANCY_FEMALE_MEAN,
 			LIFE_EXPECTANCY_FEMALE_STD_DEV);
+			fertilityStart = randomEvent(FERTILITY_START_FEMALE_MEAN,
+			FERTILITY_START_FEMALE_STD_DEV);
+			fertilityEnd = randomEvent(FERTILITY_END_FEMALE_MEAN,
+			FERTILITY_END_FEMALE_STD_DEV);
 		} else {
 			born->gender = MALE;
 			age = randomEvent(LIFE_EXPECTANCY_MALE_MEAN,
 			LIFE_EXPECTANCY_MALE_STD_DEV);
+			fertilityStart = randomEvent(FERTILITY_START_MALE_MEAN,
+			FERTILITY_START_MALE_STD_DEV);
+			fertilityEnd = randomEvent(FERTILITY_END_MALE_MEAN,
+			FERTILITY_END_MALE_STD_DEV);
 		}
 
 		born->willDie = MAX(1, clock + age); // in future!
@@ -332,9 +349,10 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 		born->fetuses = NULL;
 		born->lastSlept = clock;
 
-		// TODO tiredness
-
+		born->tiredness = 1; // baby is tired
 		born->wasBorn = clock;
+		born->fertilityStart = clock + fertilityStart;
+		born->fertilityStart = clock + fertilityEnd;
 
 		// loop through unborn children
 		Unborn * bornFetus = mother->fetuses;
@@ -345,6 +363,8 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 		chain = born;
 	}
 
+	mother->tiredness = 1; // mother is tired
+
 	return chain;
 }
 
@@ -353,9 +373,10 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
  * Returns the entity back to the allocator.
  */
 void generalDispose(Entity * entity) {
+#ifdef _OPENMP
 #pragma omp critical (EntityAllocatorRegion)
+#endif
 	{
-
 		switch (entity->type) {
 		case HUMAN:
 			entity->nextHuman = allocator.humans;
@@ -377,43 +398,28 @@ void generalDispose(Entity * entity) {
 	}
 }
 
-/**
- * Returns the human back to allocator.
- */
 void disposeHuman(Human * human) {
-	if (human->fetuses) {
+	if (human->fetuses != NULL) {
 		disposeEntities(human->fetuses->asEntity);
 	}
 	generalDispose(human->asEntity);
 }
 
-/**
- * Returns the infected back to allocator.
- */
 void disposeInfected(Infected * infected) {
-	if (infected->fetuses) {
+	if (infected->fetuses != NULL) {
 		disposeEntities(infected->fetuses->asEntity);
 	}
 	generalDispose(infected->asEntity);
 }
 
-/**
- * Returns the zombie back to allocator.
- */
 void disposeZombie(Zombie * zombie) {
 	generalDispose(zombie->asEntity);
 }
 
-/**
- * Returns the unborn back to allocator.
- */
 void disposeUnborn(Unborn * unborn) {
 	generalDispose(unborn->asEntity);
 }
 
-/**
- * Returns the entity back to allocator.
- */
 void disposeEntity(Entity * entity) {
 	switch (entity->type) {
 	case HUMAN:
@@ -431,11 +437,8 @@ void disposeEntity(Entity * entity) {
 	}
 }
 
-/**
- * Returns the whole chain of entities back to allocator.
- * Argument may be NULL.
- */
 void disposeEntities(Entity * entities) {
+	// traverse the chain and dispose each element
 	while (entities != NULL) {
 		Entity * ptr = entities;
 		entities = entities->nextEntity;
@@ -444,6 +447,7 @@ void disposeEntities(Entity * entities) {
 }
 
 void destroyUnusedChain(Entity * entities) {
+	// traverse the chain and free each element
 	while (entities != NULL) {
 		Entity * ptr = entities;
 		entities = entities->nextEntity;
@@ -451,11 +455,11 @@ void destroyUnusedChain(Entity * entities) {
 	}
 }
 
-/**
- * Frees all the
- */
 void destroyUnused() {
+	// we need to lock the access to allocator
+#ifdef _OPENMP
 #pragma omp critical (EntityAllocatorRegion)
+#endif
 	{
 		destroyUnusedChain(allocator.humans->asEntity);
 		destroyUnusedChain(allocator.infected->asEntity);
