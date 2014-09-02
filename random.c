@@ -26,6 +26,10 @@ simClock randomEvent(simClock mean, simClock stdDev) {
 /**
  * Both bounds are inclusive.
  */
-int randomNumber(int min, int max) {
+int randomInt(int min, int max) {
 	return random() % (max - min + 1) + min;
+}
+
+double randomDouble() {
+	return drand48();
 }

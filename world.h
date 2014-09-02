@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 #include "clock.h"
-#include "agent.h"
+#include "entity.h"
 
 typedef struct Tile {
 	// linked lists to represent all the humans and zombies in a particular tile

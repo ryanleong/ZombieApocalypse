@@ -12,8 +12,10 @@
 
 void initRandom(unsigned int seed);
 
-simClock randomEvent(simClock expected, simClock deviation);
+simClock randomEvent(simClock mean, simClock stdDev);
 
-int randomNumber(int min, int max);
+int randomInt(int min, int max);
+
+double randomDouble();
 
 #endif /* RANDOM_H_ */
