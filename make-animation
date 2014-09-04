@@ -1,0 +1,15 @@
+#! /bin/bash
+
+# build a gif animation out of a set of images contained in a given 
+# directory.
+
+images_path="./images"
+
+for image in `ls ${images_path}`
+do
+    convert -scale 500% $image $image
+done
+
+convert -delay 0.3 -loop 0 ${images_path}/*.png -quality 50% -layers optimize animation.gif
+
+# vim: ts=4 sw=4 et
