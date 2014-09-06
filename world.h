@@ -14,10 +14,13 @@
 #include "clock.h"
 #include "entity.h"
 
+typedef enum TileType {
+	REGULAR, BORDER
+} TileType;
+
 typedef struct Tile {
-	// linked lists to represent all the humans and zombies in a particular tile
-	LivingEntity * living;
-	Zombie * zombies;
+	TileType type;
+	Entity * entity;
 #ifdef _OPENMP
 	omp_lock_t lock;
 #endif
@@ -37,15 +40,11 @@ void resetWorld(World * world);
 void destoyWorld(World * world);
 
 #define IN_WORLD(world, x, y) \
-		((x) >= 0 && (x) < (world)->width && (y) >= 0 && (y) < (world)->height)
+		((x) >= 0 && (x) <= (world)->width + 1 \
+				&& (y) >= 0 && (y) <= (world)->height + 1)
 
-/* we definitely want to inline this, therefore it is in header */
-static Tile * getTile(World * w, int x, int y) {
-	if (!IN_WORLD(w, x, y)) {
-		return NULL;
-	}
-	return w->map + y * w->width + x;
-}
+#define GET_TILE(world, x, y) \
+		((world)->map + (y) * ((world)->width + 2) + (x))
 
 void initTile(Tile * tile);
 

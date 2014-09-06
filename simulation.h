@@ -5,4 +5,6 @@
 
 void simulateStep(World * input, World * output);
 
+void finishStep(World * input, World * output);
+
 #endif /* SIMULATION_H_ */
