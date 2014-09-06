@@ -30,7 +30,7 @@ Entity * newEntity(EntityType type) {
 		case HUMAN:
 			if (allocator.humans != NULL) {
 				entity = allocator.humans;
-				allocator.humans = entity->next;
+				allocator.humans = entity->asEntity;
 			} else {
 				entity = ((Entity *) malloc(sizeof(Human)));
 			}
@@ -38,7 +38,7 @@ Entity * newEntity(EntityType type) {
 		case INFECTED:
 			if (allocator.infected != NULL) {
 				entity = allocator.infected;
-				allocator.infected = entity->next;
+				allocator.infected = entity->asEntity;
 			} else {
 				entity = ((Entity *) malloc(sizeof(Infected)));
 			}
@@ -46,7 +46,7 @@ Entity * newEntity(EntityType type) {
 		case ZOMBIE:
 			if (allocator.zombies != NULL) {
 				entity = allocator.zombies;
-				allocator.zombies = entity->next;
+				allocator.zombies = entity->asEntity;
 			} else {
 				entity = ((Entity *) malloc(sizeof(Zombie)));
 			}
@@ -54,7 +54,6 @@ Entity * newEntity(EntityType type) {
 		}
 	}
 	entity->asEntity = entity;
-	entity->next = NULL;
 	entity->type = type;
 	return entity;
 }
@@ -334,15 +333,15 @@ void generalDispose(Entity * entity) {
 	{
 		switch (entity->type) {
 		case HUMAN:
-			entity->next = allocator.humans;
+			entity->asEntity = allocator.humans;
 			allocator.humans = entity;
 			break;
 		case INFECTED:
-			entity->next = allocator.infected;
+			entity->asEntity = allocator.infected;
 			allocator.infected = entity;
 			break;
 		case ZOMBIE:
-			entity->next = allocator.zombies;
+			entity->asEntity = allocator.zombies;
 			allocator.zombies = entity;
 			break;
 		}
@@ -378,7 +377,7 @@ void destroyUnusedChain(Entity * entities) {
 	// traverse the chain and free each element
 	while (entities != NULL) {
 		Entity * ptr = entities;
-		entities = entities->next;
+		entities = entities->asEntity;
 		free(ptr);
 	}
 }

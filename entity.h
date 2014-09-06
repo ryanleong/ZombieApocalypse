@@ -46,8 +46,7 @@ typedef struct Children {
 		Infected * asInfected; \
 		Zombie * asZombie; \
 	}; \
-	Entity * next; \
-// put general entity properties here
+	// put general entity properties here
 
 typedef enum Gender {
 	MALE, FEMALE
