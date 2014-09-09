@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdio.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -7,6 +8,8 @@
 #include "common.h"
 #include "random.h"
 #include "constants.h"
+
+void checkIncubationTime (Entity *infected, simClock currentTime);
 
 /**
  * These macros require the worlds to be named input and output
@@ -38,6 +41,12 @@ void simulateStep(World * input, World * output) {
 				continue;
 			}
 
+            // Infected people become zombies after a certain incubation
+            // time, with some random variance.
+            if (entity->type == INFECTED) {
+                checkIncubationTime (entity, output->clock);
+            }
+
 			// Convert Human to Infected
 			if (entity->type == HUMAN) {
 				int zombieCount = 0;
@@ -65,8 +74,9 @@ void simulateStep(World * input, World * output) {
 				// Convert to infected
 				double infectionChance = zombieCount * PROBABILITY_INFECTION;
 				if(randomDouble() <= infectionChance) {
-					entity = toInfected(entity, output->clock);
+					entity = toInfected(entity->asHuman, output->clock);
 					entity->type = INFECTED;
+                    printf ("DEBUG: New case in incubation.\n");
 				}
 			}
 
@@ -134,4 +144,12 @@ void finishStep(World * input, World * output) {
 	MOVE_BACK(y, output->width, output->width + 1, y, output->width, y)
 
 	resetWorld(input);
+}
+
+void checkIncubationTime (Entity *infected, simClock currentTime) {
+    if (currentTime > infected->asInfected->becomesZombie) {
+        infected = toZombie (infected, currentTime);
+        infected->type = ZOMBIE;
+        printf ("DEBUG: Incubation time ended.\n");
+    }
 }

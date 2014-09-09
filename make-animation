@@ -7,9 +7,10 @@ images_path="./images"
 
 for image in `find ${images_path} -type f`
 do
-    convert -scale 500% ${images_path}/$image ${images_path}/$image
+    convert -scale 500% $image $image
 done
 
 convert -delay 0.3 -loop 0 ${images_path}/*.png -quality 50% animation.gif
+rm ${images_path}/*.png
 
 # vim: ts=4 sw=4 et
