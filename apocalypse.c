@@ -11,56 +11,63 @@
 #include "constants.h"
 
 void randomDistribution(World * w, int people, int zombies, simClock clock) {
-	for (int i = 0; i < people; i++) {
-		int x = randomInt(0, w->width - 1);
-		int y = randomInt(0, w->height - 1);
+	for (int i = 0; i < people;) {
+		int x = randomInt(1, w->width);
+		int y = randomInt(1, w->height);
+		Tile * tile = GET_TILE(w, x, y);
+		if (tile->entity != NULL) {
+			continue;
+		}
 
 		Human * human = newHuman(clock);
-		Tile * tile = getTile(w, x, y);
-		human->nextLiving = tile->living;
-		tile->living = human->asLiving;
+		tile->entity = human->asEntity;
+
+		i++;
 	}
 
 	for (int i = 0; i < zombies; i++) {
-		int x = randomInt(0, w->width - 1);
-		int y = randomInt(0, w->height - 1);
+		int x = randomInt(1, w->width);
+		int y = randomInt(1, w->height);
+		Tile * tile = GET_TILE(w, x, y);
+		if (tile->entity != NULL) {
+			continue;
+		}
 
 		Zombie * zombie = newZombie(clock);
-		Tile * tile = getTile(w, x, y);
-		zombie->nextZombie = tile->zombies;
-		tile->zombies = zombie;
+		tile->entity = zombie->asEntity;
 	}
 }
 
 void setRGB(png_byte *ptr, Tile * tile) {
-	int humans = 0;
-	int infected = 0;
-	for (LivingEntity * e = tile->living; e != NULL; e = e->nextLiving) {
-		switch (e->type) {
-		case HUMAN:
-			humans++;
-			break;
-		case INFECTED:
-			infected++;
-			break;
-		default: // won't happen
-			break;
-		}
+	if (tile->entity == NULL) {
+		ptr[0] = 0;
+		ptr[1] = 0;
+		ptr[2] = 0;
+		return;
 	}
 
-	int zombies = 0;
-	for (LivingEntity * e = tile->zombies; e != NULL; e = e->nextZombie) {
-		zombies++;
+	switch (tile->entity->type) {
+	case HUMAN:
+		ptr[0] = 0;
+		ptr[1] = 255;
+		ptr[2] = 0;
+		break;
+	case INFECTED:
+		ptr[0] = 0;
+		ptr[1] = 0;
+		ptr[2] = 255;
+		break;
+	case ZOMBIE:
+		ptr[0] = 255;
+		ptr[1] = 0;
+		ptr[2] = 0;
+		break;
 	}
-
-	ptr[0] = MIN(zombies * 255 / MAX_COLOR, 255); // red = zombie
-	ptr[1] = MIN(humans * 255 / MAX_COLOR, 255); // green = human
-	ptr[2] = MIN(infected * 255 / MAX_COLOR, 255); // blue = infected
 }
 
-void printWorld(World * world) {
+int printWorld(World * world) {
 	char filename[80];
-	sprintf(filename, "images/step-%06d.png", world->clock);
+	sprintf(filename, "images/step-%06lld.png", world->clock);
 
 	int code = 0;
 	FILE *fp;
@@ -113,9 +120,9 @@ void printWorld(World * world) {
 	row = (png_bytep) malloc(3 * world->width * sizeof(png_byte));
 
 	// Write image data
-	for (int y = 0; y < world->height; y++) {
-		for (int x = 0; x < world->width; x++) {
-			setRGB(&(row[x * 3]), getTile(world, x, y));
+	for (int y = 1; y <= world->height; y++) {
+		for (int x = 1; x <= world->width; x++) {
+			setRGB(&(row[(x - 1) * 3]), GET_TILE(world, x, y));
 		}
 		png_write_row(png_ptr, row);
 	}
@@ -132,7 +139,7 @@ void printWorld(World * world) {
 	if (row != NULL)
 		free(row);
 
-	// return code;
+	return code;
 }
 
 int main(int argc, char **argv) {
@@ -159,11 +166,11 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < iters; i++) {
 		simulateStep(input, output);
-		//printWorld(output);
+		finishStep(input, output);
+		printWorld(output);
 
 		World * temp = input;
 		input = output;
 		output = temp;
-		resetWorld(output);
 	}
 }

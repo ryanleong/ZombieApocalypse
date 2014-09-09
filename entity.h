@@ -8,7 +8,7 @@
 #include "clock.h"
 
 typedef enum EntityType {
-	UNBORN, HUMAN, INFECTED, ZOMBIE
+	HUMAN, INFECTED, ZOMBIE
 } EntityType;
 
 typedef struct Entity Entity;
@@ -21,7 +21,13 @@ typedef struct Infected Infected;
 
 typedef struct Zombie Zombie;
 
-typedef struct Unborn Unborn;
+typedef struct Children {
+	int count;
+	simClock conceived;
+	simClock borns;
+} Children;
+
+#define NO_CHILDREN ((const struct Children){0, 0, 0})
 
 /*
  * First field is an enum specifying type of entity.
@@ -39,15 +45,6 @@ typedef struct Unborn Unborn;
 		Human * asHuman; \
 		Infected * asInfected; \
 		Zombie * asZombie; \
-		Unborn * asUnborn; \
-	}; \
-	union { \
-		Entity * nextEntity; \
-		LivingEntity * nextLiving; \
-		Human * nextHuman; \
-		Infected * nextInfected; \
-		Zombie * nextZombie; \
-		Unborn * nextUnborn; \
 	}; \
 	// put general entity properties here
 
@@ -67,8 +64,8 @@ typedef struct Entity {
 	double tiredness; \
 	simClock fertilityStart; \
 	simClock fertilityEnd; \
-	Unborn * fetuses; \
-	// put properties of living entities here
+	Children children;
+// put properties of living entities here
 
 struct LivingEntity {
 	ENTITY_FIELDS
@@ -94,13 +91,6 @@ struct Zombie {
 	simClock becameZombie;
 	simClock decomposes;
 // put zombie-only properties here
-};
-
-struct Unborn {
-	ENTITY_FIELDS
-	simClock conceived;
-	simClock borns;
-// put unborn-only properties here
 };
 
 /**
@@ -145,11 +135,6 @@ Infected * copyInfected(Infected * infected);
 Zombie * copyZombie(Zombie * zombie);
 
 /**
- * Copies unborn into a new entity, preserves all attributes.
- */
-Unborn * copyUnborn(Unborn * unborn);
-
-/**
  * Copies general entity into a new entity, preserves all attributes.
  */
 Entity * copyEntity(Entity * entity);
@@ -167,6 +152,7 @@ void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock);
 /**
  * Mother gives birth to all her children when they are scheduled.
  * Type of children depends on mother's health condition.
+ * Call this function repeatedly to born all children.
  */
 LivingEntity * giveBirth(LivingEntity * mother, simClock clock);
 
@@ -186,20 +172,9 @@ void disposeInfected(Infected * infected);
 void disposeZombie(Zombie * zombie);
 
 /**
- * Returns the unborn back to allocator.
- */
-void disposeUnborn(Unborn * unborn);
-
-/**
  * Returns the entity back to allocator.
  */
 void disposeEntity(Entity * entity);
-
-/**
- * Returns the whole chain of entities back to allocator.
- * Argument may be NULL.
- */
-void disposeEntities(Entity * entities);
 
 /**
  * Frees all used memory by allocator.

@@ -5,7 +5,7 @@
 
 images_path="./images"
 
-for image in `ls ${images_path}`
+for image in `find ${images_path} -type f`
 do
     convert -scale 500% ${images_path}/$image ${images_path}/$image
 done

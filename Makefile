@@ -9,7 +9,7 @@ all: dependencies apocalypse
 
 apocalypse: $(OBJS)
 	$(CC) $(CFLAGS) -o apocalypse $(OBJS) $(LIBS)
-	mkdir images
+	mkdir -p images
 
 clean:
 	rm -f $(OBJS)
@@ -21,7 +21,7 @@ clobber: clean
 	rm -rf images/
 
 dependencies:
-	gcc $(CFLAGS) -MM $(SRC) > dependencies
+	$(CC) $(CFLAGS) -MM $(SRC) > dependencies
 
 tags:
 	cscope -b

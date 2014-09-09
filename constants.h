@@ -10,9 +10,11 @@
 
 #include "clock.h"
 
-#define MAX_COLOR 3 // used in apocalypse.c to express saturation of tile
+#define MAX_COLOR 1 // used in apocalypse.c to express saturation of tile
 
 #define PROBABILITY_INITIAL_PREGNANCY 0.017 // 2 children = 1.5 years in 85 years
+
+#define PROBABILITY_INFECTION 0.075
 
 #define PROBABILITY_ONE_CHILD 0.8
 #define PROBABILITY_TWO_CHILDREN (PROBABILITY_ONE_CHILD + 0.19)

@@ -8,9 +8,17 @@ World * newWorld(unsigned int width, unsigned int height) {
 	w->clock = 0;
 	w->width = width;
 	w->height = height;
-	w->map = (Tile *) calloc(width * height, sizeof(Tile));
-	for (int i = 0; i < width * height; i++) {
-		initTile(w->map + i);
+	w->map = (Tile *) calloc((width + 2) * (height + 2), sizeof(Tile));
+	for (int i = 0; i < width + 2; i++) {
+		for (int j = 0; j < height + 2; j++) {
+			Tile * t = GET_TILE(w, i, j);
+			initTile(t);
+			if (i == 0 || j == 0 || i == width + 1 || j == height + 1) {
+				t->type = BORDER;
+			} else {
+				t->type = REGULAR;
+			}
+		}
 	}
 
 	return w;
@@ -19,17 +27,17 @@ World * newWorld(unsigned int width, unsigned int height) {
 void resetWorld(World * world) {
 #ifdef _OPENMP
 	int threads = omp_get_max_threads();
-int numThreads = MIN(MAX(world->width * world->height / 10, 1), threads);
+	int numThreads = MIN(MAX(world->width * world->height / 10, 1), threads);
 	// each thread resets at least 10 elements
 #pragma omp parallel for default(shared) num_threads(numThreads)
 #endif
-	for (int i = 0; i < world->width * world->height; i++) {
+	for (int i = 0; i < (world->width + 2) * (world->height + 2); i++) {
 		resetTile(world->map + i);
 	}
 }
 
 void destoyWorld(World * world) {
-	for (int i = 0; i < world->width * world->height; i++) {
+	for (int i = 0; i < (world->width + 2) * (world->height + 2); i++) {
 		destroyTile(world->map + i);
 	}
 	free(world->map);
@@ -44,15 +52,10 @@ void initTile(Tile * tile) {
 }
 
 void resetTile(Tile * tile) {
-	if (tile->living != NULL) {
-		disposeEntities(tile->living->asEntity);
+	if (tile->entity != NULL) {
+		disposeEntity(tile->entity);
+		tile->entity = NULL;
 	}
-	if (tile->zombies != NULL) {
-		disposeEntities(tile->zombies->asEntity);
-	}
-
-	tile->living = NULL;
-	tile->zombies = NULL;
 }
 
 void destroyTile(Tile * tile) {
