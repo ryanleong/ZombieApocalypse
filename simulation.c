@@ -30,10 +30,6 @@ void simulateStep(World * input, World * output) {
 	// at least three columns per thread
 #pragma omp parallel for default(shared) num_threads(numThreads)
 #endif
-
-	// DEBUG
-	int zCount = 0, hCount = 0, iCount = 0;
-
 	for (int x = 1; x <= input->width; x++) {
 		for (int y = 1; y <= input->height; y++) {
 			Entity * entity = GET_TILE(input, x, y)->entity;
@@ -107,22 +103,8 @@ void simulateStep(World * input, World * output) {
 			Entity * e = copyEntity(entity);
 			t->entity = e;
 			unlockTile(t);
-
-			// TODO continue here by specifying rules
-
-			// DEBUG
-			if(entity->type == HUMAN) {
-				hCount++;
-			}
-			else if(entity->type == INFECTED) {
-				iCount++;
-			}
-			else if(entity->type == ZOMBIE) {
-				zCount++;
-			}
 		}
 	}
-	printf("Humans: %d, Infected: %d, Zombie: %d\n", hCount, iCount, zCount);
 }
 
 #define MOVE_BACK(var, varMax, srcX, srcY, destX, destY) \

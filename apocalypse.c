@@ -142,6 +142,43 @@ int printWorld(World * world) {
 	return code;
 }
 
+/**
+ *  Print the number of humans, infected people (who carry the disease, but
+ *  haven't yet become zombies), and zombies, for debugging.
+ */
+void printPopulations (World *grid) {
+    int humans = 0, infected = 0, zombies = 0;
+    Tile *currentCell;
+
+    for (int i = 0; i < grid->height; i ++) {
+        for (int j = 0; j < grid->width; j ++) {
+            currentCell = GET_TILE (grid, i, j);
+
+            // ignore cells that are not occupied. A cell is only occupied
+            // if the entity pointer is not null.
+            if (currentCell->entity == NULL)
+                continue;
+
+            switch (currentCell->entity->type) {
+            case HUMAN:
+                humans ++;
+                break;
+
+            case INFECTED:
+                infected ++;
+                break;
+
+            case ZOMBIE:
+                zombies ++;
+                break;
+            }
+        }
+    }
+
+    printf ("Humans: %d, Infected: %d, Zombies: %d.\n", humans, infected, 
+      zombies);
+}
+
 int main(int argc, char **argv) {
 	if (argc != 6) {
 		printf("I want width, height, people, zombies, iterations.\n");
@@ -168,6 +205,7 @@ int main(int argc, char **argv) {
 		simulateStep(input, output);
 		finishStep(input, output);
 		printWorld(output);
+        printPopulations (output);
 
 		World * temp = input;
 		input = output;
