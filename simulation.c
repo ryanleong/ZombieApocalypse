@@ -14,6 +14,8 @@ int countNeighbouringZombies(World *world, int row, int column);
 LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 		simClock clock);
 
+double speedLimit(Entity * entity, simClock currentTime);
+
 /**
  * These macros require the worlds to be named input and output
  */
@@ -237,4 +239,35 @@ int countNeighbouringZombies(World * world, int x, int y) {
 	}
 
 	return zombies;
+}
+
+double speedLimit(Entity * entity, simClock currentTime) {
+	double moveChance = 0.0;
+
+	if(entity->type == ZOMBIE) {
+		int zombieAge = (currentTime - entity->asZombie->becameZombie) / IN_YEARS;
+
+		if(zombieAge < (ZOMBIE_DECOMPOZITION_MEAN / 2))
+			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 1.0;
+		else
+			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 0.8;
+	}
+	else {
+		int age = 0;
+		if(entity->type == HUMAN) 
+			age = (currentTime - entity->asHuman->wasBorn) / IN_YEARS;
+		else 
+			age = (currentTime - entity->asInfected->wasBorn) / IN_YEARS;
+
+		moveChance = MALE_MOVE_SPEED_MEAN;
+
+		if(age < 18)
+			moveChance = moveChance * MALE_UNDER_18_SPEED_MEAN;
+		else if(age > 39)
+			moveChance = moveChance * MALE_OVER_40_SPEED_MEAN;
+
+		if(entity->asHuman->gender == FEMALE)
+			moveChance = moveChance * FEMALE_TO_MALE_SPEED_RATIO;
+	}
+	return moveChance;
 }

@@ -46,4 +46,11 @@
 #define FERTILITY_END_MALE_MEAN (80 * IN_YEARS)
 #define FERTILITY_END_MALE_STD_DEV (10 * IN_YEARS)
 
+#define MALE_MOVE_SPEED_MEAN 0.8 					// At age range of 18 to 40
+#define MALE_UNDER_18_SPEED_MEAN 0.64 				// Under 18
+#define MALE_OVER_40_SPEED_MEAN 0.48 				// Over 40
+#define FEMALE_TO_MALE_SPEED_RATIO 0.85714311076	// Base of ratio of male to female avg speed (0.85714311076)
+
+#define ZOMBIE_MOVE_SPEED_MEAN 0.4
+
 #endif /* CONSTANTS_H_ */
