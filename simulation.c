@@ -10,6 +10,8 @@
 #include "constants.h"
 
 void checkIncubationTime (Entity *infected, simClock currentTime);
+void exposedToZombieNeighbours (World *world, int row, int column);
+int countNeighbouringZombies (World *world, int row, int column);
 
 /**
  * These macros require the worlds to be named input and output
@@ -45,35 +47,7 @@ void simulateStep(World * input, World * output) {
 
 			// Convert Human to Infected
 			if (entity->type == HUMAN) {
-				int zombieCount = 0;
-
-				Entity * tempEntity = GET_TILE(input, x + 1, y)->entity;
-				if (tempEntity != NULL && tempEntity->type == ZOMBIE) {
-					zombieCount++;
-				}
-
-				tempEntity = GET_TILE(input, x - 1, y)->entity;
-				if (tempEntity != NULL && tempEntity->type == ZOMBIE) {
-					zombieCount++;
-				}
-
-				tempEntity = GET_TILE(input, x, y + 1)->entity;
-				if (tempEntity != NULL && tempEntity->type == ZOMBIE) {
-					zombieCount++;
-				}
-
-				tempEntity = GET_TILE(input, x, y + 1)->entity;
-				if (tempEntity != NULL && tempEntity->type == ZOMBIE) {
-					zombieCount++;
-				}
-
-				// Convert to infected
-				double infectionChance = zombieCount * PROBABILITY_INFECTION;
-				if(randomDouble() <= infectionChance) {
-					entity = toInfected(entity->asHuman, output->clock);
-					entity->type = INFECTED;
-                    printf ("DEBUG: New case in incubation.\n");
-				}
+                exposedToZombieNeighbours (input, y, x);
 			}
 
 			// just an example of random movement
@@ -128,10 +102,72 @@ void finishStep(World * input, World * output) {
 	resetWorld(input);
 }
 
+/**
+ *  This function handles converting infected people to zombies, at the
+ *  time specified when they were first infected.
+ *
+ *  First parameter is the entity, of type INFECTED, and the second param
+ *  is the current time in the simulation.
+ */
 void checkIncubationTime (Entity *infected, simClock currentTime) {
     if (currentTime > infected->asInfected->becomesZombie) {
         infected = toZombie (infected, currentTime);
         infected->type = ZOMBIE;
         printf ("DEBUG: Incubation time ended.\n");
     }
+}
+
+/**
+ *  This function checks all the neighbouring cells around a human and
+ *  counts the number of zombies. If there are zombies, the human becomes
+ *  infected, depending on a random number.
+ */
+void exposedToZombieNeighbours (World *world, int row, int column) {
+    int zombieCount = countNeighbouringZombies (world, row, column);
+    double infectionChance = zombieCount * PROBABILITY_INFECTION;
+    Tile *tile = GET_TILE (world, column, row);
+    Entity *entity = tile->entity;
+
+    if(randomDouble() <= infectionChance) {
+        entity = toInfected(entity->asHuman, world->clock);
+        entity->type = INFECTED;
+        printf ("DEBUG: New case in incubation.\n");
+    }
+}
+
+/**
+ *  Returns the number of zombies in the cells bordering the cell at 
+ *  [row, column]. Indices outside the grid borders are ignored.
+ */
+int countNeighbouringZombies (World *world, int row, int column) {
+    int zombies = 0;
+    Tile *tile;
+    Entity *entity;
+
+    // step through all the cells of 1 row and 1 column either side of the
+    // main cell.
+    for (int i = row - 1; i <= row + 1; i ++) {
+        for (int j = column - 1; j <= column + 1; j ++) {
+            // are either of the indices outside the world boundaries? If so,
+            // continue on until we get valid coords.
+            if ((i < 0) || (i >= world->height) || (j < 0) || 
+              (j >= world->width))
+            {
+                continue;
+            }
+
+            tile = GET_TILE (world, j, i);
+            entity = tile->entity;
+
+            // if the neighbouring cell is empty, move on to the next 
+            // neighbour.
+            if (entity == NULL)
+                continue;
+
+            if (entity->type == ZOMBIE)
+                zombies ++;
+        }
+    }
+
+    return zombies;
 }
