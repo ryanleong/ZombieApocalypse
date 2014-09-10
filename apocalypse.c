@@ -40,9 +40,9 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 
 void setRGB(png_byte *ptr, Tile * tile) {
 	if (tile->entity == NULL) {
-		ptr[0] = 0;
-		ptr[1] = 0;
-		ptr[2] = 0;
+		ptr[0] = 255;
+		ptr[1] = 255;
+		ptr[2] = 255;
 		return;
 	}
 
@@ -146,37 +146,37 @@ int printWorld(World * world) {
  *  Print the number of humans, infected people (who carry the disease, but
  *  haven't yet become zombies), and zombies, for debugging.
  */
-void printPopulations (World *grid) {
-    int humans = 0, infected = 0, zombies = 0;
-    Tile *currentCell;
+void printPopulations(World *grid) {
+	int humans = 0, infected = 0, zombies = 0;
+	Tile *currentCell;
 
-    for (int i = 0; i < grid->height; i ++) {
-        for (int j = 0; j < grid->width; j ++) {
-            currentCell = GET_TILE (grid, i, j);
+	for (int i = 0; i < grid->height; i++) {
+		for (int j = 0; j < grid->width; j++) {
+			currentCell = GET_TILE(grid, i, j);
 
-            // ignore cells that are not occupied. A cell is only occupied
-            // if the entity pointer is not null.
-            if (currentCell->entity == NULL)
-                continue;
+			// ignore cells that are not occupied. A cell is only occupied
+			// if the entity pointer is not null.
+			if (currentCell->entity == NULL)
+				continue;
 
-            switch (currentCell->entity->type) {
-            case HUMAN:
-                humans ++;
-                break;
+			switch (currentCell->entity->type) {
+			case HUMAN:
+				humans++;
+				break;
 
-            case INFECTED:
-                infected ++;
-                break;
+			case INFECTED:
+				infected++;
+				break;
 
-            case ZOMBIE:
-                zombies ++;
-                break;
-            }
-        }
-    }
+			case ZOMBIE:
+				zombies++;
+				break;
+			}
+		}
+	}
 
-    printf ("Humans: %d, Infected: %d, Zombies: %d.\n", humans, infected, 
-      zombies);
+	printf("Time: %6d   Humans: %4d, Infected: %4d, Zombies: %4d.\n", grid->clock,
+			humans, infected, zombies);
 }
 
 int main(int argc, char **argv) {
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
 		simulateStep(input, output);
 		finishStep(input, output);
 		printWorld(output);
-        printPopulations (output);
+		printPopulations(output);
 
 		World * temp = input;
 		input = output;

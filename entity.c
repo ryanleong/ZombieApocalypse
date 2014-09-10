@@ -170,9 +170,8 @@ Infected * toInfected(Human * human, simClock clock) {
 
 	simClock event = randomEvent(ZOMBIE_INFECTION_MEAN,
 	ZOMBIE_INFECTION_STD_DEV);
-	infected->becomesZombie = MAX(1, event); // in future!
+	infected->becomesZombie = clock + MAX(1, event); // in future!
 
-	disposeHuman(human);
 	return infected;
 }
 
@@ -185,7 +184,6 @@ Zombie * toZombie(Infected * infected, simClock clock) {
 	ZOMBIE_DECOMPOZITION_STD_DEV);
 	zombie->decomposes = clock + MAX(event, 1); // in future!
 
-	disposeInfected(infected);
 	return zombie;
 }
 
@@ -248,17 +246,13 @@ LivingEntity * copyLiving(LivingEntity * living) {
 }
 
 void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock) {
-	// correct gender and not pregnant
-	if (mother->gender == FEMALE && mother->children.count == 0
-			&& father->gender == MALE) {
-		// both are fertile
-		if (clock >= mother->fertilityStart && clock < mother->fertilityEnd
-				&& clock >= father->fertilityStart
-				&& clock < father->fertilityEnd) {
-			int count = randomCountOfUnborn();
-			mother->children = newChildren(count, clock, false);
-		}
+	double rnd = randomDouble();
+	if (rnd > PROBABILITY_FERTILIZATION) {
+		return;
 	}
+
+	int count = randomCountOfUnborn();
+	mother->children = newChildren(count, clock, false);
 }
 
 LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {

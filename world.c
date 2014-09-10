@@ -76,3 +76,22 @@ void unlockTile(Tile * tile) {
 	omp_unset_lock(&tile->lock);
 #endif
 }
+
+Tile * getFreeAdjacent(World * input, World * output, int x, int y) {
+	Tile * t;
+	if (GET_TILE_LEFT(input, x, y)->entity == NULL
+			&& (t = GET_TILE_LEFT(output, x, y))->entity == NULL) {
+		return t;
+	} else if (GET_TILE_UP(input, x, y)->entity == NULL
+			&& (t = GET_TILE_UP(output, x, y))->entity == NULL) {
+		return t;
+	} else if (GET_TILE_RIGHT(input, x, y)->entity == NULL && (t =
+			GET_TILE_RIGHT(output, x, y))->entity == NULL) {
+		return t;
+	} else if (GET_TILE_DOWN(input, x, y)->entity == NULL
+			&& (t = GET_TILE_DOWN(output, x, y))->entity == NULL) {
+		return t;
+	} else {
+		return NULL;
+	}
+}

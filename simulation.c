@@ -8,10 +8,11 @@
 #include "common.h"
 #include "random.h"
 #include "constants.h"
+#include "debug.h"
 
-void checkIncubationTime (Entity *infected, simClock currentTime);
-void exposedToZombieNeighbours (World *world, int row, int column);
-int countNeighbouringZombies (World *world, int row, int column);
+int countNeighbouringZombies(World *world, int row, int column);
+LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
+		simClock clock);
 
 /**
  * These macros require the worlds to be named input and output
@@ -23,8 +24,18 @@ int countNeighbouringZombies (World *world, int row, int column);
 #define IF_CAN_MOVE_TO(x, y) \
 	CAN_MOVE_TO(x, y) ? GET_TILE(output, x, y) : NULL
 
+/**
+ * Order of actions:
+ * a) death of human or infected
+ * b) decomposition of zombie
+ * c) transition of infected to zombie
+ * d) transition of human into infected
+ * e) giving birth to children - changes input
+ * f) making love - changes input
+ * g) movement
+ */
 void simulateStep(World * input, World * output) {
-	output->clock = input->clock + 1;
+	simClock clock = output->clock = input->clock + 1;
 
 #ifdef _OPENMP
 	int threads = omp_get_max_threads();
@@ -39,15 +50,79 @@ void simulateStep(World * input, World * output) {
 				continue;
 			}
 
-            // Infected people become zombies after a certain incubation
-            // time, with some random variance.
-            if (entity->type == INFECTED) {
-                checkIncubationTime (entity, output->clock);
-            }
+			// Death of living entity
+			if (entity->type == HUMAN || entity->type == INFECTED) {
+				LivingEntity * le = entity->asLiving;
+				if (le->willDie <= clock) {
+					dprintf("A %s died\n",
+							entity->type == HUMAN? "Human" : "Infected");
+					continue; // just forget this entity
+				}
+			}
+
+			// Decompose Zombie
+			if (entity->type == ZOMBIE) {
+				Zombie * zombie = entity->asZombie;
+				if (zombie->decomposes <= clock) {
+					dprintf("A zombie decomposed\n");
+					continue; // just forgot this entity
+				}
+				entity = copyEntity(entity);
+			}
+
+			// Convert Infected to Zombie
+			if (entity->type == INFECTED) {
+				Infected * infected = entity->asInfected;
+				if (clock > infected->becomesZombie) {
+					entity = toZombie(infected, clock)->asEntity;
+					dprintf("An infected became zombie\n");
+				} else {
+					entity = copyEntity(entity);
+				}
+			}
 
 			// Convert Human to Infected
 			if (entity->type == HUMAN) {
-                exposedToZombieNeighbours (input, y, x);
+				int zombieCount = countNeighbouringZombies(input, x, y);
+				double infectionChance = zombieCount * PROBABILITY_INFECTION;
+
+				if (randomDouble() <= infectionChance) {
+					entity = toInfected(entity->asHuman, clock)->asEntity;
+					dprintf("A human became infected\n");
+				} else {
+					entity = copyEntity(entity);
+				}
+			}
+
+			// Here the variable entity contains either copy or a new entity after transition.
+			// This is important. From now on, we may freely change it.
+
+			// Here are performed natural processed
+			if (entity->type == HUMAN || entity->type == INFECTED) {
+				LivingEntity * le = entity->asLiving;
+				// giving birth
+				if (le->gender == FEMALE && le->children.count > 0
+						&& le->children.borns >= clock) {
+					Tile * freeTile;
+					while (le->children.count > 0 && (freeTile =
+							getFreeAdjacent(input, output, x, y)) != NULL) {
+						LivingEntity * child = giveBirth(le, clock);
+						freeTile->entity = child->asEntity;
+						dprintf("A child was born\n");
+					}
+				}
+
+				// making love
+				if (le->gender == FEMALE && le->children.count == 0
+						&& clock >= le->fertilityStart
+						&& clock < le->fertilityEnd) { // can have baby
+					LivingEntity *adjacentMale = findAdjacentFertileMale(input,
+							x, y, clock);
+					if (adjacentMale != NULL) {
+						makeLove(le, adjacentMale, clock);
+						dprintf("A couple made love\n");
+					}
+				}
 			}
 
 			// just an example of random movement
@@ -83,11 +158,11 @@ void simulateStep(World * input, World * output) {
 
 #define MOVE_BACK(var, varMax, srcX, srcY, destX, destY) \
 	for (int var = 0; var < varMax; var++) { \
-		Tile * in = GET_TILE(input, srcX, srcY); \
+		Tile * in = GET_TILE(output, srcX, srcY); \
 		if (in->entity == NULL) { \
 			continue; \
 		} \
-		if (CAN_MOVE_TO(destX, destY)) { \
+		if (GET_TILE(output, destX, destY)->entity == NULL) { \
 			GET_TILE(output, destX, destY)->entity = in->entity; \
 		} \
 		in->entity = NULL; \
@@ -102,72 +177,64 @@ void finishStep(World * input, World * output) {
 	resetWorld(input);
 }
 
-/**
- *  This function handles converting infected people to zombies, at the
- *  time specified when they were first infected.
- *
- *  First parameter is the entity, of type INFECTED, and the second param
- *  is the current time in the simulation.
- */
-void checkIncubationTime (Entity *infected, simClock currentTime) {
-    if (currentTime > infected->asInfected->becomesZombie) {
-        infected = toZombie (infected, currentTime);
-        infected->type = ZOMBIE;
-        printf ("DEBUG: Incubation time ended.\n");
-    }
+LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
+		simClock clock) {
+	LivingEntity * getFertileMale(Entity * entity, simClock clock) {
+		if (entity == NULL) {
+			return NULL;
+		}
+
+		if (entity->type == HUMAN || entity->type == INFECTED) {
+			LivingEntity * le = entity->asLiving;
+			if (le->gender == MALE) {
+				if (clock >= le->fertilityStart && clock < le->fertilityEnd) {
+					return le;
+				}
+			}
+		}
+		return NULL;
+	}
+
+	LivingEntity * male;
+	if ((male = getFertileMale(GET_TILE_LEFT(world, x, y)->entity, clock))
+			!= NULL) {
+		return male;
+	}
+	if ((male = getFertileMale(GET_TILE_UP(world, x, y)->entity, clock)) != NULL) {
+		return male;
+	}
+	if ((male = getFertileMale(GET_TILE_RIGHT(world, x, y)->entity, clock))
+			!= NULL) {
+		return male;
+	}
+	if ((male = getFertileMale(GET_TILE_DOWN(world, x, y)->entity, clock))
+			!= NULL) {
+		return male;
+	}
+	return NULL;
 }
 
 /**
- *  This function checks all the neighbouring cells around a human and
- *  counts the number of zombies. If there are zombies, the human becomes
- *  infected, depending on a random number.
+ * Returns the number of zombies in the cells bordering the cell at [x, y].
  */
-void exposedToZombieNeighbours (World *world, int row, int column) {
-    int zombieCount = countNeighbouringZombies (world, row, column);
-    double infectionChance = zombieCount * PROBABILITY_INFECTION;
-    Tile *tile = GET_TILE (world, column, row);
-    Entity *entity = tile->entity;
+int countNeighbouringZombies(World * world, int x, int y) {
+	bool isZombie(Entity * entity) {
+		return entity != NULL && entity->type == ZOMBIE;
+	}
 
-    if(randomDouble() <= infectionChance) {
-        entity = toInfected(entity->asHuman, world->clock);
-        entity->type = INFECTED;
-        printf ("DEBUG: New case in incubation.\n");
-    }
-}
+	int zombies = 0;
+	if (isZombie(GET_TILE_LEFT(world, x, y)->entity)) {
+		zombies++;
+	}
+	if (isZombie(GET_TILE_UP(world, x, y)->entity)) {
+		zombies++;
+	}
+	if (isZombie(GET_TILE_RIGHT(world, x, y)->entity)) {
+		zombies++;
+	}
+	if (isZombie(GET_TILE_DOWN(world, x, y)->entity)) {
+		zombies++;
+	}
 
-/**
- *  Returns the number of zombies in the cells bordering the cell at 
- *  [row, column]. Indices outside the grid borders are ignored.
- */
-int countNeighbouringZombies (World *world, int row, int column) {
-    int zombies = 0;
-    Tile *tile;
-    Entity *entity;
-
-    // step through all the cells of 1 row and 1 column either side of the
-    // main cell.
-    for (int i = row - 1; i <= row + 1; i ++) {
-        for (int j = column - 1; j <= column + 1; j ++) {
-            // are either of the indices outside the world boundaries? If so,
-            // continue on until we get valid coords.
-            if ((i < 0) || (i >= world->height) || (j < 0) || 
-              (j >= world->width))
-            {
-                continue;
-            }
-
-            tile = GET_TILE (world, j, i);
-            entity = tile->entity;
-
-            // if the neighbouring cell is empty, move on to the next 
-            // neighbour.
-            if (entity == NULL)
-                continue;
-
-            if (entity->type == ZOMBIE)
-                zombies ++;
-        }
-    }
-
-    return zombies;
+	return zombies;
 }

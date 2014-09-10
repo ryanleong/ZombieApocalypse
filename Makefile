@@ -3,6 +3,11 @@ OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
 CFLAGS = --std=gnu99 -O0 -g -Wall
+
+ifeq ($(DEBUG), 1)
+CFLAGS += -DDEBUG
+endif
+
 LIBS = -lm -lgomp -lpng
 
 all: dependencies apocalypse
