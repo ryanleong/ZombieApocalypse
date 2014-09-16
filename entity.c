@@ -148,8 +148,8 @@ Zombie * newZombie(simClock clock) {
 	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
 
 	zombie->becameZombie = clock; // right now
-	simClock event = randomEvent(ZOMBIE_DECOMPOZITION_MEAN,
-	ZOMBIE_DECOMPOZITION_STD_DEV);
+	simClock event = randomEvent(ZOMBIE_DECOMPOSITION_MEAN,
+	ZOMBIE_DECOMPOSITION_STD_DEV);
 	zombie->decomposes = clock + MAX(event, 1); // in future!
 
 	return zombie;
@@ -180,8 +180,8 @@ Zombie * toZombie(Infected * infected, simClock clock) {
 
 	zombie->becameZombie = clock;
 
-	simClock event = randomEvent(ZOMBIE_DECOMPOZITION_MEAN,
-	ZOMBIE_DECOMPOZITION_STD_DEV);
+	simClock event = randomEvent(ZOMBIE_DECOMPOSITION_MEAN,
+	ZOMBIE_DECOMPOSITION_STD_DEV);
 	zombie->decomposes = clock + MAX(event, 1); // in future!
 
 	return zombie;

@@ -2,7 +2,7 @@ SRC = apocalypse.c entity.c random.c simulation.c world.c
 OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
-CFLAGS = --std=gnu99 -O0 -g -Wall
+CFLAGS = --std=gnu99 -O0 -g -Wall -DDEBUG
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -DDEBUG

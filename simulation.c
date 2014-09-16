@@ -247,7 +247,7 @@ double speedLimit(Entity * entity, simClock currentTime) {
 	if(entity->type == ZOMBIE) {
 		int zombieAge = (currentTime - entity->asZombie->becameZombie) / IN_YEARS;
 
-		if(zombieAge < (ZOMBIE_DECOMPOZITION_MEAN / 2))
+		if(zombieAge < (ZOMBIE_DECOMPOSITION_MEAN / 2))
 			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 1.0;
 		else
 			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 0.8;
