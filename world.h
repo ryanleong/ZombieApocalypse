@@ -26,14 +26,7 @@ typedef struct Tile {
 #endif
 } Tile;
 
-void initTile(Tile * tile);
-
-void resetTile(Tile * tile);
-
-void destroyTile(Tile * tile);
-
 void lockTile(Tile * tile);
-
 void unlockTile(Tile * tile);
 
 #define GET_TILE(world, x, y) \
@@ -53,7 +46,7 @@ void unlockTile(Tile * tile);
 
 typedef struct World {
 	simClock clock;
-	Tile * map;
+	Tile ** map;
 	unsigned int width;
 	unsigned int height;
 } World;

@@ -1,27 +1,46 @@
 #include "world.h"
 #include "common.h"
+#include "utils.h"
+
+// local util functions
+static Tile ** initialise_grid (unsigned int rows, unsigned int columns);
+static void initTile (Tile *tile);
+static void resetTile (Tile * tile);
+static void destroyTile (Tile * tile);
+
 
 World * newWorld(unsigned int width, unsigned int height) {
 	World * w;
-	w = (World *) malloc(sizeof(World));
+	w = (World *) checked_malloc (sizeof(World));
 
 	w->clock = 0;
 	w->width = width;
 	w->height = height;
-	w->map = (Tile *) calloc((width + 2) * (height + 2), sizeof(Tile));
-	for (int i = 0; i < width + 2; i++) {
-		for (int j = 0; j < height + 2; j++) {
-			Tile * t = GET_TILE(w, i, j);
-			initTile(t);
-			if (i == 0 || j == 0 || i == width + 1 || j == height + 1) {
-				t->type = BORDER;
-			} else {
-				t->type = REGULAR;
-			}
-		}
-	}
+	w->map = initialise_grid (height, width);
 
 	return w;
+}
+
+/**
+ *  Allocates memory for a new 2 dimensional matrix of Tiles, and sets
+ *  the initial values of the tiles.
+ */
+    static Tile **
+initialise_grid (unsigned int rows, unsigned int columns)
+{
+    Tile **grid = (Tile **) checked_malloc (sizeof (Tile *) * rows);
+
+    // Each row contains 'columns' columns.
+    for (unsigned int row = 0; row < rows; row ++)
+    {
+        grid [row] = (Tile *) checked_malloc (sizeof (Tile) * columns);
+
+        // initialise each tile in the row.
+        for (unsigned int col = 0; col < columns; col ++)
+            initTile (&(grid [row] [col]));
+    }
+
+    return grid;
 }
 
 void resetWorld(World * world) {
@@ -31,34 +50,28 @@ void resetWorld(World * world) {
 	// each thread resets at least 10 elements
 #pragma omp parallel for default(shared) num_threads(numThreads)
 #endif
-	for (int i = 0; i < (world->width + 2) * (world->height + 2); i++) {
-		resetTile(world->map + i);
-	}
+    for (int row = 0; row < world->height; row ++)
+    {
+        for (int col = 0; col < world->width; col ++)
+            resetTile (&(world->map [row] [col]));
+    }
 }
 
-void destoyWorld(World * world) {
-	for (int i = 0; i < (world->width + 2) * (world->height + 2); i++) {
-		destroyTile(world->map + i);
-	}
-	free(world->map);
-	free(world);
-}
-
-void initTile(Tile * tile) {
+static void initTile(Tile * tile) {
 	resetTile(tile);
 #ifdef _OPENMP
 	omp_init_lock(&tile->lock);
 #endif
 }
 
-void resetTile(Tile * tile) {
+static void resetTile(Tile * tile) {
 	if (tile->entity != NULL) {
 		disposeEntity(tile->entity);
 		tile->entity = NULL;
 	}
 }
 
-void destroyTile(Tile * tile) {
+static void destroyTile(Tile * tile) {
 	resetTile(tile);
 #ifdef _OPENMP
 	omp_destroy_lock(&tile->lock);
