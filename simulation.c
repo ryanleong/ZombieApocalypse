@@ -55,7 +55,7 @@ void simulateStep(World * input, World * output) {
 			// Death of living entity
 			if (entity->type == HUMAN || entity->type == INFECTED) {
 				LivingEntity * le = entity->asLiving;
-				if (le->willDie <= clock) {
+				if (randomDouble() < getDeathRate(le, clock)) {
 					debug_printf("A %s died\n",
 							entity->type == HUMAN ? "Human" : "Infected");
 					continue; // just forget this entity
@@ -65,7 +65,7 @@ void simulateStep(World * input, World * output) {
 			// Decompose Zombie
 			if (entity->type == ZOMBIE) {
 				Zombie * zombie = entity->asZombie;
-				if (zombie->decomposes <= clock) {
+				if (randomDouble() < getDecompositionRate(zombie, clock)) {
 					debug_printf("A zombie decomposed\n");
 					continue; // just forgot this entity
 				}
@@ -75,7 +75,7 @@ void simulateStep(World * input, World * output) {
 			// Convert Infected to Zombie
 			if (entity->type == INFECTED) {
 				Infected * infected = entity->asInfected;
-				if (clock > infected->becomesZombie) {
+				if (randomDouble() < PROBABILITY_BECOME_ZOMBIE) {
 					entity = toZombie(infected, clock)->asEntity;
 					debug_printf("An infected became zombie\n");
 				} else {
@@ -185,14 +185,14 @@ void simulateStep(World * input, World * output) {
 	}
 
 void finishStep(World * input, World * output) {
-	MOVE_BACK(y, output->yStart, output->yEnd, y, output->xStart - 1, y,
-			output->xStart)
-	MOVE_BACK(y, output->yStart, output->yEnd, y, output->xEnd + 1, y,
-			output->xEnd)
-	MOVE_BACK(x, output->xStart, output->xEnd, output->yStart - 1, x,
-			output->yStart, x)
-	MOVE_BACK(x, output->xStart, output->xEnd, output->yEnd + 1, x,
-			output->yEnd, x)
+	MOVE_BACK(y, output->yStart, output->yEnd, output->xStart - 1, y,
+			output->xStart, y)
+	MOVE_BACK(y, output->yStart, output->yEnd, output->xEnd + 1, y,
+			output->xEnd, y)
+	MOVE_BACK(x, output->xStart, output->xEnd, x, output->yStart - 1, x,
+			output->yStart)
+	MOVE_BACK(x, output->xStart, output->xEnd, x, output->yEnd + 1, x,
+			output->yEnd)
 
 	resetWorld(input);
 }

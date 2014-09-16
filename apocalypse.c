@@ -49,29 +49,35 @@ void setRGB(png_byte *ptr, Tile * tile) {
 	}
 
 	switch (tile->entity->type) {
-	case HUMAN:
+	case HUMAN: {
+		Human * h = tile->entity->asHuman;
 		ptr[0] = 0;
-		if (tile->entity->asHuman->gender == FEMALE) {
-			ptr[1] = 255;
-		} else {
+		if (h->gender == FEMALE) {
 			ptr[1] = 200;
+		} else {
+			ptr[1] = 150;
 		}
 		ptr[2] = 0;
 		break;
-	case INFECTED:
+	}
+	case INFECTED: {
+		Infected * i = tile->entity->asInfected;
 		ptr[0] = 0;
 		ptr[1] = 0;
-		if (tile->entity->asInfected->gender == FEMALE) {
-			ptr[2] = 255;
-		} else {
+		if (i->gender == FEMALE) {
 			ptr[2] = 200;
+		} else {
+			ptr[2] = 150;
 		}
 		break;
-	case ZOMBIE:
-		ptr[0] = 255;
+	}
+	case ZOMBIE: {
+		//Zombie * z = tile->entity->asZombie;
+		ptr[0] = 200;
 		ptr[1] = 0;
 		ptr[2] = 0;
 		break;
+	}
 	}
 }
 

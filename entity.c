@@ -97,7 +97,6 @@ Human * newHuman(simClock clock) {
 	Human * human = newEntity(HUMAN)->asHuman;
 
 	double rnd = randomDouble();
-	simClock age;
 	simClock fertilityStart;
 	simClock fertilityEnd;
 	if (rnd < MALE_FEMALE_RATE) {
@@ -110,8 +109,6 @@ Human * newHuman(simClock clock) {
 			human->children = NO_CHILDREN;
 		}
 
-		age = randomEvent(LIFE_EXPECTANCY_FEMALE_MEAN,
-		LIFE_EXPECTANCY_FEMALE_STD_DEV);
 		fertilityStart = randomEvent(FERTILITY_START_FEMALE_MEAN,
 		FERTILITY_START_FEMALE_STD_DEV);
 		fertilityEnd = randomEvent(FERTILITY_END_FEMALE_MEAN,
@@ -120,17 +117,17 @@ Human * newHuman(simClock clock) {
 		human->gender = MALE;
 		human->children = NO_CHILDREN;
 
-		age = randomEvent(LIFE_EXPECTANCY_MALE_MEAN,
-		LIFE_EXPECTANCY_MALE_STD_DEV);
 		fertilityStart = randomEvent(FERTILITY_START_MALE_MEAN,
 		FERTILITY_START_MALE_STD_DEV);
 		fertilityEnd = randomEvent(FERTILITY_END_MALE_MEAN,
 		FERTILITY_END_MALE_STD_DEV);
 	}
 
-	double ageRate = randomDouble();
-	human->wasBorn = clock - ageRate * age;
-	human->willDie = MAX(1, clock + (1 - ageRate) * age); // in future!
+	if (human->gender == FEMALE) {
+		human->wasBorn = -randomDouble() * LIFE_EXPECTANCY_FEMALE_MEAN;
+	} else {
+		human->wasBorn = -randomDouble() * LIFE_EXPECTANCY_MALE_MEAN;
+	}
 
 	// may or may not be in future
 	human->fertilityStart = human->wasBorn + fertilityStart;
@@ -145,9 +142,6 @@ Zombie * newZombie(simClock clock) {
 	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
 
 	zombie->becameZombie = clock; // right now
-	simClock event = randomEvent(ZOMBIE_DECOMPOSITION_MEAN,
-	ZOMBIE_DECOMPOSITION_STD_DEV);
-	zombie->decomposes = clock + MAX(event, 1); // in future!
 	zombie->bearing = getRandomBearing();
 
 	return zombie;
@@ -159,13 +153,8 @@ Infected * toInfected(Human * human, simClock clock) {
 	infected->gender = human->gender;
 	infected->children = human->children;
 	infected->wasBorn = human->wasBorn;
-	infected->willDie = human->willDie;
 	infected->bearing = human->bearing;
 	infected->becameInfected = clock;
-
-	simClock event = randomEvent(ZOMBIE_INFECTION_MEAN,
-	ZOMBIE_INFECTION_STD_DEV);
-	infected->becomesZombie = clock + MAX(1, event); // in future!
 
 	return infected;
 }
@@ -174,11 +163,6 @@ Zombie * toZombie(Infected * infected, simClock clock) {
 	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
 
 	zombie->becameZombie = clock;
-
-	simClock event = randomEvent(ZOMBIE_DECOMPOSITION_MEAN,
-	ZOMBIE_DECOMPOSITION_STD_DEV);
-	zombie->decomposes = clock + MAX(event, 1); // in future!
-
 	zombie->bearing = getRandomBearing();
 
 	return zombie;
@@ -192,7 +176,6 @@ Human * copyHuman(Human * human) {
 	h->fertilityEnd = human->fertilityEnd;
 	h->children = human->children;
 	h->wasBorn = human->wasBorn;
-	h->willDie = human->willDie;
 	h->bearing = human->bearing;
 
 	return h;
@@ -206,9 +189,7 @@ Infected * copyInfected(Infected * infected) {
 	i->fertilityEnd = infected->fertilityEnd;
 	i->children = infected->children;
 	i->wasBorn = infected->wasBorn;
-	i->willDie = infected->willDie;
 	i->becameInfected = infected->becameInfected;
-	i->becomesZombie = infected->becomesZombie;
 	i->bearing = infected->bearing;
 
 	return i;
@@ -218,7 +199,6 @@ Zombie * copyZombie(Zombie * zombie) {
 	Zombie * z = newEntity(ZOMBIE)->asZombie;
 
 	z->becameZombie = zombie->becameZombie;
-	z->decomposes = zombie->decomposes;
 	z->bearing = zombie->bearing;
 
 	return z;
@@ -266,7 +246,6 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 	case INFECTED: {
 		Infected * infected = newEntity(INFECTED)->asInfected;
 		infected->becameInfected = mother->asInfected->becameInfected;
-		infected->becomesZombie = mother->asInfected->becomesZombie;
 		born = infected->asLiving;
 		break;
 	}
@@ -275,28 +254,21 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 	}
 
 	double rnd = randomDouble();
-	simClock age;
 	simClock fertilityStart;
 	simClock fertilityEnd;
 	if (rnd < MALE_FEMALE_RATE) {
 		born->gender = FEMALE;
-		age = randomEvent(LIFE_EXPECTANCY_FEMALE_MEAN,
-		LIFE_EXPECTANCY_FEMALE_STD_DEV);
 		fertilityStart = randomEvent(FERTILITY_START_FEMALE_MEAN,
 		FERTILITY_START_FEMALE_STD_DEV);
 		fertilityEnd = randomEvent(FERTILITY_END_FEMALE_MEAN,
 		FERTILITY_END_FEMALE_STD_DEV);
 	} else {
 		born->gender = MALE;
-		age = randomEvent(LIFE_EXPECTANCY_MALE_MEAN,
-		LIFE_EXPECTANCY_MALE_STD_DEV);
 		fertilityStart = randomEvent(FERTILITY_START_MALE_MEAN,
 		FERTILITY_START_MALE_STD_DEV);
 		fertilityEnd = randomEvent(FERTILITY_END_MALE_MEAN,
 		FERTILITY_END_MALE_STD_DEV);
 	}
-
-	born->willDie = MAX(1, clock + age); // in future!
 
 	born->children = NO_CHILDREN;
 	born->wasBorn = clock;
@@ -386,9 +358,9 @@ double getMaxSpeed(Entity * entity, simClock currentTime) {
 
 	if (entity->type == ZOMBIE) {
 		Zombie * zombie = entity->asZombie;
-		int zombieAge = (currentTime - zombie->becameZombie) / IN_YEARS;
+		int age = (currentTime - zombie->becameZombie) / IN_YEARS;
 
-		if (zombieAge < (ZOMBIE_DECOMPOSITION_MEAN / 2)) {
+		if (age < (ZOMBIE_DECOMPOSITION_MEAN / 2)) {
 			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 1.0;
 		} else {
 			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 0.8;
@@ -410,4 +382,18 @@ double getMaxSpeed(Entity * entity, simClock currentTime) {
 		}
 	}
 	return moveChance;
+}
+
+double getDeathRate(LivingEntity * living, simClock currentTime) {
+	//int age = (currentTime - living->wasBorn) / IN_YEARS;
+	if (living->gender == FEMALE) {
+		return 1.0 / LIFE_EXPECTANCY_FEMALE_MEAN;
+	} else {
+		return 1.0 / LIFE_EXPECTANCY_MALE_MEAN;
+	}
+}
+
+double getDecompositionRate(Zombie * zombie, simClock currentTime) {
+	//int age = (currentTime - zombie->becameZombie) / IN_YEARS;
+	return 1.0 / ZOMBIE_DECOMPOSITION_MEAN;
 }

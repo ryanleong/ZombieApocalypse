@@ -61,7 +61,6 @@ typedef struct Entity {
 #define LIVING_ENTITY_FIELDS \
 	Gender gender; \
 	simClock wasBorn; \
-	simClock willDie; \
 	simClock fertilityStart; \
 	simClock fertilityEnd; \
 	Children children;
@@ -82,14 +81,12 @@ struct Infected {
 	ENTITY_FIELDS
 	LIVING_ENTITY_FIELDS
 	simClock becameInfected;
-	simClock becomesZombie;
 // put infected-only properties here
 };
 
 struct Zombie {
 	ENTITY_FIELDS
 	simClock becameZombie;
-	simClock decomposes;
 // put zombie-only properties here
 };
 
@@ -185,6 +182,16 @@ void destroyUnused();
  * Returns maximal speed which the entity can go.
  */
 double getMaxSpeed(Entity * entity, simClock clock);
+
+/**
+ * Returns probability of death for a living entity at given time.
+ */
+double getDeathRate(LivingEntity * living, simClock currentTime);
+
+/**
+ * Returns probability of decomposition of zombie at given time.
+ */
+double getDecompositionRate(Zombie * zombie, simClock currentTime);
 
 #endif /* ENTITY_H_ */
 
