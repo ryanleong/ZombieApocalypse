@@ -30,7 +30,7 @@ void lockTile(Tile * tile);
 void unlockTile(Tile * tile);
 
 #define GET_TILE(world, x, y) \
-		((world)->map + (y) * ((world)->width + 2) + (x))
+		(&((world)->map [(x)] [(y)]))
 
 #define GET_TILE_LEFT(world, x, y) \
 		GET_TILE((world), (x)-1, (y))
