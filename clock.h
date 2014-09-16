@@ -7,9 +7,9 @@
 typedef long long int simClock;
 
 /**
- * The basic unit is defined as 1 hour.
+ * The basic unit is defined as 1 day.
  */
-#define CLOCK_UNITS_IN_DAY 24
+#define CLOCK_UNITS_IN_DAY 1
 
 /**
  * Current daytime from global simulation time

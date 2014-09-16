@@ -49,13 +49,21 @@ void setRGB(png_byte *ptr, Tile * tile) {
 	switch (tile->entity->type) {
 	case HUMAN:
 		ptr[0] = 0;
-		ptr[1] = 255;
+		if (tile->entity->asHuman->gender == FEMALE) {
+			ptr[1] = 255;
+		} else {
+			ptr[1] = 200;
+		}
 		ptr[2] = 0;
 		break;
 	case INFECTED:
 		ptr[0] = 0;
 		ptr[1] = 0;
-		ptr[2] = 255;
+		if (tile->entity->asInfected->gender == FEMALE) {
+			ptr[2] = 255;
+		} else {
+			ptr[2] = 200;
+		}
 		break;
 	case ZOMBIE:
 		ptr[0] = 255;
@@ -175,8 +183,8 @@ void printPopulations(World *grid) {
 		}
 	}
 
-	printf("Time: %6d   Humans: %4d, Infected: %4d, Zombies: %4d.\n", grid->clock,
-			humans, infected, zombies);
+	printf("Time: %6d   Humans: %4d, Infected: %4d, Zombies: %4d.\n",
+			(int) grid->clock, humans, infected, zombies);
 }
 
 int main(int argc, char **argv) {

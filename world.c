@@ -2,8 +2,7 @@
 #include "common.h"
 
 World * newWorld(unsigned int width, unsigned int height) {
-	World * w;
-	w = (World *) malloc(sizeof(World));
+	World * w = (World *) malloc(sizeof(World));
 
 	w->clock = 0;
 	w->width = width;
@@ -15,8 +14,6 @@ World * newWorld(unsigned int width, unsigned int height) {
 			initTile(t);
 			if (i == 0 || j == 0 || i == width + 1 || j == height + 1) {
 				t->type = BORDER;
-			} else {
-				t->type = REGULAR;
 			}
 		}
 	}
@@ -46,6 +43,7 @@ void destoyWorld(World * world) {
 
 void initTile(Tile * tile) {
 	resetTile(tile);
+	tile->type = REGULAR;
 #ifdef _OPENMP
 	omp_init_lock(&tile->lock);
 #endif
@@ -79,19 +77,11 @@ void unlockTile(Tile * tile) {
 
 Tile * getFreeAdjacent(World * input, World * output, int x, int y) {
 	Tile * t;
-	if (GET_TILE_LEFT(input, x, y)->entity == NULL
-			&& (t = GET_TILE_LEFT(output, x, y))->entity == NULL) {
-		return t;
-	} else if (GET_TILE_UP(input, x, y)->entity == NULL
-			&& (t = GET_TILE_UP(output, x, y))->entity == NULL) {
-		return t;
-	} else if (GET_TILE_RIGHT(input, x, y)->entity == NULL && (t =
-			GET_TILE_RIGHT(output, x, y))->entity == NULL) {
-		return t;
-	} else if (GET_TILE_DOWN(input, x, y)->entity == NULL
-			&& (t = GET_TILE_DOWN(output, x, y))->entity == NULL) {
-		return t;
-	} else {
-		return NULL;
+	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
+		if (GET_TILE_DIR(input, dir, x, y)->entity == NULL
+				&& (t = GET_TILE_DIR(output, dir, x, y))->entity == NULL) {
+			return t;
+		}
 	}
+	return NULL;
 }

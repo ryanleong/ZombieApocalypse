@@ -9,22 +9,22 @@
 #include "random.h"
 #include "constants.h"
 #include "debug.h"
+#include "direction.h"
 
 int countNeighbouringZombies(World *world, int row, int column);
 LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 		simClock clock);
-
-double speedLimit(Entity * entity, simClock currentTime);
+bearing getBearing(World * world, int x, int y);
 
 /**
  * These macros require the worlds to be named input and output
  */
-#define CAN_MOVE_TO(x, y) \
-	(GET_TILE((input), (x), (y))->entity == NULL \
-	&& GET_TILE((output), (x), (y))->entity == NULL)
+#define CAN_MOVE_TO(x, y, dir) \
+	(GET_TILE_DIR((input), (dir), (x), (y))->entity == NULL \
+	&& GET_TILE_DIR((output), (dir), (x), (y))->entity == NULL)
 
-#define IF_CAN_MOVE_TO(x, y) \
-	CAN_MOVE_TO(x, y) ? GET_TILE(output, x, y) : NULL
+#define IF_CAN_MOVE_TO(x, y, dir) \
+	(CAN_MOVE_TO((x), (y), (dir)) ? GET_TILE_DIR((output), (dir), (x), (y)) : NULL)
 
 /**
  * Order of actions:
@@ -104,7 +104,7 @@ void simulateStep(World * input, World * output) {
 				LivingEntity * le = entity->asLiving;
 				// giving birth
 				if (le->gender == FEMALE && le->children.count > 0
-						&& le->children.borns >= clock) {
+						&& le->children.borns <= clock) {
 					Tile * freeTile;
 					while (le->children.count > 0 && (freeTile =
 							getFreeAdjacent(input, output, x, y)) != NULL) {
@@ -127,33 +127,47 @@ void simulateStep(World * input, World * output) {
 				}
 			}
 
-			// just an example of random movement
+			// MOVEMENT
 
-			int rnd = randomInt(0, 4);
-			Tile * t = NULL;
-			if (rnd != 0) {
-				switch (rnd) {
-				case 1:
-					t = IF_CAN_MOVE_TO(x + 1, y);
-					break;
-				case 2:
-					t = IF_CAN_MOVE_TO(x, y + 1);
-					break;
-				case 3:
-					t = IF_CAN_MOVE_TO(x - 1, y);
-					break;
-				case 4:
-					t = IF_CAN_MOVE_TO(x, y - 1);
-					break;
+			bearing bearing = getBearing(input, x, y); // optimal
+			bearing += getRandomBearing() * 0.35;
+			entity->bearing = BEARING_PROJECT(bearing)
+					* (randomDouble() * 0.5 + 0.75);
+
+			Direction dir = bearingToDirection(bearing);
+
+			// some randomness
+			if (dir != STAY) {
+				double dirRnd = randomDouble();
+				if (dirRnd < DIRECTION_MISSED) {
+					dir = (dir + 2) % 4 + 1; // turn counter-clock-wise
+				} else if (dirRnd < DIRECTION_MISSED * 2) {
+					dir = dir % 4 + 1; // turn clock-wise
+				} else if (dirRnd > DIRECTION_FOLLOW + DIRECTION_MISSED * 2) {
+					dir = STAY;
+				}
+			} else {
+				bearing += getRandomBearing() * (randomDouble() * 0.5 + 0.75);
+				dir = bearingToDirection(bearing);
+			}
+
+			Tile * dest = NULL;
+			if (dir != STAY) {
+				dest = IF_CAN_MOVE_TO(x, y, dir);
+				if (dest == NULL) {
+					dest = IF_CAN_MOVE_TO(x, y, DIRECTION_CCW(dir));
+				}
+				if (dest == NULL) {
+					dest = IF_CAN_MOVE_TO(x, y, DIRECTION_CW(dir));
 				}
 			}
-			if (t == NULL) {
-				t = GET_TILE(output, x, y);
+			if (dest == NULL) {
+				dest = GET_TILE(output, x, y);
 			}
-			lockTile(t);
-			Entity * e = copyEntity(entity);
-			t->entity = e;
-			unlockTile(t);
+
+			//lockTile(t);
+			dest->entity = entity;
+			//unlockTile(t);
 		}
 	}
 }
@@ -198,20 +212,11 @@ LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 	}
 
 	LivingEntity * male;
-	if ((male = getFertileMale(GET_TILE_LEFT(world, x, y)->entity, clock))
-			!= NULL) {
-		return male;
-	}
-	if ((male = getFertileMale(GET_TILE_UP(world, x, y)->entity, clock)) != NULL) {
-		return male;
-	}
-	if ((male = getFertileMale(GET_TILE_RIGHT(world, x, y)->entity, clock))
-			!= NULL) {
-		return male;
-	}
-	if ((male = getFertileMale(GET_TILE_DOWN(world, x, y)->entity, clock))
-			!= NULL) {
-		return male;
+	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
+		if ((male = getFertileMale(GET_TILE_DIR(world, dir, x, y)->entity,
+				clock)) != NULL) {
+			return male;
+		}
 	}
 	return NULL;
 }
@@ -225,49 +230,77 @@ int countNeighbouringZombies(World * world, int x, int y) {
 	}
 
 	int zombies = 0;
-	if (isZombie(GET_TILE_LEFT(world, x, y)->entity)) {
-		zombies++;
+	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
+		if (isZombie(GET_TILE_DIR(world, dir, x, y)->entity)) {
+			zombies++;
+		}
 	}
-	if (isZombie(GET_TILE_UP(world, x, y)->entity)) {
-		zombies++;
-	}
-	if (isZombie(GET_TILE_RIGHT(world, x, y)->entity)) {
-		zombies++;
-	}
-	if (isZombie(GET_TILE_DOWN(world, x, y)->entity)) {
-		zombies++;
-	}
-
 	return zombies;
 }
 
-double speedLimit(Entity * entity, simClock currentTime) {
-	double moveChance = 0.0;
+bearing getBearing(World * world, int x, int y) {
+	Entity * entity = GET_TILE(world, x, y)->entity;
+	bearing bearing_ = entity->bearing;
 
-	if(entity->type == ZOMBIE) {
-		int zombieAge = (currentTime - entity->asZombie->becameZombie) / IN_YEARS;
+	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
+		// all destinations are in the world
+		Tile * t = GET_TILE_DIR(world, dir, x, y);
+		bearing delta = BEARING_FROM_DIRECTION(dir);
 
-		if(zombieAge < (ZOMBIE_DECOMPOZITION_MEAN / 2))
-			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 1.0;
-		else
-			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 0.8;
+		if (entity->type == ZOMBIE) {
+			if (t->type == BORDER) {
+				bearing_ += delta * BEARING_RATE_ZOMBIE_WALL_ONE;
+			} else if (t->entity == NULL) {
+				bearing_ += delta * BEARING_RATE_ZOMBIE_EMPTY_ONE;
+			} else if (t->entity->type == ZOMBIE) {
+				bearing_ += delta * BEARING_RATE_ZOMBIE_ZOMBIE_ONE;
+			} else {
+				bearing_ += delta * BEARING_RATE_ZOMBIE_LIVING_ONE;
+			}
+		} else {
+			if (t->type == BORDER) {
+				bearing_ += delta * BEARING_RATE_LIVING_WALL_ONE;
+			} else if (t->entity == NULL) {
+				bearing_ += delta * BEARING_RATE_LIVING_EMPTY_ONE;
+			} else if (t->entity->type == ZOMBIE) {
+				bearing_ += delta * BEARING_RATE_LIVING_ZOMBIE_ONE;
+			} else if (t->entity->asLiving->gender
+					!= entity->asLiving->gender) {
+				bearing_ += delta * BEARING_RATE_LIVING_OPPOSITE_SEX_ONE;
+			} else {
+				bearing_ += delta * BEARING_RATE_LIVING_SAME_SEX_ONE;
+			}
+		}
 	}
-	else {
-		int age = 0;
-		if(entity->type == HUMAN) 
-			age = (currentTime - entity->asHuman->wasBorn) / IN_YEARS;
-		else 
-			age = (currentTime - entity->asInfected->wasBorn) / IN_YEARS;
-
-		moveChance = MALE_MOVE_SPEED_MEAN;
-
-		if(age < 18)
-			moveChance = moveChance * MALE_UNDER_18_SPEED_MEAN;
-		else if(age > 39)
-			moveChance = moveChance * MALE_OVER_40_SPEED_MEAN;
-
-		if(entity->asHuman->gender == FEMALE)
-			moveChance = moveChance * FEMALE_TO_MALE_SPEED_RATIO;
+	for (int dir = DIRECTION_BASIC + 1; dir <= DIRECTION_ALL; dir++) {
+		// we have to check if destination is in our world
+		Tile * t = GET_TILE_DIR_CHECK(world, dir, x, y);
+		bearing delta = BEARING_FROM_DIRECTION(dir);
+		if (entity->type == ZOMBIE) {
+			if (t == NULL || t->type == BORDER) {
+				bearing_ += delta * BEARING_RATE_ZOMBIE_WALL_TWO;
+			} else if (t->entity == NULL) {
+				bearing_ += delta * BEARING_RATE_ZOMBIE_EMPTY_TWO;
+			} else if (t->entity->type == ZOMBIE) {
+				bearing_ += delta * BEARING_RATE_ZOMBIE_ZOMBIE_TWO;
+			} else {
+				bearing_ += delta * BEARING_RATE_ZOMBIE_LIVING_TWO;
+			}
+		} else {
+			if (t == NULL || t->type == BORDER) {
+				bearing_ += delta * BEARING_RATE_LIVING_WALL_TWO;
+			} else if (t->entity == NULL) {
+				bearing_ += delta * BEARING_RATE_LIVING_EMPTY_TWO;
+			} else if (t->entity->type == ZOMBIE) {
+				bearing_ += delta * BEARING_RATE_LIVING_ZOMBIE_TWO;
+			} else if (t->entity->asLiving->gender
+					!= entity->asLiving->gender) {
+				bearing_ += delta * BEARING_RATE_LIVING_OPPOSITE_SEX_TWO;
+			} else {
+				bearing_ += delta * BEARING_RATE_LIVING_SAME_SEX_TWO;
+			}
+		}
 	}
-	return moveChance;
+
+	return bearing_;
 }

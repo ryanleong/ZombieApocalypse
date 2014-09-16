@@ -6,6 +6,7 @@
 #define ENTITY_H_
 
 #include "clock.h"
+#include "direction.h"
 
 typedef enum EntityType {
 	HUMAN, INFECTED, ZOMBIE
@@ -46,6 +47,7 @@ typedef struct Children {
 		Infected * asInfected; \
 		Zombie * asZombie; \
 	}; \
+	bearing bearing; \
 	// put general entity properties here
 
 typedef enum Gender {
@@ -180,6 +182,8 @@ void disposeEntity(Entity * entity);
  * Frees all used memory by allocator.
  */
 void destroyUnused();
+
+double getMaxSpeed();
 
 #endif /* ENTITY_H_ */
 

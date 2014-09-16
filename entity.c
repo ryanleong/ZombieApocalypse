@@ -134,12 +134,13 @@ Human * newHuman(simClock clock) {
 
 	// may or may not be in future
 	human->fertilityStart = human->wasBorn + fertilityStart;
-	human->fertilityStart = human->wasBorn + fertilityEnd;
+	human->fertilityEnd = human->wasBorn + fertilityEnd;
 
 	// the simulation start with a nice morning
 	// when everybody woke up and nobody is tired
 	human->lastSlept = clock;
 	human->tiredness = 0;
+	human->bearing = getRandomBearing();
 
 	return human;
 }
@@ -151,6 +152,7 @@ Zombie * newZombie(simClock clock) {
 	simClock event = randomEvent(ZOMBIE_DECOMPOZITION_MEAN,
 	ZOMBIE_DECOMPOZITION_STD_DEV);
 	zombie->decomposes = clock + MAX(event, 1); // in future!
+	zombie->bearing = getRandomBearing();
 
 	return zombie;
 }
@@ -160,12 +162,11 @@ Infected * toInfected(Human * human, simClock clock) {
 
 	infected->gender = human->gender;
 	infected->children = human->children;
-
 	infected->lastSlept = human->lastSlept;
 	infected->tiredness = human->tiredness;
 	infected->wasBorn = human->wasBorn;
 	infected->willDie = human->willDie;
-
+	infected->bearing = human->bearing;
 	infected->becameInfected = clock;
 
 	simClock event = randomEvent(ZOMBIE_INFECTION_MEAN,
@@ -184,6 +185,8 @@ Zombie * toZombie(Infected * infected, simClock clock) {
 	ZOMBIE_DECOMPOZITION_STD_DEV);
 	zombie->decomposes = clock + MAX(event, 1); // in future!
 
+	zombie->bearing = getRandomBearing();
+
 	return zombie;
 }
 
@@ -198,6 +201,7 @@ Human * copyHuman(Human * human) {
 	h->tiredness = human->tiredness;
 	h->wasBorn = human->wasBorn;
 	h->willDie = human->willDie;
+	h->bearing = human->bearing;
 
 	return h;
 }
@@ -215,6 +219,7 @@ Infected * copyInfected(Infected * infected) {
 	i->willDie = infected->willDie;
 	i->becameInfected = infected->becameInfected;
 	i->becomesZombie = infected->becomesZombie;
+	i->bearing = infected->bearing;
 
 	return i;
 }
@@ -224,6 +229,7 @@ Zombie * copyZombie(Zombie * zombie) {
 
 	z->becameZombie = zombie->becameZombie;
 	z->decomposes = zombie->decomposes;
+	z->bearing = zombie->bearing;
 
 	return z;
 }
@@ -308,7 +314,8 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 	born->tiredness = 1; // baby is tired
 	born->wasBorn = clock;
 	born->fertilityStart = clock + fertilityStart;
-	born->fertilityStart = clock + fertilityEnd;
+	born->fertilityEnd = clock + fertilityEnd;
+	born->bearing = NO_BEARING;
 
 	// loop through unborn children
 	mother->children.count--;
@@ -386,4 +393,35 @@ void destroyUnused() {
 		destroyUnusedChain(allocator.infected->asEntity);
 		destroyUnusedChain(allocator.zombies->asEntity);
 	}
+}
+
+double getMaxSpeed(Entity * entity, simClock currentTime) {
+	double moveChance = 0.0;
+
+	if (entity->type == ZOMBIE) {
+		Zombie * zombie = entity->asZombie;
+		int zombieAge = (currentTime - zombie->becameZombie) / IN_YEARS;
+
+		if (zombieAge < (ZOMBIE_DECOMPOZITION_MEAN / 2)) {
+			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 1.0;
+		} else {
+			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 0.8;
+		}
+	} else {
+		LivingEntity * living = entity->asLiving;
+		int age = (currentTime - living->wasBorn) / IN_YEARS;
+
+		moveChance = MALE_MOVE_SPEED_MEAN;
+
+		if (age < 18) {
+			moveChance = moveChance * MALE_UNDER_18_SPEED_MEAN;
+		} else if (age > 39) {
+			moveChance = moveChance * MALE_OVER_40_SPEED_MEAN;
+		}
+
+		if (living->gender == FEMALE) {
+			moveChance = moveChance * FEMALE_TO_MALE_SPEED_RATIO;
+		}
+	}
+	return moveChance;
 }

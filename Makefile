@@ -1,4 +1,4 @@
-SRC = apocalypse.c entity.c random.c simulation.c world.c
+SRC = apocalypse.c entity.c direction.c random.c simulation.c world.c
 OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
