@@ -12,8 +12,8 @@
 
 void randomDistribution(World * w, int people, int zombies, simClock clock) {
 	for (int i = 0; i < people;) {
-		int x = randomInt(1, w->width);
-		int y = randomInt(1, w->height);
+		int x = randomInt(w->xStart, w->xEnd);
+		int y = randomInt(w->yStart, w->yEnd);
 		Tile * tile = GET_TILE(w, x, y);
 		if (tile->entity != NULL) {
 			continue;
@@ -25,9 +25,9 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 		i++;
 	}
 
-	for (int i = 0; i < zombies; i++) {
-		int x = randomInt(1, w->width);
-		int y = randomInt(1, w->height);
+	for (int i = 0; i < zombies;) {
+		int x = randomInt(w->xStart, w->xEnd);
+		int y = randomInt(w->yStart, w->yEnd);
 		Tile * tile = GET_TILE(w, x, y);
 		if (tile->entity != NULL) {
 			continue;
@@ -35,6 +35,8 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 
 		Zombie * zombie = newZombie(clock);
 		tile->entity = zombie->asEntity;
+
+		i++;
 	}
 }
 
@@ -128,9 +130,9 @@ int printWorld(World * world) {
 	row = (png_bytep) malloc(3 * world->width * sizeof(png_byte));
 
 	// Write image data
-	for (int y = 1; y <= world->height; y++) {
-		for (int x = 1; x <= world->width; x++) {
-			setRGB(&(row[(x - 1) * 3]), GET_TILE(world, x, y));
+	for (int y = world->yStart; y <= world->yEnd; y++) {
+		for (int x = world->xStart; x <= world->xEnd; x++) {
+			setRGB(&(row[(x - world->xStart) * 3]), GET_TILE(world, x, y));
 		}
 		png_write_row(png_ptr, row);
 	}
@@ -154,13 +156,12 @@ int printWorld(World * world) {
  *  Print the number of humans, infected people (who carry the disease, but
  *  haven't yet become zombies), and zombies, for debugging.
  */
-void printPopulations(World *grid) {
+void printPopulations(World * world) {
 	int humans = 0, infected = 0, zombies = 0;
-	Tile *currentCell;
 
-	for (int i = 0; i < grid->height; i++) {
-		for (int j = 0; j < grid->width; j++) {
-			currentCell = GET_TILE(grid, i, j);
+	for (int x = world->xStart; x <= world->xEnd; x++) {
+		for (int y = world->yStart; y <= world->yEnd; y++) {
+			Tile *currentCell = GET_TILE(world, x, y);
 
 			// ignore cells that are not occupied. A cell is only occupied
 			// if the entity pointer is not null.
@@ -184,7 +185,7 @@ void printPopulations(World *grid) {
 	}
 
 	printf("Time: %6d   Humans: %4d, Infected: %4d, Zombies: %4d.\n",
-			(int) grid->clock, humans, infected, zombies);
+			(int) world->clock, humans, infected, zombies);
 }
 
 int main(int argc, char **argv) {

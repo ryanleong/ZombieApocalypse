@@ -1,10 +1,10 @@
 #ifndef DEBUG_H_
 #define DEBUG_H_
 
-#ifdef DEBUG
-#define dprintf(...) do {fprintf( stderr, __VA_ARGS__ );} while(false)
+#ifdef NDEBUG
+#define debug_printf(...)       /** Nothing. */
 #else
-#define dprintf(...) do {} while (false)
+#define debug_printf(...)       fprintf (stderr, "DEBUG: " __VA_ARGS__);
 #endif
 
 #endif

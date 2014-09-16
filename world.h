@@ -27,38 +27,30 @@ typedef struct Tile {
 #endif
 } Tile;
 
-void initTile(Tile * tile);
-
-void resetTile(Tile * tile);
-
-void destroyTile(Tile * tile);
-
 void lockTile(Tile * tile);
 
 void unlockTile(Tile * tile);
 
 typedef struct World {
 	simClock clock;
-	Tile * map;
+	Tile ** map;
 	unsigned int width;
 	unsigned int height;
+	unsigned int xStart;
+	unsigned int xEnd;
+	unsigned int yStart;
+	unsigned int yEnd;
 } World;
 
-#define IN_WORLD(world, x, y) \
+/*#define IN_WORLD(world, x, y) \
 		((x) >= 0 && (x) <= (world)->width + 1 \
-				&& (y) >= 0 && (y) <= (world)->height + 1)
+				&& (y) >= 0 && (y) <= (world)->height + 1)*/
 
 #define GET_TILE(world, x, y) \
-		((world)->map + (y) * ((world)->width + 2) + (x))
-
-#define GET_TILE_CHECK(world, x, y) \
-		(IN_WORLD((world), (x), (y)) ? GET_TILE((world), (x), (y)) : NULL)
+		((world)->map[(x)] + (y))
 
 #define GET_TILE_DIR(world, dir, x, y) \
 		GET_TILE((world), (x) + direction_delta_x[dir], (y) + direction_delta_y[dir])
-
-#define GET_TILE_DIR_CHECK(world, dir, x, y) \
-		GET_TILE_CHECK((world), (x) + direction_delta_x[dir], (y) + direction_delta_y[dir])
 
 World * newWorld(unsigned int width, unsigned int height);
 

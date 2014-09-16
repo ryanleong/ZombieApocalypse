@@ -1,8 +1,8 @@
-SRC = apocalypse.c entity.c direction.c random.c simulation.c world.c
+SRC = apocalypse.c entity.c direction.c random.c simulation.c utils.c world.c
 OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
-CFLAGS = --std=gnu99 -O0 -g -Wall
+CFLAGS = --std=gnu99 -O0 -g -Wall -DDEBUG
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -DDEBUG
@@ -25,7 +25,7 @@ clobber: clean
 	rm -f cscope.out
 	rm -rf images/
 
-dependencies:
+dependencies: $(SRC)
 	$(CC) $(CFLAGS) -MM $(SRC) > dependencies
 
 tags:

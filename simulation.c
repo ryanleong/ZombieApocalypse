@@ -45,8 +45,8 @@ void simulateStep(World * input, World * output) {
 	// at least three columns per thread
 #pragma omp parallel for default(shared) num_threads(numThreads)
 #endif
-	for (int x = 1; x <= input->width; x++) {
-		for (int y = 1; y <= input->height; y++) {
+	for (int x = input->xStart; x <= input->xEnd; x++) {
+		for (int y = input->yStart; y <= input->yEnd; y++) {
 			Entity * entity = GET_TILE(input, x, y)->entity;
 			if (entity == NULL) {
 				continue;
@@ -56,8 +56,8 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == HUMAN || entity->type == INFECTED) {
 				LivingEntity * le = entity->asLiving;
 				if (le->willDie <= clock) {
-					dprintf("A %s died\n",
-							entity->type == HUMAN? "Human" : "Infected");
+					debug_printf("A %s died\n",
+							entity->type == HUMAN ? "Human" : "Infected");
 					continue; // just forget this entity
 				}
 			}
@@ -66,7 +66,7 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == ZOMBIE) {
 				Zombie * zombie = entity->asZombie;
 				if (zombie->decomposes <= clock) {
-					dprintf("A zombie decomposed\n");
+					debug_printf("A zombie decomposed\n");
 					continue; // just forgot this entity
 				}
 				entity = copyEntity(entity);
@@ -77,7 +77,7 @@ void simulateStep(World * input, World * output) {
 				Infected * infected = entity->asInfected;
 				if (clock > infected->becomesZombie) {
 					entity = toZombie(infected, clock)->asEntity;
-					dprintf("An infected became zombie\n");
+					debug_printf("An infected became zombie\n");
 				} else {
 					entity = copyEntity(entity);
 				}
@@ -90,7 +90,7 @@ void simulateStep(World * input, World * output) {
 
 				if (randomDouble() <= infectionChance) {
 					entity = toInfected(entity->asHuman, clock)->asEntity;
-					dprintf("A human became infected\n");
+					debug_printf("A human became infected\n");
 				} else {
 					entity = copyEntity(entity);
 				}
@@ -110,7 +110,7 @@ void simulateStep(World * input, World * output) {
 							getFreeAdjacent(input, output, x, y)) != NULL) {
 						LivingEntity * child = giveBirth(le, clock);
 						freeTile->entity = child->asEntity;
-						dprintf("A child was born\n");
+						debug_printf("A child was born\n");
 					}
 				}
 
@@ -122,7 +122,7 @@ void simulateStep(World * input, World * output) {
 							x, y, clock);
 					if (adjacentMale != NULL) {
 						makeLove(le, adjacentMale, clock);
-						dprintf("A couple made love\n");
+						debug_printf("A couple made love\n");
 					}
 				}
 			}
@@ -273,11 +273,10 @@ bearing getBearing(World * world, int x, int y) {
 		}
 	}
 	for (int dir = DIRECTION_BASIC + 1; dir <= DIRECTION_ALL; dir++) {
-		// we have to check if destination is in our world
-		Tile * t = GET_TILE_DIR_CHECK(world, dir, x, y);
+		Tile * t = GET_TILE_DIR(world, dir, x, y);
 		bearing delta = BEARING_FROM_DIRECTION(dir);
 		if (entity->type == ZOMBIE) {
-			if (t == NULL || t->type == BORDER) {
+			if (t->type == BORDER) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_WALL_TWO;
 			} else if (t->entity == NULL) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_EMPTY_TWO;
@@ -287,7 +286,7 @@ bearing getBearing(World * world, int x, int y) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_LIVING_TWO;
 			}
 		} else {
-			if (t == NULL || t->type == BORDER) {
+			if (t->type == BORDER) {
 				bearing_ += delta * BEARING_RATE_LIVING_WALL_TWO;
 			} else if (t->entity == NULL) {
 				bearing_ += delta * BEARING_RATE_LIVING_EMPTY_TWO;

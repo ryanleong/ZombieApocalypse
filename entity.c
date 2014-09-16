@@ -149,8 +149,8 @@ Zombie * newZombie(simClock clock) {
 	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
 
 	zombie->becameZombie = clock; // right now
-	simClock event = randomEvent(ZOMBIE_DECOMPOZITION_MEAN,
-	ZOMBIE_DECOMPOZITION_STD_DEV);
+	simClock event = randomEvent(ZOMBIE_DECOMPOSITION_MEAN,
+	ZOMBIE_DECOMPOSITION_STD_DEV);
 	zombie->decomposes = clock + MAX(event, 1); // in future!
 	zombie->bearing = getRandomBearing();
 
@@ -181,8 +181,8 @@ Zombie * toZombie(Infected * infected, simClock clock) {
 
 	zombie->becameZombie = clock;
 
-	simClock event = randomEvent(ZOMBIE_DECOMPOZITION_MEAN,
-	ZOMBIE_DECOMPOZITION_STD_DEV);
+	simClock event = randomEvent(ZOMBIE_DECOMPOSITION_MEAN,
+	ZOMBIE_DECOMPOSITION_STD_DEV);
 	zombie->decomposes = clock + MAX(event, 1); // in future!
 
 	zombie->bearing = getRandomBearing();
@@ -402,7 +402,7 @@ double getMaxSpeed(Entity * entity, simClock currentTime) {
 		Zombie * zombie = entity->asZombie;
 		int zombieAge = (currentTime - zombie->becameZombie) / IN_YEARS;
 
-		if (zombieAge < (ZOMBIE_DECOMPOZITION_MEAN / 2)) {
+		if (zombieAge < (ZOMBIE_DECOMPOSITION_MEAN / 2)) {
 			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 1.0;
 		} else {
 			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 0.8;
