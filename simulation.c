@@ -56,7 +56,7 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == HUMAN || entity->type == INFECTED) {
 				LivingEntity * le = entity->asLiving;
 				if (le->willDie <= clock) {
-					dprintf("A %s died\n",
+					debug_printf("A %s died\n",
 							entity->type == HUMAN? "Human" : "Infected");
 					continue; // just forget this entity
 				}
@@ -66,7 +66,7 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == ZOMBIE) {
 				Zombie * zombie = entity->asZombie;
 				if (zombie->decomposes <= clock) {
-					dprintf("A zombie decomposed\n");
+					debug_printf("A zombie decomposed\n");
 					continue; // just forgot this entity
 				}
 				entity = copyEntity(entity);
@@ -77,7 +77,7 @@ void simulateStep(World * input, World * output) {
 				Infected * infected = entity->asInfected;
 				if (clock > infected->becomesZombie) {
 					entity = toZombie(infected, clock)->asEntity;
-					dprintf("An infected became zombie\n");
+					debug_printf("An infected became zombie\n");
 				} else {
 					entity = copyEntity(entity);
 				}
@@ -90,7 +90,7 @@ void simulateStep(World * input, World * output) {
 
 				if (randomDouble() <= infectionChance) {
 					entity = toInfected(entity->asHuman, clock)->asEntity;
-					dprintf("A human became infected\n");
+					debug_printf("A human became infected\n");
 				} else {
 					entity = copyEntity(entity);
 				}
@@ -110,7 +110,7 @@ void simulateStep(World * input, World * output) {
 							getFreeAdjacent(input, output, x, y)) != NULL) {
 						LivingEntity * child = giveBirth(le, clock);
 						freeTile->entity = child->asEntity;
-						dprintf("A child was born\n");
+						debug_printf("A child was born\n");
 					}
 				}
 
@@ -122,7 +122,7 @@ void simulateStep(World * input, World * output) {
 							x, y, clock);
 					if (adjacentMale != NULL) {
 						makeLove(le, adjacentMale, clock);
-						dprintf("A couple made love\n");
+						debug_printf("A couple made love\n");
 					}
 				}
 			}
