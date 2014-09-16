@@ -1,4 +1,4 @@
-SRC = apocalypse.c entity.c random.c simulation.c world.c
+SRC = apocalypse.c entity.c random.c simulation.c world.c utils.c
 OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
@@ -25,7 +25,7 @@ clobber: clean
 	rm -f cscope.out
 	rm -rf images/
 
-dependencies:
+dependencies: $(SRC)
 	$(CC) $(CFLAGS) -MM $(SRC) > dependencies
 
 tags:
