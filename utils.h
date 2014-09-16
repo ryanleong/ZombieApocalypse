@@ -1,8 +1,8 @@
-#ifndef _UTILS_H
-#define _UTILS_H
+#ifndef _UTILS_H_
+#define _UTILS_H_
 
 /** wrapper to malloc that aborts if malloc returns null. */
-void * checked_malloc (size_t bytes);
+void * checked_malloc(size_t bytes);
 
 #endif
 

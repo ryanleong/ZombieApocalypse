@@ -172,7 +172,7 @@ void simulateStep(World * input, World * output) {
 	}
 }
 
-#define MOVE_BACK(var, varMax, srcX, srcY, destX, destY) \
+#define MOVE_BACK(var, varMin, varMax, srcX, srcY, destX, destY) \
 	for (int var = 0; var < varMax; var++) { \
 		Tile * in = GET_TILE(output, srcX, srcY); \
 		if (in->entity == NULL) { \
@@ -185,10 +185,14 @@ void simulateStep(World * input, World * output) {
 	}
 
 void finishStep(World * input, World * output) {
-	MOVE_BACK(x, output->width, x, 0, x, 1)
-	MOVE_BACK(x, output->width, x, output->height + 1, x, output->height)
-	MOVE_BACK(y, output->width, 0, y, 1, y)
-	MOVE_BACK(y, output->width, output->width + 1, y, output->width, y)
+	MOVE_BACK(y, output->yStart, output->yEnd, y, output->xStart - 1, y,
+			output->xStart)
+	MOVE_BACK(y, output->yStart, output->yEnd, y, output->xEnd + 1, y,
+			output->xEnd)
+	MOVE_BACK(x, output->xStart, output->xEnd, output->yStart - 1, x,
+			output->yStart, x)
+	MOVE_BACK(x, output->xStart, output->xEnd, output->yEnd + 1, x,
+			output->yEnd, x)
 
 	resetWorld(input);
 }

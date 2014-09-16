@@ -2,7 +2,7 @@
 #define CLOCK_H_
 
 /**
- * Type for time in simulation, the basic unit is defined as 1 hour.
+ * Type for time in simulation, the basic unit is defined as 1 day.
  */
 typedef long long int simClock;
 

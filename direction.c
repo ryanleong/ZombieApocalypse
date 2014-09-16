@@ -12,7 +12,7 @@
 
 bearing getRandomBearing() {
 	double angle = randomDouble() * 2 * M_PI;
-	return 0.5 * cos(angle) + 0.7 * I * sin(angle);
+	return 0.5 * cos(angle) + 0.5 * I * sin(angle);
 }
 
 Direction bearingToDirection(bearing bearing) {

@@ -136,10 +136,6 @@ Human * newHuman(simClock clock) {
 	human->fertilityStart = human->wasBorn + fertilityStart;
 	human->fertilityEnd = human->wasBorn + fertilityEnd;
 
-	// the simulation start with a nice morning
-	// when everybody woke up and nobody is tired
-	human->lastSlept = clock;
-	human->tiredness = 0;
 	human->bearing = getRandomBearing();
 
 	return human;
@@ -162,8 +158,6 @@ Infected * toInfected(Human * human, simClock clock) {
 
 	infected->gender = human->gender;
 	infected->children = human->children;
-	infected->lastSlept = human->lastSlept;
-	infected->tiredness = human->tiredness;
 	infected->wasBorn = human->wasBorn;
 	infected->willDie = human->willDie;
 	infected->bearing = human->bearing;
@@ -197,8 +191,6 @@ Human * copyHuman(Human * human) {
 	h->fertilityStart = human->fertilityStart;
 	h->fertilityEnd = human->fertilityEnd;
 	h->children = human->children;
-	h->lastSlept = human->lastSlept;
-	h->tiredness = human->tiredness;
 	h->wasBorn = human->wasBorn;
 	h->willDie = human->willDie;
 	h->bearing = human->bearing;
@@ -213,8 +205,6 @@ Infected * copyInfected(Infected * infected) {
 	i->fertilityStart = infected->fertilityStart;
 	i->fertilityEnd = infected->fertilityEnd;
 	i->children = infected->children;
-	i->lastSlept = infected->lastSlept;
-	i->tiredness = infected->tiredness;
 	i->wasBorn = infected->wasBorn;
 	i->willDie = infected->willDie;
 	i->becameInfected = infected->becameInfected;
@@ -309,9 +299,6 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 	born->willDie = MAX(1, clock + age); // in future!
 
 	born->children = NO_CHILDREN;
-	born->lastSlept = clock;
-
-	born->tiredness = 1; // baby is tired
 	born->wasBorn = clock;
 	born->fertilityStart = clock + fertilityStart;
 	born->fertilityEnd = clock + fertilityEnd;
@@ -319,7 +306,6 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 
 	// loop through unborn children
 	mother->children.count--;
-	mother->tiredness = 1;
 	return born;
 }
 

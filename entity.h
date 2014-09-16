@@ -62,8 +62,6 @@ typedef struct Entity {
 	Gender gender; \
 	simClock wasBorn; \
 	simClock willDie; \
-	simClock lastSlept; \
-	double tiredness; \
 	simClock fertilityStart; \
 	simClock fertilityEnd; \
 	Children children;
@@ -183,7 +181,10 @@ void disposeEntity(Entity * entity);
  */
 void destroyUnused();
 
-double getMaxSpeed();
+/**
+ * Returns maximal speed which the entity can go.
+ */
+double getMaxSpeed(Entity * entity, simClock clock);
 
 #endif /* ENTITY_H_ */
 

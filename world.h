@@ -15,10 +15,20 @@
 #include "entity.h"
 #include "direction.h"
 
+/**
+ * There are two types of Tiles:
+ * REGULAR is inside the map where entities normally are
+ * BORDER is a ghost tile which can host entities only temporarily
+ */
 typedef enum TileType {
 	REGULAR, BORDER
 } TileType;
 
+/**
+ * Each tile has its type: either REGULAR if it is inside or it is BORDER
+ * Each tile also contains pointer to entity (which is NULL if the tile is empty)
+ *
+ */
 typedef struct Tile {
 	TileType type;
 	Entity * entity;
@@ -27,37 +37,73 @@ typedef struct Tile {
 #endif
 } Tile;
 
+/**
+ * Locks the tile for exclusive access.
+ * XXX The tile locking will probably be changed
+ */
 void lockTile(Tile * tile);
 
+/**
+ * Unlocks the tile; everybody can access the tile.
+ * XXX The tile locking will probably be changed
+ */
 void unlockTile(Tile * tile);
 
+/**
+ * The World contains a 2D map.
+ * The map is slightly bigger to allow unchecked access to two tiles in each direction.
+ * You should never iterate like this: for (int x = 0; x < w->width; x++)
+ * But rather: for (int x = w->xStart; x <= w->xEnd; x++)
+ * Remember that start and end are inclusive.
+ * The main reason is to make it possible to divide the map into pieces
+ * which will calculated independently on different nodes connected by MPI.
+ *
+ * As there is never access more than 2 tiles from REGULAR tile,
+ * no border constraints are necessary.
+ */
 typedef struct World {
 	simClock clock;
 	Tile ** map;
-	unsigned int width;
-	unsigned int height;
-	unsigned int xStart;
-	unsigned int xEnd;
-	unsigned int yStart;
-	unsigned int yEnd;
+	unsigned int width; // real width
+	unsigned int height; // real height
+	unsigned int xStart; // first interior tile
+	unsigned int xEnd; // last interior tile
+	unsigned int yStart; // first interior tile
+	unsigned int yEnd; // last interior tile
 } World;
 
-/*#define IN_WORLD(world, x, y) \
-		((x) >= 0 && (x) <= (world)->width + 1 \
-				&& (y) >= 0 && (y) <= (world)->height + 1)*/
-
+/**
+ * Returns the specified tile.
+ * Does not check if the tile is in the world.
+ */
 #define GET_TILE(world, x, y) \
 		((world)->map[(x)] + (y))
 
+/**
+ * Returns the tile in direction from specified tile.
+ * Does not check if the tile is in the world.
+ */
 #define GET_TILE_DIR(world, dir, x, y) \
-		GET_TILE((world), (x) + direction_delta_x[dir], (y) + direction_delta_y[dir])
+		GET_TILE((world), (x) + direction_delta_x[(dir)], (y) + direction_delta_y[(dir)])
 
+/**
+ * Creates a new world of specified dimensions.
+ */
 World * newWorld(unsigned int width, unsigned int height);
 
+/**
+ * Resets the world - removes all entities.
+ */
 void resetWorld(World * world);
 
+/**
+ * Destroys the entities in the world and than destroys the world.
+ */
 void destoyWorld(World * world);
 
+/**
+ * Returns the first adjacent tile to [x,y] in output which is free in both worlds.
+ */
 Tile * getFreeAdjacent(World * input, World * output, int x, int y);
 
 #endif // WORLD_H_

@@ -4,6 +4,11 @@
 
 #include "random.h"
 
+/**
+ * Initializes the random generator.
+ * This function must be called once when the program starts.
+ * If seed is zero, the current time is used instead.
+ */
 void initRandom(unsigned int seed) {
 	if (seed == 0) {
 		seed = time(NULL);
@@ -30,6 +35,9 @@ int randomInt(int min, int max) {
 	return random() % (max - min + 1) + min;
 }
 
+/**
+ * Returns random double in range [0, 1)
+ */
 double randomDouble() {
 	return drand48();
 }
