@@ -35,11 +35,11 @@ typedef struct {
 
 typedef struct {
     gender_t gender;
-    sim_clock_t becameInfected;
+    sim_clock_t became_infected;
 } infected_t;
 
 typedef struct {
-    sim_clock_t becameZombie;
+    sim_clock_t became_zombie;
 } zombie_t;
 
 
@@ -56,45 +56,24 @@ typedef union {
 } entity_u;
 
 /**
- * Use only at the start of the simulation (clock should be 0)
- * Creates a new random human who lives prior to start of the simulation.
- * If the human is a female, she can be pregnant.
+ *  These functions are used to seed the initial human and zombie
+ *  populations.
  */
-human_t * newHuman(sim_clock_t clock);
+entity_u * new_human (void);
+entity_u * new_zombie (void);
 
 /**
- * Use only at the start of the simulation (clock should be 0)
- * Creates a new zombie which will eventually decompose.
+ *  These functions handle transitions between different entity types.
  */
-zombie_t * newZombie(sim_clock_t clock);
+void becomes_infected (entity_u *human, sim_clock_t clock);
+void becomes_zombie (entity_u *infected, sim_clock_t clock);
 
 /**
- * Converts a human into infected.
- * All attributes are preserved and becoming zombie is planned.
- * The human is disposed.
+ *  Functions for copying entities from one entity_u to another.
  */
-infected_t * toInfected(human_t * human, sim_clock_t clock);
-
-/**
- * Converts an infected into zombie.
- * The infected is disposed.
- */
-zombie_t * toZombie(infected_t * infected, sim_clock_t clock);
-
-/**
- * Copies human into a new entity, preserves all attributes.
- */
-human_t * copyHuman(human_t * human);
-
-/**
- * Copies infected into a new entity, preserves all attributes.
- */
-infected_t * copyInfected(infected_t * infected);
-
-/**
- * Copies zombie into a new entity, preserves all attributes.
- */
-zombie_t * copyZombie(zombie_t * zombie);
+void copy_human (human_t *origin, human_t *dest);
+void copy_infected (infected_t *origin, infected_t *dest);
+void copy_zombie (zombie_t *origin, zombie_t *dest);
 
 
 #endif /* ENTITY_H_ */

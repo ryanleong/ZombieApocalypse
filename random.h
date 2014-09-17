@@ -12,7 +12,7 @@
 
 void initRandom(unsigned int seed);
 
-simClock randomEvent(simClock mean, simClock stdDev);
+sim_clock_t randomEvent(sim_clock_t mean, sim_clock_t stdDev);
 
 int randomInt(int min, int max);
 

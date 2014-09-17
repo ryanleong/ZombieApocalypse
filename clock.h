@@ -4,7 +4,7 @@
 /**
  * Type for time in simulation, the basic unit is defined as 1 hour.
  */
-typedef long long int simClock;
+typedef long long int sim_clock_t;
 
 /**
  * The basic unit is defined as 1 hour.
