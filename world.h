@@ -28,11 +28,6 @@ typedef struct Tile {
 #endif
 } Tile;
 
-void lockTile(Tile * tile);
-void unlockTile(Tile * tile);
-bool valid_coordinates (World *world, int row, int column);
-int find_adjacent_space (World *world, int *row, int *column);
-
 #define GET_TILE(world, x, y) \
 		(&((world)->map [(x)] [(y)]))
 
@@ -55,19 +50,19 @@ typedef struct World {
 	unsigned int height;
 } World;
 
-World * newWorld(unsigned int width, unsigned int height);
-void resetWorld(World * world);
-void destoyWorld(World * world);
-
-#define IN_WORLD(world, x, y) \
-		((x) >= 0 && (x) <= (world)->width + 1 \
-				&& (y) >= 0 && (y) <= (world)->height + 1)
-
 typedef enum Direction {
 	LEFT = 1, UP, RIGHT, DOWN, STAY = 0
 } Direction;
 
 #define OPPOSITE(direction) ((direction) ? ((direction) + 1) % 4 + 1 : STAY)
+
+World * newWorld(unsigned int width, unsigned int height);
+void resetWorld(World * world);
+void destoyWorld(World * world);
+void lockTile(Tile * tile);
+void unlockTile(Tile * tile);
+bool valid_coordinates (World *world, int row, int column);
+int find_adjacent_space (World *world, int *row, int *column);
 
 #endif // WORLD_H_
 
