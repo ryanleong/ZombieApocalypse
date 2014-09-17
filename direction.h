@@ -63,6 +63,7 @@ static const int direction_delta_y[] = { 0, 0, -1, 0, 1, 0, -1, -2, -1, 0, 1, 2,
 
 /**
  * The bearing is simply a complex number.
+ * Note that 0+1i means DOWN.
  */
 typedef double complex bearing;
 
@@ -74,7 +75,8 @@ typedef double complex bearing;
 
 /**
  * Returns random bearing in terms of random angle and absolute value = 0.5.
- * This is intentional to map it to STAY if it is converted to direction.
+ * This is intentional to map any random bearing to
+ * direction STAY in function bearingToDirection.
  */
 bearing getRandomBearing();
 
@@ -93,7 +95,7 @@ bearing getRandomBearing();
 /**
  * Converts bearing to direction.
  * The plane is divided into 5 parts.
- * In the middle the circle with radius = 1 is considered STAY.
+ * In the middle, the circle with radius = 1 is considered STAY.
  * The rest is divided as the letter X - LEFT, UP, RIGHT and DOWN.
  */
 Direction bearingToDirection(bearing bearing);

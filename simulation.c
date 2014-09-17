@@ -11,22 +11,29 @@
 #include "debug.h"
 #include "direction.h"
 
-int countNeighbouringZombies(World *world, int row, int column);
-LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
+static int countNeighbouringZombies(World *world, int row, int column);
+static LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 		simClock clock);
-bearing getBearing(World * world, int x, int y);
+static bearing getBearing(World * world, int x, int y);
 
 /**
- * These macros require the worlds to be named input and output
+ * These macros require the worlds to be named input and output.
+ * CAN_MOVE tests if the tile is empty in both worlds
  */
 #define CAN_MOVE_TO(x, y, dir) \
 	(GET_TILE_DIR((input), (dir), (x), (y))->entity == NULL \
 	&& GET_TILE_DIR((output), (dir), (x), (y))->entity == NULL)
 
+/**
+ * IF_CAN_MOVE tests if the tile is empty in both worlds
+ * and if it is, it returns the tile, otherwise it returns NULL
+ */
 #define IF_CAN_MOVE_TO(x, y, dir) \
 	(CAN_MOVE_TO((x), (y), (dir)) ? GET_TILE_DIR((output), (dir), (x), (y)) : NULL)
 
 /**
+ * Note that this function is called by every thread.
+ *
  * Order of actions:
  * a) death of human or infected
  * b) decomposition of zombie
@@ -37,8 +44,19 @@ bearing getBearing(World * world, int x, int y);
  * g) movement
  */
 void simulateStep(World * input, World * output) {
-	simClock clock = output->clock = input->clock + 1;
+	// only a single thread sets the output clock
+#ifdef _OPENMP
+#pragma omp single
+#endif
+	{
+		output->clock = input->clock + 1;
+	}
+	// this will be done by every thread; each of them will have its own variable
+	// we should never touch output->clock as its assignment is not synchronized
+	simClock clock = input->clock + 1;
 
+	// we want to force static scheduling because be suppose that the load
+	// is distributed evenly over the map
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
@@ -64,7 +82,7 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == ZOMBIE) {
 				Zombie * zombie = entity->asZombie;
 				if (randomDouble() < getDecompositionRate(zombie, clock)) {
-					debug_printf("A zombie decomposed\n");
+					debug_printf("A Zombie decomposed\n");
 					continue; // just forgot this entity
 				}
 				entity = copyEntity(entity);
@@ -75,7 +93,7 @@ void simulateStep(World * input, World * output) {
 				Infected * infected = entity->asInfected;
 				if (randomDouble() < PROBABILITY_BECOME_ZOMBIE) {
 					entity = toZombie(infected, clock)->asEntity;
-					debug_printf("An infected became zombie\n");
+					debug_printf("An Infected became Zombie\n");
 				} else {
 					entity = copyEntity(entity);
 				}
@@ -88,16 +106,16 @@ void simulateStep(World * input, World * output) {
 
 				if (randomDouble() <= infectionChance) {
 					entity = toInfected(entity->asHuman, clock)->asEntity;
-					debug_printf("A human became infected\n");
+					debug_printf("A Human became infected\n");
 				} else {
 					entity = copyEntity(entity);
 				}
 			}
 
-			// Here the variable entity contains either copy or a new entity after transition.
+			// Here the entity variable contains either copy or a new entity after transition.
 			// This is important. From now on, we may freely change it.
 
-			// Here are performed natural processed
+			// Here are performed natural processed of humans and infected
 			if (entity->type == HUMAN || entity->type == INFECTED) {
 				LivingEntity * le = entity->asLiving;
 				// giving birth
@@ -108,7 +126,8 @@ void simulateStep(World * input, World * output) {
 							getFreeAdjacent(input, output, x, y)) != NULL) {
 						LivingEntity * child = giveBirth(le, clock);
 						freeTile->entity = child->asEntity;
-						debug_printf("A child was born\n");
+						debug_printf("A %s child was born\n",
+								child->type == HUMAN ? "Human" : "Infected");
 					}
 				}
 
@@ -127,14 +146,20 @@ void simulateStep(World * input, World * output) {
 
 			// MOVEMENT
 
-			bearing bearing = getBearing(input, x, y); // optimal
-			bearing += getRandomBearing() * 0.35;
-			entity->bearing = BEARING_PROJECT(bearing)
-					* (randomDouble() * 0.5 + 0.75);
+			bearing bearing = getBearing(input, x, y); // optimal bearing
+			bearing += getRandomBearing() * BEARING_FLUCTUATION;
+
+			// to make the entity bearing variable in terms of absolute value
+			double bearingRandomQuotient = (randomDouble() - 0.5)
+					* BEARING_ABS_QUOTIENT_VARIANCE + BEARING_ABS_QUOTIENT_MEAN;
+			entity->bearing = BEARING_PROJECT(bearing) * bearingRandomQuotient;
 
 			Direction dir = bearingToDirection(bearing);
 
-			// some randomness
+			// some randomness in direction
+			// the entity will never go in the opposite direction
+			// TODO utilize probabilistic speed - use function getMaxSpeed
+			// TODO this is very important and should be easy
 			if (dir != STAY) {
 				double dirRnd = randomDouble();
 				if (dirRnd < DIRECTION_MISSED) {
@@ -145,10 +170,13 @@ void simulateStep(World * input, World * output) {
 					dir = STAY;
 				}
 			} else {
+				// if the entity would STAY, we'll try again to make it move
+				// TODO this should be reviewed; does it make sense?
 				bearing += getRandomBearing() * (randomDouble() * 0.5 + 0.75);
 				dir = bearingToDirection(bearing);
 			}
 
+			// we will try to find the tile in the chosen direction
 			Tile * dest = NULL;
 			if (dir != STAY) {
 				dest = IF_CAN_MOVE_TO(x, y, dir);
@@ -163,12 +191,17 @@ void simulateStep(World * input, World * output) {
 				dest = GET_TILE(output, x, y);
 			}
 
+			// actual assignment of entity to its destination
 			dest->entity = entity;
 		}
 		unlockColumn(output, x);
 	}
 }
 
+/**
+ * Moves back an entity which is on the BORDER tile.
+ * This macro is universal for all borders.
+ */
 #define MOVE_BACK(var, varMin, varMax, srcX, srcY, destX, destY) \
 	for (int var = 0; var < varMax; var++) { \
 		Tile * in = GET_TILE(output, srcX, srcY); \
@@ -182,6 +215,7 @@ void simulateStep(World * input, World * output) {
 	}
 
 void finishStep(World * input, World * output) {
+	// TODO make this utilize more than four threads; probably hard
 #ifdef _OPENMP
 #pragma omp sections
 #endif
@@ -218,7 +252,11 @@ void finishStep(World * input, World * output) {
 	resetWorld(input);
 }
 
-LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
+/**
+ * Returns a MALE Living entity which is on an adjacent tile to the given one.
+ * The MALE has to be able to reproduce.
+ */
+static LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 		simClock clock) {
 	LivingEntity * getFertileMale(Entity * entity, simClock clock) {
 		if (entity == NULL) {
@@ -236,6 +274,7 @@ LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 		return NULL;
 	}
 
+	// TODO randomize to get rid of preference of direction; low priority
 	LivingEntity * male;
 	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
 		if ((male = getFertileMale(GET_TILE_DIR(world, dir, x, y)->entity,
@@ -249,7 +288,7 @@ LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 /**
  * Returns the number of zombies in the cells bordering the cell at [x, y].
  */
-int countNeighbouringZombies(World * world, int x, int y) {
+static int countNeighbouringZombies(World * world, int x, int y) {
 	bool isZombie(Entity * entity) {
 		return entity != NULL && entity->type == ZOMBIE;
 	}
@@ -263,7 +302,19 @@ int countNeighbouringZombies(World * world, int x, int y) {
 	return zombies;
 }
 
-bearing getBearing(World * world, int x, int y) {
+/**
+ * Returns the optimal bearing for an entity based on twelve adjacent tiles:
+ * __#__
+ * _###_
+ * ##@##
+ * _###_
+ * __#__
+ * The tiles in distance one and two are handled separately.
+ * For each tile (and its entity) it is calculated the suitability to go that direction.
+ * This may can produce a result which points to a tile which is occupied.
+ * It is an intentional feature.
+ */
+static bearing getBearing(World * world, int x, int y) {
 	Entity * entity = GET_TILE(world, x, y)->entity;
 	bearing bearing_ = entity->bearing;
 

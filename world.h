@@ -44,7 +44,9 @@ typedef struct Tile {
  * which will calculated independently on different nodes connected by MPI.
  *
  * As there is never access more than 2 tiles from REGULAR tile,
- * no border constraints are necessary.
+ * no border checks are necessary.
+ *
+ * Part of the world (set of three adjacent columns) can be locked.
  */
 typedef struct World {
 	simClock clock;
@@ -87,7 +89,7 @@ void resetWorld(World * world);
 /**
  * Destroys the entities in the world and than destroys the world.
  */
-void destoyWorld(World * world);
+void destroyWorld(World * world);
 
 /**
  * Locks three adjacent columns centered around x for exclusive access.

@@ -41,6 +41,7 @@ World * newWorld(unsigned int width, unsigned int height) {
 }
 
 void resetWorld(World * world) {
+	// TODO choose better schedule; dynamic? Need to test; low priority
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
@@ -103,6 +104,7 @@ void unlockColumn(World * world, int x) {
 }
 
 Tile * getFreeAdjacent(World * input, World * output, int x, int y) {
+	// TODO randomize to eliminate preference for direction; low priority
 	Tile * t;
 	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
 		if (GET_TILE_DIR(input, dir, x, y)->entity == NULL

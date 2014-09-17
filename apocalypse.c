@@ -10,6 +10,10 @@
 #include "common.h"
 #include "constants.h"
 
+/**
+ * Fills the world with specified number of people and zombies.
+ * The people are of different age; zombies are "brand new".
+ */
 void randomDistribution(World * w, int people, int zombies, simClock clock) {
 	for (int i = 0; i < people;) {
 		int x = randomInt(w->xStart, w->xEnd);
@@ -40,7 +44,13 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 	}
 }
 
-void setRGB(png_byte *ptr, Tile * tile) {
+/**
+ * Fills an image pixel with a color based on properties of the tile and entity.
+ * Humans are green, infected are blue and zombies are red.
+ */
+void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
+	// TODO make the color depend on age; this is low priority
+	// I tried it but the difference was not noticeable
 	if (tile->entity == NULL) {
 		ptr[0] = 255;
 		ptr[1] = 255;
@@ -81,7 +91,11 @@ void setRGB(png_byte *ptr, Tile * tile) {
 	}
 }
 
+/**
+ * Generates an image for the world mapping each tile to a pixel.
+ */
 int printWorld(World * world) {
+	// TODO make image generation parallel; this is rather hard and low priority
 	char filename[80];
 	sprintf(filename, "images/step-%06lld.png", world->clock);
 
@@ -138,7 +152,8 @@ int printWorld(World * world) {
 	// Write image data
 	for (int y = world->yStart; y <= world->yEnd; y++) {
 		for (int x = world->xStart; x <= world->xEnd; x++) {
-			setRGB(&(row[(x - world->xStart) * 3]), GET_TILE(world, x, y));
+			setRGB(&(row[(x - world->xStart) * 3]), GET_TILE(world, x, y),
+					world->clock);
 		}
 		png_write_row(png_ptr, row);
 	}
@@ -163,6 +178,7 @@ int printWorld(World * world) {
  *  haven't yet become zombies), and zombies, for debugging.
  */
 void printPopulations(World * world) {
+	// TODO make this parallel; it should be easy and useful, high priority
 	int humans = 0, infected = 0, zombies = 0;
 
 	for (int x = world->xStart; x <= world->xEnd; x++) {
@@ -190,6 +206,8 @@ void printPopulations(World * world) {
 		}
 	}
 
+	// make sure there are always blanks around numbers
+	// that way we can easily split the line
 	printf("Time: %6d \tHumans: %4d \tInfected: %4d \tZombies: %4d\n",
 			(int) world->clock, humans, infected, zombies);
 }
@@ -216,45 +234,70 @@ int main(int argc, char **argv) {
 	randomDistribution(input, people, zombies, 0);
 	printWorld(input);
 
+	/* This may need some explanation:
+	 * First we create a thread pool which contains at most the number of threads
+	 * to be be able to assign at least 3 columns to each.
+	 * This limit is placed because otherwise the locking regions would overlap
+	 * which would kill the performance.
+	 *
+	 * Inside parallel region, everything is run multiple times.
+	 * We want that for functions simulateStep and finishStep.
+	 * But printWorld and printPopulation are single threaded so far.
+	 * They both can be run in parallel but only with one thread each.
+	 * That is ensured by using sections; this could be written more succinctly
+	 * but I think that excessive parentheses don't matter.
+	 * The world swapping should be performed by only one thread.
+	 *
+	 * Both print functions can be switched off by N* macros.
+	 */
 #ifdef _OPENMP
 	// at least three columns per thread
 	int threads = omp_get_max_threads();
 	int numThreads = MIN(MAX(input->width / 3, 1), threads);
 #pragma omp parallel num_threads(numThreads) default(shared)
 #endif
-	for (int i = 0; i < iters; i++) {
-		simulateStep(input, output);
-		finishStep(input, output);
+	{
+		for (int i = 0; i < iters; i++) {
+			simulateStep(input, output);
+			finishStep(input, output);
 
 #ifdef _OPENMP
 #pragma omp sections
 #endif
-		{
+			{
 #ifndef NIMAGES
 #ifdef _OPENMP
 #pragma omp section
 #endif
-			{
-				printWorld(output);
-			}
+				{
+					printWorld(output);
+				}
 #endif
 #ifndef NPOPULATION
 #ifdef _OPENMP
 #pragma omp section
 #endif
-			{
-				printPopulations(output);
-			}
+				{
+					printPopulations(output);
+				}
 #endif
-		}
+			}
 
 #ifdef _OPENMP
 #pragma omp single
 #endif
-		{
-			World * temp = input;
-			input = output;
-			output = temp;
+			{
+				World * temp = input;
+				input = output;
+				output = temp;
+			}
 		}
 	}
+
+	// this is a clean up
+	// we destroy both worlds
+	destroyWorld(input);
+	destroyWorld(output);
+	// and than we destroy all entities which have ever been used
+	destroyUnused();
 }

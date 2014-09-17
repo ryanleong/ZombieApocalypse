@@ -19,8 +19,9 @@ Direction bearingToDirection(bearing bearing) {
 	if (cabs(bearing) < 1) {
 		return STAY;
 	}
-	double angle = carg(bearing); // -PI -- +PI
+	double angle = carg(bearing); // in range [-PI, +PI]
 
+	// note that negative imaginary part means UP
 	if (angle >= M_PI * (-3) / 4 && angle < M_PI * (-1) / 4) {
 		return UP;
 	} else if (angle >= M_PI * (-1) / 4 && angle < M_PI * 1 / 4) {

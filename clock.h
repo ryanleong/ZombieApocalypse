@@ -12,11 +12,6 @@ typedef long long int simClock;
 #define CLOCK_UNITS_IN_DAY 1
 
 /**
- * Current daytime from global simulation time
- */
-#define dayTime(clock) ((clock) % CLOCK_UNITS_IN_DAY)
-
-/**
  * How many units the time interval contains
  */
 #define IN_DAYS CLOCK_UNITS_IN_DAY

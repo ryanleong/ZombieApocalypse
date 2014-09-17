@@ -10,6 +10,9 @@
 
 #include "clock.h"
 
+// TODO study literature and find out the right values
+// TODO this is very important and boring
+
 #define ZOMBIE_DECOMPOSITION_MEAN (3 * IN_YEARS)
 #define ZOMBIE_INFECTION_MEAN (14 * IN_DAYS)
 
@@ -70,6 +73,10 @@
 #define BEARING_RATE_ZOMBIE_ZOMBIE_TWO (1)
 #define BEARING_RATE_ZOMBIE_EMPTY_TWO (1.5)
 #define BEARING_RATE_ZOMBIE_WALL_TWO (-10)
+
+#define BEARING_FLUCTUATION 0.35
+#define BEARING_ABS_QUOTIENT_MEAN 1
+#define BEARING_ABS_QUOTIENT_VARIANCE 0.25
 
 #define DIRECTION_FOLLOW 0.5
 #define DIRECTION_MISSED 0.1

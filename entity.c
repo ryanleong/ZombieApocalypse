@@ -7,51 +7,76 @@
 #include "random.h"
 #include "constants.h"
 
+/**
+ * Contains linked lists of entities of different types.
+ * EntityAllocator wraps malloc; its purpose is to reuse old entities.
+ * All entities are created and removed in each step of the simulation.
+ *
+ * In allocator, despite their names the asXYZ pointers are used to point to next entity.
+ */
 typedef struct EntityAllocator {
-	Entity * humans;
-	Entity * infected;
-	Entity * zombies;
+	Human * humans;
+	Infected * infected;
+	Zombie * zombies;
 } EntityAllocator;
 
+/**
+ * There is only one allocator.
+ * TODO per thread allocator; high priority, hard; expecting performance gain
+ */
 EntityAllocator allocator = { NULL, NULL, NULL };
 
 /**
  * Allocates new entity in memory if none can be recycled.
- * It also fills pointer to next = NULL and as = this and also fills type.
+ * It fills pointer asXYZ = this and also fills type.
  * Other fields are uninitialized!
+ *
+ * We need to limit the access to allocator by multiple threads.
  */
-Entity * newEntity(EntityType type) {
+static Entity * newEntity(EntityType type) {
 	Entity * entity = NULL;
+	switch (type) {
+	case HUMAN:
 #ifdef _OPENMP
-#pragma omp critical (EntityAllocatorRegion)
+#pragma omp critical (EntityAllocatorHumanRegion)
 #endif
 	{
-		switch (type) {
-		case HUMAN:
-			if (allocator.humans != NULL) {
-				entity = allocator.humans;
-				allocator.humans = entity->asEntity;
-			} else {
-				entity = ((Entity *) malloc(sizeof(Human)));
-			}
-			break;
-		case INFECTED:
-			if (allocator.infected != NULL) {
-				entity = allocator.infected;
-				allocator.infected = entity->asEntity;
-			} else {
-				entity = ((Entity *) malloc(sizeof(Infected)));
-			}
-			break;
-		case ZOMBIE:
-			if (allocator.zombies != NULL) {
-				entity = allocator.zombies;
-				allocator.zombies = entity->asEntity;
-			} else {
-				entity = ((Entity *) malloc(sizeof(Zombie)));
-			}
-			break;
+		if (allocator.humans != NULL) {
+			entity = (Entity *) allocator.humans;
+			allocator.humans = entity->asHuman;
+		} else {
+			entity = ((Entity *) malloc(sizeof(Human)));
 		}
+	}
+		break;
+
+	case INFECTED:
+#ifdef _OPENMP
+#pragma omp critical (EntityAllocatorInfectedRegion)
+#endif
+	{
+		if (allocator.infected != NULL) {
+			entity = (Entity *) allocator.infected;
+			allocator.infected = entity->asInfected;
+		} else {
+			entity = ((Entity *) malloc(sizeof(Infected)));
+		}
+	}
+		break;
+
+	case ZOMBIE:
+#ifdef _OPENMP
+#pragma omp critical (EntityAllocatorZombieRegion)
+#endif
+	{
+		if (allocator.zombies != NULL) {
+			entity = (Entity *) allocator.zombies;
+			allocator.zombies = entity->asZombie;
+		} else {
+			entity = ((Entity *) malloc(sizeof(Zombie)));
+		}
+	}
+		break;
 	}
 	entity->asEntity = entity;
 	entity->type = type;
@@ -61,7 +86,7 @@ Entity * newEntity(EntityType type) {
 /**
  * Returns random number of children.
  */
-int randomCountOfUnborn() {
+static int randomCountOfUnborn() {
 	double rnd = drand48();
 	if (rnd < PROBABILITY_ONE_CHILD) {
 		return 1;
@@ -76,7 +101,7 @@ int randomCountOfUnborn() {
  * Creates chain of unborn.
  * Already means that it is the start of the simulation.
  */
-Children newChildren(int count, simClock clock, bool already) {
+static Children newChildren(int count, simClock clock, bool already) {
 	Children children;
 	children.count = count;
 	simClock event = randomEvent(PREGNANCY_DURATION_MEAN,
@@ -123,13 +148,14 @@ Human * newHuman(simClock clock) {
 		FERTILITY_END_MALE_STD_DEV);
 	}
 
+	// TODO make the new human age dependent on age distribution, low priority
 	if (human->gender == FEMALE) {
-		human->wasBorn = -randomDouble() * LIFE_EXPECTANCY_FEMALE_MEAN;
+		human->wasBorn = clock - randomDouble() * LIFE_EXPECTANCY_FEMALE_MEAN;
 	} else {
-		human->wasBorn = -randomDouble() * LIFE_EXPECTANCY_MALE_MEAN;
+		human->wasBorn = clock - randomDouble() * LIFE_EXPECTANCY_MALE_MEAN;
 	}
 
-	// may or may not be in future
+// may or may not be in future
 	human->fertilityStart = human->wasBorn + fertilityStart;
 	human->fertilityEnd = human->wasBorn + fertilityEnd;
 
@@ -163,6 +189,7 @@ Zombie * toZombie(Infected * infected, simClock clock) {
 	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
 
 	zombie->becameZombie = clock;
+	// after becoming zombie, the bearing is restarted
 	zombie->bearing = getRandomBearing();
 
 	return zombie;
@@ -276,47 +303,39 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 	born->fertilityEnd = clock + fertilityEnd;
 	born->bearing = NO_BEARING;
 
-	// loop through unborn children
+	// decrease number of unborn children
 	mother->children.count--;
 	return born;
 }
 
-/**
- * The entity must be disposed first!
- * Returns the entity back to the allocator.
- */
-void generalDispose(Entity * entity) {
+void disposeHuman(Human * human) {
 #ifdef _OPENMP
-#pragma omp critical (EntityAllocatorRegion)
+#pragma omp critical (EntityAllocatorHumanRegion)
 #endif
 	{
-		switch (entity->type) {
-		case HUMAN:
-			entity->asEntity = allocator.humans;
-			allocator.humans = entity;
-			break;
-		case INFECTED:
-			entity->asEntity = allocator.infected;
-			allocator.infected = entity;
-			break;
-		case ZOMBIE:
-			entity->asEntity = allocator.zombies;
-			allocator.zombies = entity;
-			break;
-		}
+		human->asHuman = allocator.humans;
+		allocator.humans = human;
 	}
 }
 
-void disposeHuman(Human * human) {
-	generalDispose(human->asEntity);
-}
-
 void disposeInfected(Infected * infected) {
-	generalDispose(infected->asEntity);
+#ifdef _OPENMP
+#pragma omp critical (EntityAllocatorInfectedRegion)
+#endif
+	{
+		infected->asInfected = allocator.infected;
+		allocator.infected = infected;
+	}
 }
 
 void disposeZombie(Zombie * zombie) {
-	generalDispose(zombie->asEntity);
+#ifdef _OPENMP
+#pragma omp critical (EntityAllocatorZombieRegion)
+#endif
+	{
+		zombie->asZombie = allocator.zombies;
+		allocator.zombies = zombie;
+	}
 }
 
 void disposeEntity(Entity * entity) {
@@ -332,8 +351,10 @@ void disposeEntity(Entity * entity) {
 	}
 }
 
+/**
+ * Traverses the chain and frees each element.
+ */
 void destroyUnusedChain(Entity * entities) {
-	// traverse the chain and free each element
 	while (entities != NULL) {
 		Entity * ptr = entities;
 		entities = entities->asEntity;
@@ -342,18 +363,33 @@ void destroyUnusedChain(Entity * entities) {
 }
 
 void destroyUnused() {
-	// we need to lock the access to allocator
+// we need to lock the access to allocator
+
 #ifdef _OPENMP
-#pragma omp critical (EntityAllocatorRegion)
+#pragma omp critical (EntityAllocatorHumanRegion)
 #endif
 	{
 		destroyUnusedChain(allocator.humans->asEntity);
+		allocator.humans = NULL;
+	}
+#ifdef _OPENMP
+#pragma omp critical (EntityAllocatorInfectedRegion)
+#endif
+	{
 		destroyUnusedChain(allocator.infected->asEntity);
+		allocator.infected = NULL;
+	}
+#ifdef _OPENMP
+#pragma omp critical (EntityAllocatorZombieRegion)
+#endif
+	{
 		destroyUnusedChain(allocator.zombies->asEntity);
+		allocator.zombies = NULL;
 	}
 }
 
 double getMaxSpeed(Entity * entity, simClock currentTime) {
+	// TODO include more categories or make it totally age dependent, high priority
 	double moveChance = 0.0;
 
 	if (entity->type == ZOMBIE) {
@@ -385,7 +421,8 @@ double getMaxSpeed(Entity * entity, simClock currentTime) {
 }
 
 double getDeathRate(LivingEntity * living, simClock currentTime) {
-	//int age = (currentTime - living->wasBorn) / IN_YEARS;
+	// TODO make getDeathRate dependent on age and other conditions, high priority
+//int age = (currentTime - living->wasBorn) / IN_YEARS;
 	if (living->gender == FEMALE) {
 		return 1.0 / LIFE_EXPECTANCY_FEMALE_MEAN;
 	} else {
@@ -394,6 +431,7 @@ double getDeathRate(LivingEntity * living, simClock currentTime) {
 }
 
 double getDecompositionRate(Zombie * zombie, simClock currentTime) {
-	//int age = (currentTime - zombie->becameZombie) / IN_YEARS;
+	// TODO make getDecompositionRate dependent on age, high priority
+//int age = (currentTime - zombie->becameZombie) / IN_YEARS;
 	return 1.0 / ZOMBIE_DECOMPOSITION_MEAN;
 }
