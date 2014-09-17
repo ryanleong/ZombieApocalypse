@@ -32,22 +32,7 @@ typedef enum TileType {
 typedef struct Tile {
 	TileType type;
 	Entity * entity;
-#ifdef _OPENMP
-	omp_lock_t lock;
-#endif
 } Tile;
-
-/**
- * Locks the tile for exclusive access.
- * XXX The tile locking will probably be changed
- */
-void lockTile(Tile * tile);
-
-/**
- * Unlocks the tile; everybody can access the tile.
- * XXX The tile locking will probably be changed
- */
-void unlockTile(Tile * tile);
 
 /**
  * The World contains a 2D map.
@@ -70,6 +55,9 @@ typedef struct World {
 	unsigned int xEnd; // last interior tile
 	unsigned int yStart; // first interior tile
 	unsigned int yEnd; // last interior tile
+#ifdef _OPENMP
+	omp_lock_t * locks;
+#endif
 } World;
 
 /**
@@ -100,6 +88,16 @@ void resetWorld(World * world);
  * Destroys the entities in the world and than destroys the world.
  */
 void destoyWorld(World * world);
+
+/**
+ * Locks three adjacent columns centered around x for exclusive access.
+ */
+void lockColumn(World * world, int x);
+
+/**
+ * Unlocks the locked columns so everybody can use them.
+ */
+void unlockColumn(World * tile, int x);
 
 /**
  * Returns the first adjacent tile to [x,y] in output which is free in both worlds.

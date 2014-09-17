@@ -19,6 +19,9 @@ World * newWorld(unsigned int width, unsigned int height) {
 	world->yStart = 2;
 	world->yEnd = height + 1;
 
+#ifdef _OPENMP
+	world->locks = (omp_lock_t *) checked_malloc(sizeof(omp_lock_t) * (width + 4));
+#endif
 	world->map = (Tile **) checked_malloc(sizeof(Tile *) * (width + 4));
 	for (unsigned int x = 0; x < width + 4; x++) {
 		world->map[x] = (Tile *) checked_malloc(sizeof(Tile) * (height + 4));
@@ -29,6 +32,9 @@ World * newWorld(unsigned int width, unsigned int height) {
 				tile->type = BORDER;
 			}
 		}
+#ifdef _OPENMP
+		omp_init_lock(world->locks + x);
+#endif
 	}
 
 	return world;
@@ -36,10 +42,7 @@ World * newWorld(unsigned int width, unsigned int height) {
 
 void resetWorld(World * world) {
 #ifdef _OPENMP
-	int threads = omp_get_max_threads();
-	int numThreads = MIN(MAX(world->width * world->height / 10, 1), threads);
-// each thread resets at least 10 elements
-#pragma omp parallel for default(shared) num_threads(numThreads)
+#pragma omp for schedule(static)
 #endif
 	for (int x = 0; x < world->width + 4; x++) {
 		for (int y = 0; y < world->height + 4; y++) {
@@ -56,17 +59,20 @@ void destroyWorld(World * world) {
 			destroyTile(tile);
 		}
 		free(world->map[x]);
+#ifdef _OPENMP
+		omp_destroy_lock(world->locks + x);
+#endif
 	}
 	free(world->map);
+#ifdef _OPENMP
+	free(world->locks);
+#endif
 	free(world);
 }
 
 static void initTile(Tile * tile) {
 	tile->entity = NULL;
 	tile->type = REGULAR;
-#ifdef _OPENMP
-	omp_init_lock(&tile->lock);
-#endif
 }
 
 static void resetTile(Tile * tile) {
@@ -78,20 +84,21 @@ static void resetTile(Tile * tile) {
 
 static void destroyTile(Tile * tile) {
 	resetTile(tile);
+}
+
+void lockColumn(World * world, int x) {
 #ifdef _OPENMP
-	omp_destroy_lock(&tile->lock);
+	for (int i = x - 1; i <= x + 1; i++) {
+		omp_set_lock(world->locks + i);
+	}
 #endif
 }
 
-void lockTile(Tile * tile) {
+void unlockColumn(World * world, int x) {
 #ifdef _OPENMP
-	omp_set_lock(&tile->lock);
-#endif
-}
-
-void unlockTile(Tile * tile) {
-#ifdef _OPENMP
-	omp_unset_lock(&tile->lock);
+	for (int i = x - 1; i <= x + 1; i++) {
+		omp_unset_lock(world->locks + i);
+	}
 #endif
 }
 

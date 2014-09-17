@@ -190,7 +190,7 @@ void printPopulations(World * world) {
 		}
 	}
 
-	printf("Time: %6d   Humans: %4d, Infected: %4d, Zombies: %4d.\n",
+	printf("Time: %6d \tHumans: %4d \tInfected: %4d \tZombies: %4d\n",
 			(int) world->clock, humans, infected, zombies);
 }
 
@@ -216,14 +216,45 @@ int main(int argc, char **argv) {
 	randomDistribution(input, people, zombies, 0);
 	printWorld(input);
 
+#ifdef _OPENMP
+	// at least three columns per thread
+	int threads = omp_get_max_threads();
+	int numThreads = MIN(MAX(input->width / 3, 1), threads);
+#pragma omp parallel num_threads(numThreads) default(shared)
+#endif
 	for (int i = 0; i < iters; i++) {
 		simulateStep(input, output);
 		finishStep(input, output);
-		printWorld(output);
-		printPopulations(output);
 
-		World * temp = input;
-		input = output;
-		output = temp;
+#ifdef _OPENMP
+#pragma omp sections
+#endif
+		{
+#ifndef NIMAGES
+#ifdef _OPENMP
+#pragma omp section
+#endif
+			{
+				printWorld(output);
+			}
+#endif
+#ifndef NPOPULATION
+#ifdef _OPENMP
+#pragma omp section
+#endif
+			{
+				printPopulations(output);
+			}
+#endif
+		}
+
+#ifdef _OPENMP
+#pragma omp single
+#endif
+		{
+			World * temp = input;
+			input = output;
+			output = temp;
+		}
 	}
 }

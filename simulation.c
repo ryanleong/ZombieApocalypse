@@ -40,12 +40,10 @@ void simulateStep(World * input, World * output) {
 	simClock clock = output->clock = input->clock + 1;
 
 #ifdef _OPENMP
-	int threads = omp_get_max_threads();
-	int numThreads = MIN(MAX(input->width / 3, 1), threads);
-	// at least three columns per thread
-#pragma omp parallel for default(shared) num_threads(numThreads)
+#pragma omp for schedule(static)
 #endif
 	for (int x = input->xStart; x <= input->xEnd; x++) {
+		lockColumn(output, x);
 		for (int y = input->yStart; y <= input->yEnd; y++) {
 			Entity * entity = GET_TILE(input, x, y)->entity;
 			if (entity == NULL) {
@@ -165,10 +163,9 @@ void simulateStep(World * input, World * output) {
 				dest = GET_TILE(output, x, y);
 			}
 
-			//lockTile(t);
 			dest->entity = entity;
-			//unlockTile(t);
 		}
+		unlockColumn(output, x);
 	}
 }
 
@@ -185,15 +182,39 @@ void simulateStep(World * input, World * output) {
 	}
 
 void finishStep(World * input, World * output) {
-	MOVE_BACK(y, output->yStart, output->yEnd, output->xStart - 1, y,
-			output->xStart, y)
-	MOVE_BACK(y, output->yStart, output->yEnd, output->xEnd + 1, y,
-			output->xEnd, y)
-	MOVE_BACK(x, output->xStart, output->xEnd, x, output->yStart - 1, x,
-			output->yStart)
-	MOVE_BACK(x, output->xStart, output->xEnd, x, output->yEnd + 1, x,
-			output->yEnd)
-
+#ifdef _OPENMP
+#pragma omp sections
+#endif
+	{
+#ifdef _OPENMP
+#pragma omp section
+#endif
+		{
+			MOVE_BACK(y, output->yStart, output->yEnd, output->xStart - 1, y,
+					output->xStart, y)
+		}
+#ifdef _OPENMP
+#pragma omp section
+#endif
+		{
+			MOVE_BACK(y, output->yStart, output->yEnd, output->xEnd + 1, y,
+					output->xEnd, y)
+		}
+#ifdef _OPENMP
+#pragma omp section
+#endif
+		{
+			MOVE_BACK(x, output->xStart, output->xEnd, x, output->yStart - 1, x,
+					output->yStart)
+		}
+#ifdef _OPENMP
+#pragma omp section
+#endif
+		{
+			MOVE_BACK(x, output->xStart, output->xEnd, x, output->yEnd + 1, x,
+					output->yEnd)
+		}
+	}
 	resetWorld(input);
 }
 
