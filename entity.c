@@ -1,6 +1,4 @@
 #include <stdlib.h>
-#include <stdbool.h>
-#include <omp.h>
 
 #include "entity.h"
 #include "common.h"
