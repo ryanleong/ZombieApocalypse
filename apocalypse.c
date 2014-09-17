@@ -10,62 +10,79 @@
 #include "common.h"
 #include "constants.h"
 
-void randomDistribution(World * w, int people, int zombies, simClock clock) {
-	for (int i = 0; i < people;) {
-		int x = randomInt(1, w->width);
-		int y = randomInt(1, w->height);
-		Tile * tile = GET_TILE(w, x, y);
-		if (tile->entity != NULL) {
-			continue;
-		}
 
-		Human * human = newHuman(clock);
-		tile->entity = human->asEntity;
+/**
+ *  Set up initial populations of humans and zombies, with random starting
+ *  locations.
+ */
+    static void
+init_world (world_t *world, int num_people, int num_zombies)
+{
+    int x, y;
 
-		i++;
-	}
+    for (int i = 0; i < num_people; )
+    {
+        // choose random coordinates.
+        x = randomInt (0, world->width - 1);
+        y = randomInt (0, world->height - 1);
 
-	for (int i = 0; i < zombies; i++) {
-		int x = randomInt(1, w->width);
-		int y = randomInt(1, w->height);
-		Tile * tile = GET_TILE(w, x, y);
-		if (tile->entity != NULL) {
-			continue;
-		}
+        // check if there is already a person at the selected location.
+        if (world->map [y] [x].entity_type != EMPTY)
+            continue;
 
-		Zombie * zombie = newZombie(clock);
-		tile->entity = zombie->asEntity;
-	}
+        // the location now has a person there.
+        new_human (& (world->map [y] [x].entity.human));
+        world->map [y] [x].entity_type = HUMAN;
+
+        // keep looping until we have created the initial human population.
+        i ++;
+    }
+
+    // same process for creating the initial zombie population.
+    for (int i = 0; i < num_zombies; )
+    {
+        x = randomInt (0, world->width - 1);
+        y = randomInt (0, world->height - 1);
+
+        if (world->map [y] [x].entity_type != EMPTY)
+            continue;
+
+        new_zombie (& (world->map [y] [x].entity.zombie));
+        world->map [y] [x].entity_type = ZOMBIE;
+        i ++;
+    }
 }
 
-void setRGB(png_byte *ptr, Tile * tile) {
-	if (tile->entity == NULL) {
-		ptr[0] = 255;
-		ptr[1] = 255;
-		ptr[2] = 255;
-		return;
-	}
-
-	switch (tile->entity->type) {
+void setRGB(png_byte *ptr, tile_t * tile) {
+	switch (tile->entity_type) 
+    {
 	case HUMAN:
 		ptr[0] = 0;
 		ptr[1] = 255;
 		ptr[2] = 0;
 		break;
+
 	case INFECTED:
 		ptr[0] = 0;
 		ptr[1] = 0;
 		ptr[2] = 255;
 		break;
+
 	case ZOMBIE:
 		ptr[0] = 255;
 		ptr[1] = 0;
 		ptr[2] = 0;
 		break;
+
+    case EMPTY:
+		ptr[0] = 255;
+		ptr[1] = 255;
+		ptr[2] = 255;
+        break;
 	}
 }
 
-int printWorld(World * world) {
+int printWorld(world_t * world) {
 	char filename[80];
 	sprintf(filename, "images/step-%06lld.png", world->clock);
 
@@ -120,9 +137,9 @@ int printWorld(World * world) {
 	row = (png_bytep) malloc(3 * world->width * sizeof(png_byte));
 
 	// Write image data
-	for (int y = 1; y <= world->height; y++) {
-		for (int x = 1; x <= world->width; x++) {
-			setRGB(&(row[(x - 1) * 3]), GET_TILE(world, x, y));
+	for (int y = 0; y < world->height; y++) {
+		for (int x = 0; x < world->width; x++) {
+			setRGB(&(row[(x - 1) * 3]), & (world->map [x] [y]));
 		}
 		png_write_row(png_ptr, row);
 	}
@@ -146,20 +163,12 @@ int printWorld(World * world) {
  *  Print the number of humans, infected people (who carry the disease, but
  *  haven't yet become zombies), and zombies, for debugging.
  */
-void printPopulations(World *grid) {
+void printPopulations(world_t *world) {
 	int humans = 0, infected = 0, zombies = 0;
-	Tile *currentCell;
 
-	for (int i = 0; i < grid->height; i++) {
-		for (int j = 0; j < grid->width; j++) {
-			currentCell = GET_TILE(grid, i, j);
-
-			// ignore cells that are not occupied. A cell is only occupied
-			// if the entity pointer is not null.
-			if (currentCell->entity == NULL)
-				continue;
-
-			switch (currentCell->entity->type) {
+	for (int i = 0; i < world->height; i++) {
+		for (int j = 0; j < world->width; j++) {
+			switch (world->map [i] [j].entity_type) {
 			case HUMAN:
 				humans++;
 				break;
@@ -171,12 +180,16 @@ void printPopulations(World *grid) {
 			case ZOMBIE:
 				zombies++;
 				break;
+
+            case EMPTY:
+                // empty cell. Ignore.
+                break;
 			}
 		}
 	}
 
-	printf("Time: %6d   Humans: %4d, Infected: %4d, Zombies: %4d.\n", grid->clock,
-			humans, infected, zombies);
+	printf("Time: %6d   Humans: %4d, Infected: %4d, Zombies: %4d.\n", 
+      (int) world->clock, humans, infected, zombies);
 }
 
 int main(int argc, char **argv) {
@@ -195,10 +208,10 @@ int main(int argc, char **argv) {
 
 	initRandom(0);
 
-	World * input = newWorld(width, height);
-	World * output = newWorld(width, height);
+	world_t * input = newWorld(width, height);
+	world_t * output = newWorld(width, height);
 
-	randomDistribution(input, people, zombies, 0);
+	init_world (input, people, zombies);
 	printWorld(input);
 
 	for (int i = 0; i < iters; i++) {
@@ -207,7 +220,7 @@ int main(int argc, char **argv) {
 		printWorld(output);
 		printPopulations(output);
 
-		World * temp = input;
+		world_t * temp = input;
 		input = output;
 		output = temp;
 	}

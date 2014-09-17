@@ -11,33 +11,25 @@
  *  Creates a new entity_u with the struct human field active. The age
  *  and gender will be chosen at random.
  */
-    entity_u *
-new_human (void)
+    void
+new_human (human_t *human)
 {
-    entity_u *entity = (entity_u *) checked_malloc (sizeof (entity_u));
-
     // generate a random int between 0 and 1 to decide the gender.
-    entity->human.gender = (randomInt (0, 1) == 0)? MALE : FEMALE;
+    human->gender = (randomInt (0, 1) == 0)? MALE : FEMALE;
 
     // choose a random age between 0 and 75.
-    entity->human.age = randomInt (0, 75);
-
-    return entity;
+    human->age = randomInt (0, 75);
 }
 
 /**
  *  This function is used to create an initial zombie population.
  */
-    entity_u *
-new_zombie (void)
+    void
+new_zombie (zombie_t *zombie)
 {
-    entity_u *entity = (entity_u *) checked_malloc (sizeof (entity_u));
-
     // initial zombie population will be assumed to have become zombies at
     // the start of the simulaion.
-    entity->zombie.became_zombie = (sim_clock_t) 0;
-
-    return entity;
+    zombie->became_zombie = (sim_clock_t) 0;
 }
 
 /**

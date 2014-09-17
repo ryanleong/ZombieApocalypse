@@ -59,8 +59,8 @@ typedef union {
  *  These functions are used to seed the initial human and zombie
  *  populations.
  */
-entity_u * new_human (void);
-entity_u * new_zombie (void);
+void new_human (human_t *human);
+void new_zombie (zombie_t *zombie);
 
 /**
  *  These functions handle transitions between different entity types.

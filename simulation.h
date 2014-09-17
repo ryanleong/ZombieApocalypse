@@ -3,8 +3,8 @@
 
 #include "world.h"
 
-void simulateStep(World * input, World * output);
+void simulateStep(world_t * input, world_t * output);
 
-void finishStep(World * input, World * output);
+void finishStep(world_t * input, world_t * output);
 
 #endif /* SIMULATION_H_ */
