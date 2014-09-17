@@ -7,6 +7,8 @@
 #define WORLD_H_
 
 #include <stdlib.h>
+#include <stdbool.h>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -28,6 +30,8 @@ typedef struct Tile {
 
 void lockTile(Tile * tile);
 void unlockTile(Tile * tile);
+bool valid_coordinates (World *world, int row, int column);
+int find_adjacent_space (World *world, int *row, int *column);
 
 #define GET_TILE(world, x, y) \
 		(&((world)->map [(x)] [(y)]))
@@ -52,9 +56,7 @@ typedef struct World {
 } World;
 
 World * newWorld(unsigned int width, unsigned int height);
-
 void resetWorld(World * world);
-
 void destoyWorld(World * world);
 
 #define IN_WORLD(world, x, y) \
@@ -66,8 +68,6 @@ typedef enum Direction {
 } Direction;
 
 #define OPPOSITE(direction) ((direction) ? ((direction) + 1) % 4 + 1 : STAY)
-
-Tile * getFreeAdjacent(World * input, World * output, int x, int y);
 
 #endif // WORLD_H_
 
