@@ -163,7 +163,9 @@ int printWorld(world_t * world) {
  *  Print the number of humans, infected people (who carry the disease, but
  *  haven't yet become zombies), and zombies, for debugging.
  */
-void printPopulations(world_t *world) {
+    void
+print_populations (const world_t *world)
+{
 	int humans = 0, infected = 0, zombies = 0;
 
 	for (int i = 0; i < world->height; i++) {
@@ -215,10 +217,10 @@ int main(int argc, char **argv) {
 	printWorld(input);
 
 	for (int i = 0; i < iters; i++) {
-		simulateStep(input, output);
+		simulation_step (input, output);
 		finishStep(input, output);
 		printWorld(output);
-		printPopulations(output);
+		print_populations (output);
 
 		world_t * temp = input;
 		input = output;
