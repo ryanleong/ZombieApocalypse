@@ -19,7 +19,7 @@
 
 typedef struct {
 	entity_type_t entity_type;
-	entity_u *entity;
+	entity_u entity;
 #ifdef _OPENMP
 	omp_lock_t lock;
 #endif

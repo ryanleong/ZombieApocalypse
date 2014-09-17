@@ -3,15 +3,14 @@
 #include "utils.h"
 
 // local util functions
-static Tile ** initialise_grid (unsigned int rows, unsigned int columns);
-static void initTile (Tile *tile);
-static void resetTile (Tile * tile);
-static void destroyTile (Tile * tile);
+static tile_t ** initialise_grid (unsigned int rows, unsigned int columns);
+static void init_tile (tile_t *tile);
+static void reset_tile (tile_t * tile);
 
 
-World * newWorld(unsigned int width, unsigned int height) {
-    World * w;
-    w = (World *) checked_malloc (sizeof(World));
+world_t * newWorld(unsigned int width, unsigned int height) {
+    world_t * w;
+    w = (world_t *) checked_malloc (sizeof(world_t));
 
     w->clock = 0;
     w->width = width;
@@ -22,22 +21,22 @@ World * newWorld(unsigned int width, unsigned int height) {
 }
 
 /**
- *  Allocates memory for a new 2 dimensional matrix of Tiles, and sets
+ *  Allocates memory for a new 2 dimensional matrix of tile_ts, and sets
  *  the initial values of the tiles.
  */
-    static Tile **
+    static tile_t **
 initialise_grid (unsigned int rows, unsigned int columns)
 {
-    Tile **grid = (Tile **) checked_malloc (sizeof (Tile *) * rows);
+    tile_t **grid = (tile_t **) checked_malloc (sizeof (tile_t *) * rows);
 
     // Each row contains 'columns' columns.
     for (unsigned int row = 0; row < rows; row ++)
     {
-        grid [row] = (Tile *) checked_malloc (sizeof (Tile) * columns);
+        grid [row] = (tile_t *) checked_malloc (sizeof (tile_t) * columns);
 
         // initialise each tile in the row.
         for (unsigned int col = 0; col < columns; col ++)
-            initTile (&(grid [row] [col]));
+            init_tile (&(grid [row] [col]));
     }
 
     return grid;
@@ -49,7 +48,7 @@ initialise_grid (unsigned int rows, unsigned int columns)
  *  valid, false if not.
  */
     bool
-valid_coordinates (World *world, int row, int column)
+valid_coordinates (world_t *world, int row, int column)
 {
     // each index must be greater than or equal to 0, and strictly less
     // than the array size.
@@ -62,7 +61,7 @@ valid_coordinates (World *world, int row, int column)
     return true;
 }
 
-void resetWorld(World * world) {
+void resetWorld(world_t * world) {
 #ifdef _OPENMP
     int threads = omp_get_max_threads();
     int numThreads = MIN(MAX(world->width * world->height / 10, 1), threads);
@@ -72,38 +71,35 @@ void resetWorld(World * world) {
     for (int row = 0; row < world->height; row ++)
     {
         for (int col = 0; col < world->width; col ++)
-            resetTile (&(world->map [row] [col]));
+            reset_tile (&(world->map [row] [col]));
     }
 }
 
-static void initTile(Tile * tile) {
-    resetTile(tile);
+/**
+ *  Initialises a tile_t struct to be empty.
+ */
+    static void
+init_tile (tile_t *tile)
+{
+    reset_tile (tile);
 #ifdef _OPENMP
     omp_init_lock(&tile->lock);
 #endif
 }
 
-static void resetTile(Tile * tile) {
-    if (tile->entity != NULL) {
-        disposeEntity(tile->entity);
-        tile->entity = NULL;
-    }
+    static void 
+reset_tile (tile_t * tile) 
+{
+    tile->entity_type = EMPTY;
 }
 
-static void destroyTile(Tile * tile) {
-    resetTile(tile);
-#ifdef _OPENMP
-    omp_destroy_lock(&tile->lock);
-#endif
-}
-
-void lockTile(Tile * tile) {
+void lockTile(tile_t * tile) {
 #ifdef _OPENMP
     omp_set_lock(&tile->lock);
 #endif
 }
 
-void unlockTile(Tile * tile) {
+void unlockTile(tile_t * tile) {
 #ifdef _OPENMP
     omp_unset_lock(&tile->lock);
 #endif
@@ -119,7 +115,7 @@ void unlockTile(Tile * tile) {
  *  around.
  */
     int
-find_adjacent_space (World *world, int *row, int *column)
+find_adjacent_space (world_t *world, int *row, int *column)
 {
     int i, j;
 
@@ -132,11 +128,11 @@ find_adjacent_space (World *world, int *row, int *column)
                 continue;
 
             // if the tile is unoccupied, choose it.
-            if (world->map [i] [j].entity == NULL)
+            if (world->map [i] [j].entity_type == EMPTY)
             {
                 *row = i;
                 *column = j;
-                return;
+                return 1;
             }
         }
     }
