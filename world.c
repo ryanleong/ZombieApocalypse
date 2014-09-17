@@ -48,7 +48,7 @@ initialise_grid (unsigned int rows, unsigned int columns)
  *  valid, false if not.
  */
     bool
-valid_coordinates (world_t *world, int row, int column)
+valid_coordinates (const world_t *world, int row, int column)
 {
     // each index must be greater than or equal to 0, and strictly less
     // than the array size.
@@ -115,7 +115,7 @@ void unlockTile(tile_t * tile) {
  *  around.
  */
     int
-find_adjacent_space (world_t *world, int *row, int *column)
+find_adjacent_space (const world_t *world, int *row, int *column)
 {
     int i, j;
 

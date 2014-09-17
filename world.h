@@ -38,8 +38,8 @@ void resetWorld(world_t * world);
 void destoyWorld(world_t * world);
 void lockTile(tile_t * tile);
 void unlockTile(tile_t * tile);
-bool valid_coordinates (world_t *world, int row, int column);
-int find_adjacent_space (world_t *world, int *row, int *column);
+bool valid_coordinates (const world_t *world, int row, int column);
+int find_adjacent_space (const world_t *world, int *row, int *column);
 
 #endif // WORLD_H_
 
