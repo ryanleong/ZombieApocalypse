@@ -21,61 +21,47 @@ typedef struct EntityAllocator {
 } EntityAllocator;
 
 /**
- * There is only one allocator.
- * TODO per thread allocator; high priority, hard; expecting performance gain
+ * There is only one allocator per thread.
  */
-EntityAllocator allocator = { NULL, NULL, NULL };
+EntityAllocator allocator; // initialized to { NULL, NULL, NULL };
+#ifdef _OPENMP
+#pragma omp threadprivate(allocator)
+#endif
 
 /**
  * Allocates new entity in memory if none can be recycled.
  * It fills pointer asXYZ = this and also fills type.
  * Other fields are uninitialized!
  *
- * We need to limit the access to allocator by multiple threads.
  */
 static Entity * newEntity(EntityType type) {
 	Entity * entity = NULL;
 	switch (type) {
 	case HUMAN:
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorHumanRegion)
-#endif
-	{
 		if (allocator.humans != NULL) {
 			entity = (Entity *) allocator.humans;
 			allocator.humans = entity->asHuman;
 		} else {
 			entity = ((Entity *) malloc(sizeof(Human)));
 		}
-	}
 		break;
 
 	case INFECTED:
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorInfectedRegion)
-#endif
-	{
 		if (allocator.infected != NULL) {
 			entity = (Entity *) allocator.infected;
 			allocator.infected = entity->asInfected;
 		} else {
 			entity = ((Entity *) malloc(sizeof(Infected)));
 		}
-	}
 		break;
 
 	case ZOMBIE:
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorZombieRegion)
-#endif
-	{
 		if (allocator.zombies != NULL) {
 			entity = (Entity *) allocator.zombies;
 			allocator.zombies = entity->asZombie;
 		} else {
 			entity = ((Entity *) malloc(sizeof(Zombie)));
 		}
-	}
 		break;
 	}
 	entity->asEntity = entity;
@@ -309,33 +295,18 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 }
 
 void disposeHuman(Human * human) {
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorHumanRegion)
-#endif
-	{
-		human->asHuman = allocator.humans;
-		allocator.humans = human;
-	}
+	human->asHuman = allocator.humans;
+	allocator.humans = human;
 }
 
 void disposeInfected(Infected * infected) {
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorInfectedRegion)
-#endif
-	{
-		infected->asInfected = allocator.infected;
-		allocator.infected = infected;
-	}
+	infected->asInfected = allocator.infected;
+	allocator.infected = infected;
 }
 
 void disposeZombie(Zombie * zombie) {
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorZombieRegion)
-#endif
-	{
-		zombie->asZombie = allocator.zombies;
-		allocator.zombies = zombie;
-	}
+	zombie->asZombie = allocator.zombies;
+	allocator.zombies = zombie;
 }
 
 void disposeEntity(Entity * entity) {
@@ -363,26 +334,15 @@ void destroyUnusedChain(Entity * entities) {
 }
 
 void destroyUnused() {
-// we need to lock the access to allocator
-
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorHumanRegion)
-#endif
-	{
+	if (allocator.humans != NULL) {
 		destroyUnusedChain(allocator.humans->asEntity);
 		allocator.humans = NULL;
 	}
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorInfectedRegion)
-#endif
-	{
+	if (allocator.infected != NULL) {
 		destroyUnusedChain(allocator.infected->asEntity);
 		allocator.infected = NULL;
 	}
-#ifdef _OPENMP
-#pragma omp critical (EntityAllocatorZombieRegion)
-#endif
-	{
+	if (allocator.zombies != NULL) {
 		destroyUnusedChain(allocator.zombies->asEntity);
 		allocator.zombies = NULL;
 	}
@@ -422,7 +382,7 @@ double getMaxSpeed(Entity * entity, simClock currentTime) {
 
 double getDeathRate(LivingEntity * living, simClock currentTime) {
 	// TODO make getDeathRate dependent on age and other conditions, high priority
-//int age = (currentTime - living->wasBorn) / IN_YEARS;
+	//int age = (currentTime - living->wasBorn) / IN_YEARS;
 	if (living->gender == FEMALE) {
 		return 1.0 / LIFE_EXPECTANCY_FEMALE_MEAN;
 	} else {
@@ -432,6 +392,6 @@ double getDeathRate(LivingEntity * living, simClock currentTime) {
 
 double getDecompositionRate(Zombie * zombie, simClock currentTime) {
 	// TODO make getDecompositionRate dependent on age, high priority
-//int age = (currentTime - zombie->becameZombie) / IN_YEARS;
+	//int age = (currentTime - zombie->becameZombie) / IN_YEARS;
 	return 1.0 / ZOMBIE_DECOMPOSITION_MEAN;
 }

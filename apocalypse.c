@@ -9,6 +9,11 @@
 #include "simulation.h"
 #include "common.h"
 #include "constants.h"
+#include "common.h"
+
+#ifndef OUTPUT_EVERY
+#define OUTPUT_EVERY 1
+#endif
 
 /**
  * Fills the world with specified number of people and zombies.
@@ -61,7 +66,11 @@ void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
 	switch (tile->entity->type) {
 	case HUMAN: {
 		Human * h = tile->entity->asHuman;
-		ptr[0] = 0;
+		if (h->children.count > 0) {
+			ptr[0] = 100;
+		} else {
+			ptr[0] = 0;
+		}
 		if (h->gender == FEMALE) {
 			ptr[1] = 200;
 		} else {
@@ -72,7 +81,11 @@ void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
 	}
 	case INFECTED: {
 		Infected * i = tile->entity->asInfected;
-		ptr[0] = 0;
+		if (i->children.count > 0) {
+			ptr[0] = 100;
+		} else {
+			ptr[0] = 0;
+		}
 		ptr[1] = 0;
 		if (i->gender == FEMALE) {
 			ptr[2] = 200;
@@ -95,7 +108,6 @@ void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
  * Generates an image for the world mapping each tile to a pixel.
  */
 int printWorld(World * world) {
-	// TODO make image generation parallel; this is rather hard and low priority
 	char filename[80];
 	sprintf(filename, "images/step-%06lld.png", world->clock);
 
@@ -103,7 +115,6 @@ int printWorld(World * world) {
 	FILE *fp;
 	png_structp png_ptr;
 	png_infop info_ptr;
-	png_bytep row;
 
 	// Open file for writing (binary mode)
 	fp = fopen(filename, "wb");
@@ -147,16 +158,22 @@ int printWorld(World * world) {
 	png_write_info(png_ptr, info_ptr);
 
 	// Allocate memory for one row (3 bytes per pixel - RGB)
-	row = (png_bytep) malloc(3 * world->width * sizeof(png_byte));
+	png_bytep * image = (png_bytep*) malloc(sizeof(png_bytep) * world->height);
+	for (int i = 0; i < world->height; i++) {
+		image[i] = (png_bytep) malloc(3 * world->width * sizeof(png_byte));
+	}
 
-	// Write image data
+	// Prepare image data; this can be done in parallel
+#ifdef _OPENMP
+#pragma omp parallel for collapse(2) schedule(guided, 10)
+#endif
 	for (int y = world->yStart; y <= world->yEnd; y++) {
 		for (int x = world->xStart; x <= world->xEnd; x++) {
-			setRGB(&(row[(x - world->xStart) * 3]), GET_TILE(world, x, y),
-					world->clock);
+			setRGB(image[y - world->yStart] + (x - world->xStart) * 3,
+					GET_TILE(world, x, y), world->clock);
 		}
-		png_write_row(png_ptr, row);
 	}
+	png_write_image(png_ptr, image);
 
 	// End write
 	png_write_end(png_ptr, NULL);
@@ -167,8 +184,12 @@ int printWorld(World * world) {
 		png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
 	if (png_ptr != NULL)
 		png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
-	if (row != NULL)
-		free(row);
+	if (image != NULL) {
+		for (int i = 0; i < world->height; i++) {
+			free(image[i]);
+		}
+		free(image);
+	}
 
 	return code;
 }
@@ -178,9 +199,11 @@ int printWorld(World * world) {
  *  haven't yet become zombies), and zombies, for debugging.
  */
 void printPopulations(World * world) {
-	// TODO make this parallel; it should be easy and useful, high priority
 	int humans = 0, infected = 0, zombies = 0;
 
+#ifdef _OPENMP
+#pragma omp parallel for collapse(2) schedule(guided, 10) reduction(+: humans, infected, zombies)
+#endif
 	for (int x = world->xStart; x <= world->xEnd; x++) {
 		for (int y = world->yStart; y <= world->yEnd; y++) {
 			Tile *currentCell = GET_TILE(world, x, y);
@@ -208,8 +231,22 @@ void printPopulations(World * world) {
 
 	// make sure there are always blanks around numbers
 	// that way we can easily split the line
-	printf("Time: %6d \tHumans: %4d \tInfected: %4d \tZombies: %4d\n",
-			(int) world->clock, humans, infected, zombies);
+	printf("Time: %6lld \tHumans: %4d \tInfected: %4d \tZombies: %4d\n",
+			world->clock, humans, infected, zombies);
+}
+
+void printStatistics(World * world) {
+	if (world->clock % OUTPUT_EVERY > 0) {
+		return;
+	}
+
+#ifndef NPOPULATION
+	printPopulations(world);
+#endif
+
+#ifndef NIMAGES
+	printWorld(world);
+#endif
 }
 
 int main(int argc, char **argv) {
@@ -234,70 +271,27 @@ int main(int argc, char **argv) {
 	randomDistribution(input, people, zombies, 0);
 	printWorld(input);
 
-	/* This may need some explanation:
-	 * First we create a thread pool which contains at most the number of threads
-	 * to be be able to assign at least 3 columns to each.
-	 * This limit is placed because otherwise the locking regions would overlap
-	 * which would kill the performance.
-	 *
-	 * Inside parallel region, everything is run multiple times.
-	 * We want that for functions simulateStep and finishStep.
-	 * But printWorld and printPopulation are single threaded so far.
-	 * They both can be run in parallel but only with one thread each.
-	 * That is ensured by using sections; this could be written more succinctly
-	 * but I think that excessive parentheses don't matter.
-	 * The world swapping should be performed by only one thread.
-	 *
-	 * Both print functions can be switched off by N* macros.
-	 */
-#ifdef _OPENMP
-	// at least three columns per thread
-	int threads = omp_get_max_threads();
-	int numThreads = MIN(MAX(input->width / 3, 1), threads);
-#pragma omp parallel num_threads(numThreads) default(shared)
-#endif
-	{
-		for (int i = 0; i < iters; i++) {
-			simulateStep(input, output);
-			finishStep(input, output);
+	for (int i = 0; i < iters; i++) {
+		simulateStep(input, output);
+		finishStep(input, output);
+		printStatistics(output);
 
-#ifdef _OPENMP
-#pragma omp sections
-#endif
-			{
-#ifndef NIMAGES
-#ifdef _OPENMP
-#pragma omp section
-#endif
-				{
-					printWorld(output);
-				}
-#endif
-#ifndef NPOPULATION
-#ifdef _OPENMP
-#pragma omp section
-#endif
-				{
-					printPopulations(output);
-				}
-#endif
-			}
-
-#ifdef _OPENMP
-#pragma omp single
-#endif
-			{
-				World * temp = input;
-				input = output;
-				output = temp;
-			}
-		}
+		World * temp = input;
+		input = output;
+		output = temp;
 	}
 
-	// this is a clean up
-	// we destroy both worlds
+// this is a clean up
+// we destroy both worlds
 	destroyWorld(input);
 	destroyWorld(output);
-	// and than we destroy all entities which have ever been used
-	destroyUnused();
+
+// and than we destroy all entities which have ever been used
+// we need to call this with all threads because allocator is thread-local
+#ifdef _OPENMP
+#pragma omp parallel num_threads(getNumThreads(width))
+#endif
+	{
+		destroyUnused();
+	}
 }

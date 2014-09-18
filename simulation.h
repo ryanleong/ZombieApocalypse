@@ -6,8 +6,6 @@
 /**
  * Runs one step of the world simulation.
  * The implementation should use the input map only for reading.
- *
- * This function will be called in every thread.
  */
 void simulateStep(World * input, World * output);
 
@@ -16,9 +14,13 @@ void simulateStep(World * input, World * output);
  * This means:
  * 1) moving entities on BORDER back to REGULAR tiles.
  * 2) resetting the world.
- *
- * This function will be called in every thread.
  */
 void finishStep(World * input, World * output);
+
+/**
+ * Returns optimal number of threads which to use for step simulating.
+ * This number is also necessary for allocators.
+ */
+int getNumThreads(int width);
 
 #endif /* SIMULATION_H_ */

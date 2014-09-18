@@ -1,6 +1,7 @@
 #include "world.h"
 #include "common.h"
 #include "utils.h"
+#include "random.h"
 
 // local util functions
 static void initTile(Tile *tile);
@@ -41,9 +42,8 @@ World * newWorld(unsigned int width, unsigned int height) {
 }
 
 void resetWorld(World * world) {
-	// TODO choose better schedule; dynamic? Need to test; low priority
 #ifdef _OPENMP
-#pragma omp for schedule(static)
+#pragma omp parallel for collapse(2) schedule(guided, 10)
 #endif
 	for (int x = 0; x < world->width + 4; x++) {
 		for (int y = 0; y < world->height + 4; y++) {
@@ -104,9 +104,10 @@ void unlockColumn(World * world, int x) {
 }
 
 Tile * getFreeAdjacent(World * input, World * output, int x, int y) {
-	// TODO randomize to eliminate preference for direction; low priority
 	Tile * t;
-	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
+	int permutation = randomInt(0, RANDOM_BASIC_DIRECTIONS - 1);
+	for (int i = 0; i < 4; i++) {
+		Direction dir = random_basic_directions[permutation][i];
 		if (GET_TILE_DIR(input, dir, x, y)->entity == NULL
 				&& (t = GET_TILE_DIR(output, dir, x, y))->entity == NULL) {
 			return t;

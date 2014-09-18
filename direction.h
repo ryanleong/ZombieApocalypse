@@ -37,6 +37,20 @@ typedef enum Direction {
 	DIRECTION_ALL = 12
 } Direction;
 
+#define RANDOM_BASIC_DIRECTIONS 24
+
+static const int random_basic_directions[][4] = { { LEFT, UP, RIGHT, DOWN }, {
+		LEFT, UP, DOWN, RIGHT }, { LEFT, RIGHT, UP, DOWN }, { LEFT, RIGHT, DOWN,
+		UP }, { LEFT, DOWN, UP, RIGHT }, { LEFT, DOWN, RIGHT, UP }, { UP, LEFT,
+		RIGHT, DOWN }, { UP, LEFT, DOWN, RIGHT }, { UP, RIGHT, LEFT, DOWN }, {
+		UP, RIGHT, DOWN, LEFT }, { UP, DOWN, LEFT, RIGHT }, { UP, DOWN, RIGHT,
+		LEFT }, { RIGHT, LEFT, UP, DOWN }, { RIGHT, LEFT, DOWN, UP }, { RIGHT,
+		UP, LEFT, DOWN }, { RIGHT, UP, DOWN, LEFT }, { RIGHT, DOWN, LEFT, UP },
+		{ RIGHT, DOWN, UP, LEFT }, { DOWN, LEFT, UP, RIGHT }, { DOWN, LEFT,
+				RIGHT, UP }, { DOWN, UP, LEFT, RIGHT },
+		{ DOWN, UP, RIGHT, LEFT }, { DOWN, RIGHT, LEFT, UP }, { DOWN, RIGHT, UP,
+				LEFT } };
+
 /**
  * Mapping direction to movement in x.
  */

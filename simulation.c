@@ -44,21 +44,12 @@ static bearing getBearing(World * world, int x, int y);
  * g) movement
  */
 void simulateStep(World * input, World * output) {
-	// only a single thread sets the output clock
-#ifdef _OPENMP
-#pragma omp single
-#endif
-	{
-		output->clock = input->clock + 1;
-	}
-	// this will be done by every thread; each of them will have its own variable
-	// we should never touch output->clock as its assignment is not synchronized
-	simClock clock = input->clock + 1;
+	simClock clock = output->clock = input->clock + 1;
 
 	// we want to force static scheduling because be suppose that the load
 	// is distributed evenly over the map
 #ifdef _OPENMP
-#pragma omp for schedule(static)
+#pragma omp parallel for num_threads(getNumThreads(input->width)) schedule(static)
 #endif
 	for (int x = input->xStart; x <= input->xEnd; x++) {
 		lockColumn(output, x);
@@ -158,15 +149,18 @@ void simulateStep(World * input, World * output) {
 
 			// some randomness in direction
 			// the entity will never go in the opposite direction
-			// TODO utilize probabilistic speed - use function getMaxSpeed
-			// TODO this is very important and should be easy
 			if (dir != STAY) {
-				double dirRnd = randomDouble();
-				if (dirRnd < DIRECTION_MISSED) {
-					dir = (dir + 2) % 4 + 1; // turn counter-clock-wise
-				} else if (dirRnd < DIRECTION_MISSED * 2) {
-					dir = dir % 4 + 1; // turn clock-wise
-				} else if (dirRnd > DIRECTION_FOLLOW + DIRECTION_MISSED * 2) {
+				if (randomDouble() < getMaxSpeed(entity, clock)) {
+					double dirRnd = randomDouble();
+					if (dirRnd < DIRECTION_MISSED) {
+						dir = (dir + 2) % 4 + 1; // turn counter-clock-wise
+					} else if (dirRnd < DIRECTION_MISSED * 2) {
+						dir = dir % 4 + 1; // turn clock-wise
+					} else if (dirRnd
+							> DIRECTION_FOLLOW + DIRECTION_MISSED * 2) {
+						dir = STAY;
+					}
+				} else {
 					dir = STAY;
 				}
 			} else {
@@ -200,55 +194,42 @@ void simulateStep(World * input, World * output) {
 
 /**
  * Moves back an entity which is on the BORDER tile.
- * This macro is universal for all borders.
  */
-#define MOVE_BACK(var, varMin, varMax, srcX, srcY, destX, destY) \
-	for (int var = 0; var < varMax; var++) { \
-		Tile * in = GET_TILE(output, srcX, srcY); \
-		if (in->entity == NULL) { \
-			continue; \
-		} \
-		if (GET_TILE(output, destX, destY)->entity == NULL) { \
-			GET_TILE(output, destX, destY)->entity = in->entity; \
-		} \
-		in->entity = NULL; \
+void moveBack(World * world, int srcX, int srcY, int destX, int destY) {
+	Tile * in = GET_TILE(world, srcX, srcY);
+	if (in->entity != NULL) {
+		if (GET_TILE(world, destX, destY)->entity == NULL) {
+			GET_TILE(world, destX, destY)->entity = in->entity;
+		}
+		in->entity = NULL;
 	}
+}
 
 void finishStep(World * input, World * output) {
-	// TODO make this utilize more than four threads; probably hard
-#ifdef _OPENMP
-#pragma omp sections
-#endif
 	{
 #ifdef _OPENMP
-#pragma omp section
+		int threads = omp_get_max_threads();
+		int numThreads = MIN(MAX(output->width / 10, 1), threads);
+#pragma omp parallel for schedule(guided, 10) num_threads(numThreads)
 #endif
-		{
-			MOVE_BACK(y, output->yStart, output->yEnd, output->xStart - 1, y,
-					output->xStart, y)
-		}
-#ifdef _OPENMP
-#pragma omp section
-#endif
-		{
-			MOVE_BACK(y, output->yStart, output->yEnd, output->xEnd + 1, y,
-					output->xEnd, y)
-		}
-#ifdef _OPENMP
-#pragma omp section
-#endif
-		{
-			MOVE_BACK(x, output->xStart, output->xEnd, x, output->yStart - 1, x,
-					output->yStart)
-		}
-#ifdef _OPENMP
-#pragma omp section
-#endif
-		{
-			MOVE_BACK(x, output->xStart, output->xEnd, x, output->yEnd + 1, x,
-					output->yEnd)
+		for (int x = output->xStart; x <= output->xEnd; x++) {
+			moveBack(output, x, output->yStart - 1, x, output->yStart);
+			moveBack(output, x, output->yEnd + 1, x, output->yEnd);
 		}
 	}
+
+	{
+#ifdef _OPENMP
+		int threads = omp_get_max_threads();
+		int numThreads = MIN(MAX(output->height / 10, 1), threads);
+#pragma omp parallel for schedule(guided, 10) num_threads(numThreads)
+#endif
+		for (int y = output->yStart; y <= output->yEnd; y++) {
+			moveBack(output, output->xStart - 1, y, output->xStart, y);
+			moveBack(output, output->xEnd + 1, y, output->xEnd, y);
+		}
+	}
+
 	resetWorld(input);
 }
 
@@ -274,9 +255,10 @@ static LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 		return NULL;
 	}
 
-	// TODO randomize to get rid of preference of direction; low priority
 	LivingEntity * male;
-	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
+	int permutation = randomInt(0, RANDOM_BASIC_DIRECTIONS - 1);
+	for (int i = 0; i < 4; i++) {
+		Direction dir = random_basic_directions[permutation][i];
 		if ((male = getFertileMale(GET_TILE_DIR(world, dir, x, y)->entity,
 				clock)) != NULL) {
 			return male;
@@ -378,4 +360,15 @@ static bearing getBearing(World * world, int x, int y) {
 	}
 
 	return bearing_;
+}
+
+int getNumThreads(int width) {
+#ifdef _OPENMP
+// at least three columns per thread
+	int threads = omp_get_max_threads();
+	int numThreads = MIN(MAX(width / 3, 1), threads);
+#else
+	int numThreads = 1;
+#endif
+	return numThreads;
 }
