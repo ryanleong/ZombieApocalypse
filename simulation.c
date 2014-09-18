@@ -52,9 +52,9 @@ simulation_step (const world_t *input, world_t *output)
     // at least three columns per thread
 #pragma omp parallel for default(shared) num_threads(numThreads)
 #endif
-    for (int x = 0; x < input->width; x++) 
+    for (int y = 0; y < input->height; y++) 
     {
-        for (int y = 0; y < input->height; y++) 
+        for (int x = 0; x < input->width; x++) 
         {
             switch (input->map [y] [x].entity_type)
             {
