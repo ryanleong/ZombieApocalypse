@@ -48,14 +48,14 @@ initialise_grid (unsigned int rows, unsigned int columns)
  *  valid, false if not.
  */
     bool
-valid_coordinates (const world_t *world, int row, int column)
+valid_coordinates (const world_t *world, int y, int x)
 {
     // each index must be greater than or equal to 0, and strictly less
     // than the array size.
-    if ((row < 0) || (row >= world->height))
+    if ((y < 0) || (y >= world->height))
         return false;
 
-    if ((column < 0) || (column >= world->width))
+    if ((x < 0) || (x >= world->width))
         return false;
 
     return true;
