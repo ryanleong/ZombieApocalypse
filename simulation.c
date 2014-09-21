@@ -52,11 +52,11 @@ simulation_step (const World *input, World *output)
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(getNumThreads(input->width)) schedule(static)
 #endif
-    for (int y = 0; y < input->height; y++) 
+    for (int x = input->xStart; x < input->xEnd; x ++) 
     {
-        for (int x = 0; x < input->width; x++) 
+        for (int y = input->xStart; y < input->yEnd; y ++) 
         {
-            switch (input->map [y] [x].entity_type)
+            switch (input->map [x] [y].entity_type)
             {
             case INFECTED:
                 if (infected_becomes_zombie (input, output, x, y))
@@ -80,7 +80,7 @@ simulation_step (const World *input, World *output)
             }
 
             // humans (including infected) and zombies can all move.
-            if (input->map [y] [x].entity_type != EMPTY)
+            if (input->map [x] [y].entity_type != EMPTY)
                 move_entity (input, output, x, y);
         }
     }
@@ -97,21 +97,21 @@ void finishStep(World * input, World * output) {
     static bool
 adjacent_male (const World *world, int x, int y)
 {
-    for (int row = y - 1; row <= y + 1; row ++)
+    for (int i = x - 1; i <= x + 1; i ++)
     {
-        for (int col = x - 1; col <= x + 1; col ++)
+        for (int j = y - 1; j <= y + 1; j ++)
         {
-            if (!valid_coordinates (world, row, col))
+            if (!valid_coordinates (world, i, j))
                 continue;
 
-            if (world->map [row] [col].entity_type == HUMAN)
+            if (world->map [i] [j].entity_type == HUMAN)
             {
-                if (world->map [row] [col].entity.human.gender == MALE)
+                if (world->map [i] [j].entity.human.gender == MALE)
                     return true;
             }
-            else if (world->map [row] [col].entity_type == INFECTED)
+            else if (world->map [i] [j].entity_type == INFECTED)
             {
-                if (world->map [row] [col].entity.infected.gender == MALE)
+                if (world->map [i] [j].entity.infected.gender == MALE)
                     return true;
             }
         }
@@ -128,16 +128,15 @@ count_neighbouring_zombies (const World *world, int x, int y)
 {
     int zombies = 0;
 
-    // step through all tiles within radius 1.
-    for (int row = y - 1; row <= y + 1; row ++)
+    for (int i = x - 1; i <= x + 1; i ++)
     {
-        for (int col = x - 1; col <= x + 1; col ++)
+        for (int j = y - 1; y <= j + 1; j ++)
         {
             // check that row,col is a valid grid coordinate.
-            if (!valid_coordinates (world, row, col))
+            if (!valid_coordinates (world, i, j))
                 continue;
 
-            if (world->map [row] [col].entity_type == ZOMBIE)
+            if (world->map [i] [j].entity_type == ZOMBIE)
                 zombies ++;
         }
     }
