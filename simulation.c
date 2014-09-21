@@ -15,6 +15,7 @@ static int countNeighbouringZombies(World *world, int row, int column);
 static LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 		simClock clock);
 static bearing getBearing(World * world, int x, int y);
+static void mergeStats(World * dest, Stats src);
 
 /**
  * These macros require the worlds to be named input and output.
@@ -46,12 +47,14 @@ static bearing getBearing(World * world, int x, int y);
 void simulateStep(World * input, World * output) {
 	simClock clock = output->clock = input->clock + 1;
 
-	// we want to force static scheduling because be suppose that the load
+	// we want to force static scheduling because we suppose that the load
 	// is distributed evenly over the map
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(getNumThreads(input->width)) schedule(static)
 #endif
 	for (int x = input->xStart; x <= input->xEnd; x++) {
+		// stats are counted per column and summed at the end
+		Stats stats = NO_STATS;
 		lockColumn(output, x);
 		for (int y = input->yStart; y <= input->yEnd; y++) {
 			Entity * entity = GET_TILE(input, x, y)->entity;
@@ -63,6 +66,19 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == HUMAN || entity->type == INFECTED) {
 				LivingEntity * le = entity->asLiving;
 				if (randomDouble() < getDeathRate(le, clock)) {
+					if (le->type == HUMAN) {
+						if (le->gender == FEMALE) {
+							stats.humanFemalesDied++;
+						} else {
+							stats.humanMalesDied++;
+						}
+					} else {
+						if (le->gender == FEMALE) {
+							stats.infectedFemalesDied++;
+						} else {
+							stats.infectedMalesDied++;
+						}
+					}
 					debug_printf("A %s died\n",
 							entity->type == HUMAN ? "Human" : "Infected");
 					continue; // just forget this entity
@@ -73,6 +89,7 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == ZOMBIE) {
 				Zombie * zombie = entity->asZombie;
 				if (randomDouble() < getDecompositionRate(zombie, clock)) {
+					stats.zombiesDecomposed++;
 					debug_printf("A Zombie decomposed\n");
 					continue; // just forgot this entity
 				}
@@ -83,6 +100,11 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == INFECTED) {
 				Infected * infected = entity->asInfected;
 				if (randomDouble() < PROBABILITY_BECOME_ZOMBIE) {
+					if (infected->gender == FEMALE) {
+						stats.infectedFemalesBecameZombies++;
+					} else {
+						stats.infectedMalesBecameZombies++;
+					}
 					entity = toZombie(infected, clock)->asEntity;
 					debug_printf("An Infected became Zombie\n");
 				} else {
@@ -96,6 +118,11 @@ void simulateStep(World * input, World * output) {
 				double infectionChance = zombieCount * PROBABILITY_INFECTION;
 
 				if (randomDouble() <= infectionChance) {
+					if (entity->asHuman->gender == FEMALE) {
+						stats.humanFemalesBecameInfected++;
+					} else {
+						stats.humanMalesBecameInfected++;
+					}
 					entity = toInfected(entity->asHuman, clock)->asEntity;
 					debug_printf("A Human became infected\n");
 				} else {
@@ -110,15 +137,41 @@ void simulateStep(World * input, World * output) {
 			if (entity->type == HUMAN || entity->type == INFECTED) {
 				LivingEntity * le = entity->asLiving;
 				// giving birth
-				if (le->gender == FEMALE && le->children.count > 0
-						&& le->children.borns <= clock) {
-					Tile * freeTile;
-					while (le->children.count > 0 && (freeTile =
-							getFreeAdjacent(input, output, x, y)) != NULL) {
-						LivingEntity * child = giveBirth(le, clock);
-						freeTile->entity = child->asEntity;
-						debug_printf("A %s child was born\n",
-								child->type == HUMAN ? "Human" : "Infected");
+				if (le->gender == FEMALE && le->children.count > 0) {
+					if (le->children.borns <= clock) {
+						if (le->type == HUMAN) {
+							stats.humanFemalesGivingBirth++;
+						} else {
+							stats.infectedFemalesGivingBirth++;
+						}
+
+						Tile * freeTile;
+						while (le->children.count > 0 && (freeTile =
+								getFreeAdjacent(input, output, x, y)) != NULL) {
+							LivingEntity * child = giveBirth(le, clock);
+							if (child->type == HUMAN) {
+								if (child->gender == FEMALE) {
+									stats.humanFemalesBorn++;
+								} else {
+									stats.humanMalesBorn++;
+								}
+							} else {
+								if (child->gender == FEMALE) {
+									stats.infectedFemalesBorn++;
+								} else {
+									stats.infectedMalesBorn++;
+								}
+							}
+							freeTile->entity = child->asEntity;
+							debug_printf("A %s child was born\n",
+									child->type == HUMAN ? "Human" : "Infected");
+						}
+					} else {
+						if (le->type == HUMAN) {
+							stats.humanFemalesPregnant++;
+						} else {
+							stats.humanFemalesPregnant++;
+						}
 					}
 				}
 
@@ -129,10 +182,28 @@ void simulateStep(World * input, World * output) {
 					LivingEntity *adjacentMale = findAdjacentFertileMale(input,
 							x, y, clock);
 					if (adjacentMale != NULL) {
+						stats.couplesMakingLove++;
 						makeLove(le, adjacentMale, clock);
+						stats.childrenConceived += le->children.count;
 						debug_printf("A couple made love\n");
 					}
 				}
+			}
+
+			if (entity->type == HUMAN) {
+				if (entity->asHuman->gender == FEMALE) {
+					stats.humanFemales++;
+				} else {
+					stats.humanMales++;
+				}
+			} else if (entity->type == INFECTED) {
+				if (entity->asInfected->gender == FEMALE) {
+					stats.infectedFemales++;
+				} else {
+					stats.infectedMales++;
+				}
+			} else {
+				stats.zombies++;
 			}
 
 			// MOVEMENT
@@ -189,6 +260,7 @@ void simulateStep(World * input, World * output) {
 			dest->entity = entity;
 		}
 		unlockColumn(output, x);
+		mergeStats(output, stats);
 	}
 }
 
@@ -229,8 +301,6 @@ void finishStep(World * input, World * output) {
 			moveBack(output, output->xEnd + 1, y, output->xEnd, y);
 		}
 	}
-
-	resetWorld(input);
 }
 
 /**
@@ -360,6 +430,42 @@ static bearing getBearing(World * world, int x, int y) {
 	}
 
 	return bearing_;
+}
+
+static void mergeStats(World * dest, Stats src) {
+#ifdef _OPENMP
+#pragma omp critical (StatsCriticalRegion)
+#endif
+	{
+		dest->stats.humanFemales += src.humanFemales;
+		dest->stats.humanMales += src.humanMales;
+		dest->stats.infectedFemales += src.infectedFemales;
+		dest->stats.infectedMales += src.infectedMales;
+		dest->stats.zombies += src.zombies;
+		dest->stats.humanFemalesDied += src.humanFemalesDied;
+		dest->stats.humanMalesDied += src.humanMalesDied;
+		dest->stats.infectedFemalesDied += src.infectedFemalesDied;
+		dest->stats.infectedMalesDied += src.infectedMalesDied;
+		dest->stats.zombiesDecomposed += src.zombiesDecomposed;
+		dest->stats.humanFemalesBorn += src.humanFemalesBorn;
+		dest->stats.humanMalesBorn += src.humanMalesBorn;
+		dest->stats.humanFemalesGivingBirth += src.humanFemalesGivingBirth;
+		dest->stats.humanFemalesPregnant += src.humanFemalesPregnant;
+		dest->stats.infectedFemalesBorn += src.infectedFemalesBorn;
+		dest->stats.infectedMalesBorn += src.infectedMalesBorn;
+		dest->stats.infectedFemalesGivingBirth +=
+				src.infectedFemalesGivingBirth;
+		dest->stats.infectedFemalesPregnant += src.infectedFemalesPregnant;
+		dest->stats.couplesMakingLove += src.couplesMakingLove;
+		dest->stats.childrenConceived += src.childrenConceived;
+		dest->stats.humanFemalesBecameInfected +=
+				src.humanFemalesBecameInfected;
+		dest->stats.humanMalesBecameInfected += src.humanMalesBecameInfected;
+		dest->stats.infectedFemalesBecameZombies +=
+				src.infectedFemalesBecameZombies;
+		dest->stats.infectedMalesBecameZombies +=
+				src.infectedMalesBecameZombies;
+	}
 }
 
 int getNumThreads(int width) {

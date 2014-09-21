@@ -199,40 +199,29 @@ int printWorld(World * world) {
  *  haven't yet become zombies), and zombies, for debugging.
  */
 void printPopulations(World * world) {
-	int humans = 0, infected = 0, zombies = 0;
-
-#ifdef _OPENMP
-#pragma omp parallel for collapse(2) schedule(guided, 10) reduction(+: humans, infected, zombies)
-#endif
-	for (int x = world->xStart; x <= world->xEnd; x++) {
-		for (int y = world->yStart; y <= world->yEnd; y++) {
-			Tile *currentCell = GET_TILE(world, x, y);
-
-			// ignore cells that are not occupied. A cell is only occupied
-			// if the entity pointer is not null.
-			if (currentCell->entity == NULL)
-				continue;
-
-			switch (currentCell->entity->type) {
-			case HUMAN:
-				humans++;
-				break;
-
-			case INFECTED:
-				infected++;
-				break;
-
-			case ZOMBIE:
-				zombies++;
-				break;
-			}
-		}
-	}
-
+	Stats s = world->stats;
 	// make sure there are always blanks around numbers
 	// that way we can easily split the line
-	printf("Time: %6lld \tHumans: %4d \tInfected: %4d \tZombies: %4d\n",
-			world->clock, humans, infected, zombies);
+	printf("Time: %6lld \tHumans: %6d \tInfected: %6d \tZombies: %6d\n",
+			world->clock, s.humanFemales + s.humanMales,
+			s.infectedFemales + s.infectedMales, s.zombies);
+
+#ifndef NDETAILED_STATS
+	printf("LHF: %6d \tLHM: %6d \tLIF: %6d \tLIM: %6d \tLZ:  %6d\n", s.humanFemales,
+			s.humanMales, s.infectedFemales, s.infectedMales, s.zombies);
+	printf("DHF: %6d \tDHM: %6d \tDIF: %6d \tDIM: %6d \tDZ:  %6d\n",
+			s.humanFemalesDied, s.humanMalesDied, s.infectedFemalesDied,
+			s.infectedMalesDied, s.zombiesDecomposed);
+	printf("BHF: %6d \tBHM: %6d \tBIF: %6d \tBIM: %6d\n", s.humanFemalesBorn,
+			s.humanMalesBorn, s.infectedFemalesBorn, s.infectedMalesBorn);
+	printf("PH:  %6d \tPI:  %6d \tGBH: %6d \tGBI: %6d \tCML: %6d \tCC:  %6d\n",
+			s.humanFemalesPregnant, s.infectedFemalesPregnant,
+			s.humanFemalesBecameInfected, s.infectedFemalesGivingBirth,
+			s.couplesMakingLove, s.childrenConceived);
+	printf("IHF: %6d \tIHM: %6d \tIFZ: %6d \tIMZ: %6d\n",
+			s.humanFemalesBecameInfected, s.humanMalesBecameInfected,
+			s.infectedFemalesBecameZombies, s.infectedMalesBecameZombies);
+#endif
 }
 
 void printStatistics(World * world) {
@@ -279,6 +268,7 @@ int main(int argc, char **argv) {
 		World * temp = input;
 		input = output;
 		output = temp;
+		resetWorld(output);
 	}
 
 // this is a clean up

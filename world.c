@@ -20,6 +20,8 @@ World * newWorld(unsigned int width, unsigned int height) {
 	world->yStart = 2;
 	world->yEnd = height + 1;
 
+	world->stats = NO_STATS;
+
 #ifdef _OPENMP
 	world->locks = (omp_lock_t *) checked_malloc(sizeof(omp_lock_t) * (width + 4));
 #endif
@@ -51,6 +53,7 @@ void resetWorld(World * world) {
 			resetTile(tile);
 		}
 	}
+	world->stats = NO_STATS;
 }
 
 void destroyWorld(World * world) {

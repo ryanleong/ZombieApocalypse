@@ -34,6 +34,35 @@ typedef struct Tile {
 	Entity * entity;
 } Tile;
 
+typedef struct Stats {
+	int humanFemales;
+	int humanMales;
+	int infectedFemales;
+	int infectedMales;
+	int zombies;
+	int humanFemalesDied;
+	int humanMalesDied;
+	int infectedFemalesDied;
+	int infectedMalesDied;
+	int zombiesDecomposed;
+	int humanFemalesBorn;
+	int humanMalesBorn;
+	int humanFemalesGivingBirth;
+	int humanFemalesPregnant;
+	int infectedFemalesBorn;
+	int infectedMalesBorn;
+	int infectedFemalesGivingBirth;
+	int infectedFemalesPregnant;
+	int couplesMakingLove;
+	int childrenConceived;
+	int humanFemalesBecameInfected;
+	int humanMalesBecameInfected;
+	int infectedFemalesBecameZombies;
+	int infectedMalesBecameZombies;
+} Stats;
+
+#define NO_STATS ((const struct Stats) {0})
+
 /**
  * The World contains a 2D map.
  * The map is slightly bigger to allow unchecked access to two tiles in each direction.
@@ -57,6 +86,7 @@ typedef struct World {
 	unsigned int xEnd; // last interior tile
 	unsigned int yStart; // first interior tile
 	unsigned int yEnd; // last interior tile
+	Stats stats; // detailed statistics
 #ifdef _OPENMP
 	omp_lock_t * locks;
 #endif
