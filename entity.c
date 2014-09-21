@@ -110,7 +110,7 @@ Human * newHuman(simClock clock) {
 	double rnd = randomDouble();
 	simClock fertilityStart;
 	simClock fertilityEnd;
-	if (rnd < MALE_FEMALE_RATE) {
+	if (rnd < FEMALE_MALE_RATIO) {
 		human->gender = FEMALE;
 
 		if (randomDouble() < PROBABILITY_INITIAL_PREGNANCY) {
@@ -269,7 +269,7 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 	double rnd = randomDouble();
 	simClock fertilityStart;
 	simClock fertilityEnd;
-	if (rnd < MALE_FEMALE_RATE) {
+	if (rnd < FEMALE_MALE_RATIO) {
 		born->gender = FEMALE;
 		fertilityStart = randomEvent(FERTILITY_START_FEMALE_MEAN,
 		FERTILITY_START_FEMALE_STD_DEV);
@@ -349,49 +349,71 @@ void destroyUnused() {
 }
 
 double getMaxSpeed(Entity * entity, simClock currentTime) {
-	// TODO include more categories or make it totally age dependent, high priority
-	double moveChance = 0.0;
-
 	if (entity->type == ZOMBIE) {
 		Zombie * zombie = entity->asZombie;
-		int age = (currentTime - zombie->becameZombie) / IN_YEARS;
-
-		if (age < (ZOMBIE_DECOMPOSITION_MEAN / 2)) {
-			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 1.0;
+		int age = currentTime - zombie->becameZombie;
+		if (age < ZOMBIE_YOUNG_OLD_BORDER) {
+			return SPEED_ZOMBIE_YOUNG;
 		} else {
-			moveChance = ZOMBIE_MOVE_SPEED_MEAN * 0.8;
+			return SPEED_ZOMBIE_OLD;
 		}
 	} else {
 		LivingEntity * living = entity->asLiving;
-		int age = (currentTime - living->wasBorn) / IN_YEARS;
-
-		moveChance = MALE_MOVE_SPEED_MEAN;
-
-		if (age < 18) {
-			moveChance = moveChance * MALE_UNDER_18_SPEED_MEAN;
-		} else if (age > 39) {
-			moveChance = moveChance * MALE_OVER_40_SPEED_MEAN;
-		}
-
+		int age = currentTime - living->wasBorn;
 		if (living->gender == FEMALE) {
-			moveChance = moveChance * FEMALE_TO_MALE_SPEED_RATIO;
+			if (age < HUMAN_CHILD_YOUNG_BORDER) {
+				return SPEED_FEMALE_CHILD;
+			} else if (age < HUMAN_YOUNG_MIDDLEAGE_BORDER) {
+				return SPEED_FEMALE_YOUNG;
+			} else if (age < HUMAN_MIDDLEAGE_ELDERLY_BORDER) {
+				return SPEED_FEMALE_MIDDLEAGE;
+			} else {
+				return SPEED_FEMALE_ELDERLY;
+			}
+		} else {
+			if (age < HUMAN_CHILD_YOUNG_BORDER) {
+				return SPEED_MALE_CHILD;
+			} else if (age < HUMAN_YOUNG_MIDDLEAGE_BORDER) {
+				return SPEED_MALE_YOUNG;
+			} else if (age < HUMAN_MIDDLEAGE_ELDERLY_BORDER) {
+				return SPEED_MALE_MIDDLEAGE;
+			} else {
+				return SPEED_MALE_ELDERLY;
+			}
 		}
 	}
-	return moveChance;
 }
 
 double getDeathRate(LivingEntity * living, simClock currentTime) {
-	// TODO make getDeathRate dependent on age and other conditions, high priority
-	//int age = (currentTime - living->wasBorn) / IN_YEARS;
+	int age = currentTime - living->wasBorn;
 	if (living->gender == FEMALE) {
-		return 1.0 / LIFE_EXPECTANCY_FEMALE_MEAN;
+		if (age < HUMAN_CHILD_YOUNG_BORDER) {
+			return PROBABILITY_FEMALE_CHILD_DEATH;
+		} else if (age < HUMAN_YOUNG_MIDDLEAGE_BORDER) {
+			return PROBABILITY_FEMALE_YOUNG_DEATH;
+		} else if (age < HUMAN_MIDDLEAGE_ELDERLY_BORDER) {
+			return PROBABILITY_FEMALE_MIDDLEAGE_DEATH;
+		} else {
+			return PROBABILITY_FEMALE_ELDERLY_DEATH;
+		}
 	} else {
-		return 1.0 / LIFE_EXPECTANCY_MALE_MEAN;
+		if (age < HUMAN_CHILD_YOUNG_BORDER) {
+			return PROBABILITY_MALE_CHILD_DEATH;
+		} else if (age < HUMAN_YOUNG_MIDDLEAGE_BORDER) {
+			return PROBABILITY_MALE_YOUNG_DEATH;
+		} else if (age < HUMAN_MIDDLEAGE_ELDERLY_BORDER) {
+			return PROBABILITY_MALE_MIDDLEAGE_DEATH;
+		} else {
+			return PROBABILITY_MALE_ELDERLY_DEATH;
+		}
 	}
 }
 
 double getDecompositionRate(Zombie * zombie, simClock currentTime) {
-	// TODO make getDecompositionRate dependent on age, high priority
-	//int age = (currentTime - zombie->becameZombie) / IN_YEARS;
-	return 1.0 / ZOMBIE_DECOMPOSITION_MEAN;
+	int age = currentTime - zombie->becameZombie;
+	if (age < ZOMBIE_YOUNG_OLD_BORDER) {
+		return PROBABILITY_ZOMBIE_YOUNG_DEATH;
+	} else {
+		return PROBABILITY_ZOMBIE_OLD_DEATH;
+	}
 }
