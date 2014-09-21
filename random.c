@@ -12,10 +12,7 @@ void initRandom(unsigned int seed) {
 	srand48(seed);
 }
 
-/**
- * Gaussian distribution with mean and standard deviation.
- */
-simClock randomEvent(simClock mean, simClock stdDev) {
+sim_clock_t randomEvent(sim_clock_t mean, sim_clock_t stdDev) {
 	double u1 = drand48(); //these are uniform(0,1) random doubles
 	double u2 = drand48();
 	double randStdNormal = sqrt(-2.0 * log(u1)) * sin(2.0 * M_PI * u2); //random normal(0,1)
@@ -23,9 +20,6 @@ simClock randomEvent(simClock mean, simClock stdDev) {
 	return randNormal;
 }
 
-/**
- * Both bounds are inclusive.
- */
 int randomInt(int min, int max) {
 	return random() % (max - min + 1) + min;
 }

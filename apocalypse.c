@@ -9,6 +9,11 @@
 #include "simulation.h"
 #include "common.h"
 #include "constants.h"
+#include "common.h"
+
+#ifndef OUTPUT_EVERY
+#define OUTPUT_EVERY 1
+#endif
 
 
 /**
@@ -16,7 +21,7 @@
  *  locations.
  */
     static void
-init_world (world_t *world, int num_people, int num_zombies)
+init_world (World *world, int num_people, int num_zombies)
 {
     int x, y;
 
@@ -53,7 +58,7 @@ init_world (world_t *world, int num_people, int num_zombies)
     }
 }
 
-void setRGB(png_byte *ptr, tile_t * tile) {
+void setRGB(png_byte *ptr, Tile * tile) {
 	switch (tile->entity_type) 
     {
 	case HUMAN:
@@ -65,7 +70,11 @@ void setRGB(png_byte *ptr, tile_t * tile) {
 	case INFECTED:
 		ptr[0] = 0;
 		ptr[1] = 0;
-		ptr[2] = 255;
+		if (tile->entity.infected.gender == FEMALE) {
+			ptr[2] = 200;
+		} else {
+			ptr[2] = 150;
+		}
 		break;
 
 	case ZOMBIE:
@@ -82,7 +91,10 @@ void setRGB(png_byte *ptr, tile_t * tile) {
 	}
 }
 
-int printWorld(world_t * world) {
+/**
+ * Generates an image for the world mapping each tile to a pixel.
+ */
+int printWorld(World * world) {
 	char filename[80];
 	sprintf(filename, "images/step-%06lld.png", world->clock);
 
@@ -90,7 +102,6 @@ int printWorld(world_t * world) {
 	FILE *fp;
 	png_structp png_ptr;
 	png_infop info_ptr;
-	png_bytep row;
 
 	// Open file for writing (binary mode)
 	fp = fopen(filename, "wb");
@@ -134,15 +145,22 @@ int printWorld(world_t * world) {
 	png_write_info(png_ptr, info_ptr);
 
 	// Allocate memory for one row (3 bytes per pixel - RGB)
-	row = (png_bytep) malloc(3 * world->width * sizeof(png_byte));
-
-	// Write image data
-	for (int y = 0; y < world->height; y++) {
-		for (int x = 0; x < world->width; x++) {
-			setRGB(&(row[(x - 1) * 3]), & (world->map [x] [y]));
-		}
-		png_write_row(png_ptr, row);
+	png_bytep * image = (png_bytep*) malloc(sizeof(png_bytep) * world->height);
+	for (int i = 0; i < world->height; i++) {
+		image[i] = (png_bytep) malloc(3 * world->width * sizeof(png_byte));
 	}
+
+	// Prepare image data; this can be done in parallel
+#ifdef _OPENMP
+#pragma omp parallel for collapse(2) schedule(guided, 10)
+#endif
+	for (int y = world->yStart; y <= world->yEnd; y++) {
+		for (int x = world->xStart; x <= world->xEnd; x++) {
+			setRGB(image[y - world->yStart] + (x - world->xStart) * 3,
+					& (world->map [x] [y]));
+		}
+	}
+	png_write_image(png_ptr, image);
 
 	// End write
 	png_write_end(png_ptr, NULL);
@@ -153,8 +171,12 @@ int printWorld(world_t * world) {
 		png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
 	if (png_ptr != NULL)
 		png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
-	if (row != NULL)
-		free(row);
+	if (image != NULL) {
+		for (int i = 0; i < world->height; i++) {
+			free(image[i]);
+		}
+		free(image);
+	}
 
 	return code;
 }
@@ -163,11 +185,12 @@ int printWorld(world_t * world) {
  *  Print the number of humans, infected people (who carry the disease, but
  *  haven't yet become zombies), and zombies, for debugging.
  */
-    void
-print_populations (const world_t *world)
-{
+void printPopulations(World * world) {
 	int humans = 0, infected = 0, zombies = 0;
 
+#ifdef _OPENMP
+#pragma omp parallel for collapse(2) schedule(guided, 10) reduction(+: humans, infected, zombies)
+#endif
 	for (int i = 0; i < world->height; i++) {
 		for (int j = 0; j < world->width; j++) {
 			switch (world->map [i] [j].entity_type) {
@@ -190,8 +213,24 @@ print_populations (const world_t *world)
 		}
 	}
 
-	printf("Time: %6d   Humans: %4d, Infected: %4d, Zombies: %4d.\n", 
-      (int) world->clock, humans, infected, zombies);
+	// make sure there are always blanks around numbers
+	// that way we can easily split the line
+	printf("Time: %6lld \tHumans: %4d \tInfected: %4d \tZombies: %4d\n",
+			world->clock, humans, infected, zombies);
+}
+
+void printStatistics(World * world) {
+	if (world->clock % OUTPUT_EVERY > 0) {
+		return;
+	}
+
+#ifndef NPOPULATION
+	printPopulations(world);
+#endif
+
+#ifndef NIMAGES
+	printWorld(world);
+#endif
 }
 
 int main(int argc, char **argv) {
@@ -210,8 +249,8 @@ int main(int argc, char **argv) {
 
 	initRandom(0);
 
-	world_t * input = newWorld(width, height);
-	world_t * output = newWorld(width, height);
+	World * input = newWorld(width, height);
+	World * output = newWorld(width, height);
 
 	init_world (input, people, zombies);
 	printWorld(input);
@@ -219,11 +258,12 @@ int main(int argc, char **argv) {
 	for (int i = 0; i < iters; i++) {
 		simulation_step (input, output);
 		finishStep(input, output);
-		printWorld(output);
-		print_populations (output);
+		printStatistics(output);
 
-		world_t * temp = input;
+		World * temp = input;
 		input = output;
 		output = temp;
 	}
+
+    return 0;
 }

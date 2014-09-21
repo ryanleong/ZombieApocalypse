@@ -9,48 +9,48 @@
 #include "random.h"
 #include "constants.h"
 #include "debug.h"
+#include "direction.h"
 
-int count_neighbouring_zombies (const world_t *world, int row, int column);
-static bool adjacent_male (const world_t *world, int x, int y);
+int count_neighbouring_zombies (const World *world, int row, int column);
+static bool adjacent_male (const World *world, int x, int y);
 
 /** 
  *  Functions to convert entities to different entities, on certain 
  *  conditions including randomness. Each function takes two pointers to
- *  world_t structs, one for the state before the transition, the other
+ *  World structs, one for the state before the transition, the other
  *  is where we will store the new world state after the transition. Also
  *  there are the x and y coordinates of the subject entity.
  */
-static bool infected_becomes_zombie (const world_t *before, world_t *after, 
+static bool infected_becomes_zombie (const World *before, World *after, 
   int x, int y);
-static void human_reproduction (const world_t *before, world_t *after, 
+static void human_reproduction (const World *before, World *after, 
   int x, int y);
-static void human_death (const world_t *before, world_t *after, int x,
+static void human_death (const World *before, World *after, int x,
   int y);
-static void infect_humans (const world_t *before, world_t *after, int x,
+static void infect_humans (const World *before, World *after, int x,
   int y);
-static void zombie_decompose (const world_t *before, world_t *after, int x,
+static void zombie_decompose (const World *before, World *after, int x,
   int y);
 
 // Function to move entities.
-static void move_entity (const world_t *before, world_t *after, int x,
+static void move_entity (const World *before, World *after, int x,
   int y);
 
 
 /**
  *  Implements a single step of the simulation. This function will compute
- *  the next state of the world and store it in the world_t struct pointed
+ *  the next state of the world and store it in the World struct pointed
  *  to by the second param.
  */
     void
-simulation_step (const world_t *input, world_t *output) 
+simulation_step (const World *input, World *output) 
 {
     output->clock = input->clock + 1;
 
+	// we want to force static scheduling because be suppose that the load
+	// is distributed evenly over the map
 #ifdef _OPENMP
-    int threads = omp_get_max_threads();
-    int numThreads = MIN(MAX(input->width / 3, 1), threads);
-    // at least three columns per thread
-#pragma omp parallel for default(shared) num_threads(numThreads)
+#pragma omp parallel for num_threads(getNumThreads(input->width)) schedule(static)
 #endif
     for (int y = 0; y < input->height; y++) 
     {
@@ -86,7 +86,7 @@ simulation_step (const world_t *input, world_t *output)
     }
 }
 
-void finishStep(world_t * input, world_t * output) {
+void finishStep(World * input, World * output) {
     resetWorld(input);
 }
 
@@ -95,7 +95,7 @@ void finishStep(world_t * input, world_t * output) {
  *  true if there is a male, false otherwise.
  */
     static bool
-adjacent_male (const world_t *world, int x, int y)
+adjacent_male (const World *world, int x, int y)
 {
     for (int row = y - 1; row <= y + 1; row ++)
     {
@@ -124,7 +124,7 @@ adjacent_male (const world_t *world, int x, int y)
  * Returns the number of zombies in the cells bordering the cell at [x, y].
  */
     int 
-count_neighbouring_zombies (const world_t *world, int x, int y) 
+count_neighbouring_zombies (const World *world, int x, int y) 
 {
     int zombies = 0;
 
@@ -143,6 +143,17 @@ count_neighbouring_zombies (const world_t *world, int x, int y)
     }
 
     return zombies;
+}
+
+int getNumThreads(int width) {
+#ifdef _OPENMP
+// at least three columns per thread
+	int threads = omp_get_max_threads();
+	int numThreads = MIN(MAX(width / 3, 1), threads);
+#else
+	int numThreads = 1;
+#endif
+	return numThreads;
 }
 
 /** vim: set ts=4 sw=4 et : */

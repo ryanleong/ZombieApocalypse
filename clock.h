@@ -2,19 +2,14 @@
 #define CLOCK_H_
 
 /**
- * Type for time in simulation, the basic unit is defined as 1 hour.
+ * Type for time in simulation, the basic unit is defined as 1 day.
  */
 typedef long long int sim_clock_t;
 
 /**
- * The basic unit is defined as 1 hour.
+ * The basic unit is defined as 1 day.
  */
-#define CLOCK_UNITS_IN_DAY 24
-
-/**
- * Current daytime from global simulation time
- */
-#define dayTime(clock) ((clock) % CLOCK_UNITS_IN_DAY)
+#define CLOCK_UNITS_IN_DAY 1
 
 /**
  * How many units the time interval contains

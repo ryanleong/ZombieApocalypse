@@ -6,6 +6,7 @@
 #define ENTITY_H_
 
 #include "clock.h"
+#include "direction.h"
 
 /**
  *  This defines what entity is located at each cell in the grid. EMPTY

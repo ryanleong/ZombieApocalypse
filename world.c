@@ -1,45 +1,51 @@
 #include "world.h"
 #include "common.h"
 #include "utils.h"
+#include "random.h"
 
 // local util functions
-static tile_t ** initialise_grid (unsigned int rows, unsigned int columns);
-static void init_tile (tile_t *tile);
-static void reset_tile (tile_t * tile);
+static Tile ** initialise_grid (World * world);
+static void reset_tile (Tile * tile);
 
 
-world_t * newWorld(unsigned int width, unsigned int height) {
-    world_t * w;
-    w = (world_t *) checked_malloc (sizeof(world_t));
+World * newWorld(unsigned int width, unsigned int height) {
+    World * w;
+    w = (World *) checked_malloc (sizeof(World));
 
     w->clock = 0;
     w->width = width;
     w->height = height;
-    w->map = initialise_grid (height, width);
+#ifdef _OPENMP
+	w->locks = (omp_lock_t *) checked_malloc(sizeof(omp_lock_t) * (width + 4));
+#endif
+
+    w->map = initialise_grid (w);
 
     return w;
 }
 
 /**
- *  Allocates memory for a new 2 dimensional matrix of tile_ts, and sets
+ *  Allocates memory for a new 2 dimensional matrix of Tiles, and sets
  *  the initial values of the tiles.
  */
-    static tile_t **
-initialise_grid (unsigned int rows, unsigned int columns)
+    static Tile **
+initialise_grid (World * world)
 {
-    tile_t **grid = (tile_t **) checked_malloc (sizeof (tile_t *) * rows);
+    Tile **grid = (Tile **) checked_malloc (sizeof (Tile *) * world->width);
 
-    // Each row contains 'columns' columns.
-    for (unsigned int row = 0; row < rows; row ++)
+    for (unsigned int x = 0; x < world->width; x ++)
     {
-        grid [row] = (tile_t *) checked_malloc (sizeof (tile_t) * columns);
+        grid [x] = (Tile *) checked_malloc (sizeof (Tile) * world->height);
 
-        // initialise each tile in the row.
-        for (unsigned int col = 0; col < columns; col ++)
-            init_tile (&(grid [row] [col]));
+        for (unsigned int y = 0; y < world->height; y ++)
+            reset_tile (&(grid [x] [y]));
+
+#ifdef _OPENMP
+		omp_init_lock(world->locks + x);
+#endif
     }
 
-    return grid;
+	return grid;
 }
 
 /**
@@ -48,7 +54,7 @@ initialise_grid (unsigned int rows, unsigned int columns)
  *  valid, false if not.
  */
     bool
-valid_coordinates (const world_t *world, int y, int x)
+valid_coordinates (const World *world, int x, int y)
 {
     // each index must be greater than or equal to 0, and strictly less
     // than the array size.
@@ -61,12 +67,9 @@ valid_coordinates (const world_t *world, int y, int x)
     return true;
 }
 
-void resetWorld(world_t * world) {
+void resetWorld(World * world) {
 #ifdef _OPENMP
-    int threads = omp_get_max_threads();
-    int numThreads = MIN(MAX(world->width * world->height / 10, 1), threads);
-    // each thread resets at least 10 elements
-#pragma omp parallel for default(shared) num_threads(numThreads)
+#pragma omp parallel for collapse(2) schedule(guided, 10)
 #endif
     for (int row = 0; row < world->height; row ++)
     {
@@ -75,33 +78,25 @@ void resetWorld(world_t * world) {
     }
 }
 
-/**
- *  Initialises a tile_t struct to be empty.
- */
-    static void
-init_tile (tile_t *tile)
-{
-    reset_tile (tile);
-#ifdef _OPENMP
-    omp_init_lock(&tile->lock);
-#endif
-}
-
     static void 
-reset_tile (tile_t * tile) 
+reset_tile (Tile * tile) 
 {
     tile->entity_type = EMPTY;
 }
 
-void lockTile(tile_t * tile) {
+void lockColumn(World * world, int x) {
 #ifdef _OPENMP
-    omp_set_lock(&tile->lock);
+	for (int i = x - 1; i <= x + 1; i++) {
+		omp_set_lock(world->locks + i);
+	}
 #endif
 }
 
-void unlockTile(tile_t * tile) {
+void unlockColumn(World * world, int x) {
 #ifdef _OPENMP
-    omp_unset_lock(&tile->lock);
+	for (int i = x - 1; i <= x + 1; i++) {
+		omp_unset_lock(world->locks + i);
+	}
 #endif
 }
 
@@ -115,13 +110,13 @@ void unlockTile(tile_t * tile) {
  *  around.
  */
     int
-find_adjacent_space (const world_t *world, int *row, int *column)
+find_adjacent_space (const World *world, int *x, int *y)
 {
     int i, j;
 
-    for (i = *row - 1; i < *row + 1; i ++)
+    for (i = *x - 1; i < *x + 1; i ++)
     {
-        for (j = *column - 1; j < *column + 1; j ++)
+        for (j = *y - 1; j < *y + 1; j ++)
         {
             // ignore coordinates that go outside the bounds of the matrix.
             if (!valid_coordinates (world, i, j))
@@ -130,8 +125,8 @@ find_adjacent_space (const world_t *world, int *row, int *column)
             // if the tile is unoccupied, choose it.
             if (world->map [i] [j].entity_type == EMPTY)
             {
-                *row = i;
-                *column = j;
+                *x = i;
+                *y = j;
                 return 1;
             }
         }

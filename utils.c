@@ -9,12 +9,10 @@
  *  only catch nulls if NDEBUG is *not* #define'd. See the man page for
  *  assert() for more details on the reasoning behind this design.
  */
-    void *
-checked_malloc (size_t bytes)
-{
-    void *mem = malloc (bytes);
-    assert (mem != NULL);
-    return mem;
+void * checked_malloc(size_t bytes) {
+	void *mem = malloc(bytes);
+	assert(mem != NULL);
+	return mem;
 }
 
 /** vim: set ts=4 sw=4 et : */
