@@ -136,6 +136,8 @@ void unlockColumn(World * tile, int x);
  */
 Tile * getFreeAdjacent(World * input, World * output, int x, int y);
 
+void copyStats(World * world, Stats stats);
+
 #endif // WORLD_H_
 
 // vim: ts=4 sw=4 et

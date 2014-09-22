@@ -265,10 +265,12 @@ int main(int argc, char **argv) {
 		finishStep(input, output);
 		printStatistics(output);
 
+		Stats stats = output->stats;
+		resetWorld(input);
 		World * temp = input;
 		input = output;
 		output = temp;
-		resetWorld(output);
+		copyStats(output, stats);
 	}
 
 // this is a clean up

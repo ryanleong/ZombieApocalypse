@@ -118,3 +118,20 @@ Tile * getFreeAdjacent(World * input, World * output, int x, int y) {
 	}
 	return NULL;
 }
+
+void copyStats(World * world, Stats stats) {
+#ifndef NCUMULATIVE_STATS
+	world->stats = stats;
+	// these are the global stats which we need to reset
+	// we want to keep just the event-driven
+	world->stats.humanFemales = 0;
+	world->stats.humanMales = 0;
+	world->stats.infectedFemales = 0;
+	world->stats.infectedMales = 0;
+	world->stats.zombies = 0;
+	world->stats.humanFemalesPregnant = 0;
+	world->stats.infectedFemalesPregnant = 0;
+#else
+	world->stats = NO_STATS;
+#endif
+}
