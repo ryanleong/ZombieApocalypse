@@ -176,7 +176,8 @@ LivingEntity * copyLiving(LivingEntity * living);
  * The fertilization will happen with a probability.
  * Call this whenever a MALE is next to a FEMALE.
  */
-void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock, Stats stats);
+void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock,
+		Stats stats);
 
 /**
  * Mother gives birth to all her children when they are scheduled.

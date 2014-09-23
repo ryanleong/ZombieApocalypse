@@ -2,7 +2,7 @@ SRC = apocalypse.c entity.c direction.c random.c simulation.c utils.c world.c
 OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
-CFLAGS = --std=gnu99 -O0 -g -Wall -fopenmp
+CFLAGS = --std=gnu99 -O2 -g -Wall -fopenmp
 
 ifdef NDEBUG
 CFLAGS += -DNDEBUG
@@ -36,10 +36,10 @@ apocalypse: $(OBJS)
 	$(CC) $(CFLAGS) -o apocalypse $(OBJS) $(LIBS)
 	mkdir -p images
 
-clean:
+clean: cleanpdf
 	rm -f $(OBJS)
 
-clobber: clean
+clobber: clean clobberpdf
 	rm -f apocalypse
 	rm -f dependencies
 	rm -f cscope.out
@@ -51,7 +51,28 @@ dependencies: $(SRC)
 tags:
 	cscope -b
 
-.PHONY: all clean clobber tags
+## Report ##
+
+%.eps: %.dia
+	dia -t eps -e $@ $<
+
+%.pdf: %.dot
+	dot -Tsvg -O $<
+	inkscape -A $@ $<.svg
+	rm $<.svg
+
+pdf: tr.pdf
+
+tr.pdf: tr.tex model.pdf movement.eps
+	pdflatex tr.tex
+
+cleanpdf:
+	rm -f *.aux *.out *.log
+
+clobberpdf: cleanpdf
+	rm -f tr.pdf
+
+.PHONY: all pdf clean cleanpdf clobber clobberpdf tags
 
 
 include dependencies

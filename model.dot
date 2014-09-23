@@ -1,0 +1,10 @@
+digraph graphname {
+	Human [rank = source]
+	Dead [rank = sink]
+	Human -> Infected [label = "getting infected"];
+	Infected -> Zombie [label = "becomes zombie"];
+	Zombie -> Dead [lable = "decomposes"];
+	Human -> Dead [label = "natural death"];
+	Infected -> Dead [label = "natural death"];
+	rankdir="LR"
+}

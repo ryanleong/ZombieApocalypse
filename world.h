@@ -59,7 +59,7 @@ typedef struct World {
 	unsigned int yStart; // first interior tile
 	unsigned int yEnd; // last interior tile
 	Stats stats; // detailed statistics
-    Stats lastStats;
+	Stats lastStats;
 #ifdef _OPENMP
 	omp_lock_t * locks;
 #endif

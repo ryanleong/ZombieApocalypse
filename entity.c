@@ -133,24 +133,26 @@ Human * newHuman(simClock clock) {
 		FERTILITY_END_MALE_STD_DEV);
 	}
 
-	// TODO make the new human age dependent on age distribution, low priority
-	//if (human->gender == FEMALE) {
-        double try=randomDouble();
-    
-        if(try<CHILD_POP){
-            human->wasBorn = clock - (randomDouble() * HUMAN_CHILD_YOUNG_BORDER);
-        }else if(try<YOUNG_POP+CHILD_POP){
-            human->wasBorn = clock - HUMAN_CHILD_YOUNG_BORDER - randomDouble() * YOUNG_PERIOD;
-        }else if(try<MIDDLEAGE_POP+YOUNG_POP+CHILD_POP){
-            human->wasBorn = clock - HUMAN_YOUNG_MIDDLEAGE_BORDER - randomDouble() * MIDDLEAGE_PERIOD;//65-37.5=27.5
-        }else{
-            human->wasBorn = clock - HUMAN_MIDDLEAGE_ELDERLY_BORDER - randomDouble() * ELDER_PERIOD;//110-65=45
-        }
-	//} else {
-		//human->wasBorn = clock - randomDouble() * LIFE_EXPECTANCY_MALE_MEAN;
-	//}
+	double ageClass = randomDouble();
+	double withinClass = randomDouble();
 
-// may or may not be in future
+	if (ageClass < HUMAN_CHILD_POPULATION_SIZE) {
+		human->wasBorn = clock - (withinClass * HUMAN_CHILD_PERIOD);
+	} else if (ageClass
+			< HUMAN_YOUNG_POPULATION_SIZE + HUMAN_CHILD_POPULATION_SIZE) {
+		human->wasBorn = clock - HUMAN_CHILD_YOUNG_BORDER
+				- withinClass * HUMAN_YOUNG_PERIOD;
+	} else if (ageClass
+			< HUMAN_MIDDLEAGE_POPULATION_SIZE + HUMAN_YOUNG_POPULATION_SIZE
+					+ HUMAN_CHILD_POPULATION_SIZE) {
+		human->wasBorn = clock - HUMAN_YOUNG_MIDDLEAGE_BORDER
+				- randomDouble() * HUMAN_MIDDLEAGE_PERIOD;
+	} else {
+		human->wasBorn = clock - HUMAN_MIDDLEAGE_ELDERLY_BORDER
+				- randomDouble() * HUMAN_ELDERLY_PERIOD;
+	}
+
+	// may or may not be in future
 	human->fertilityStart = human->wasBorn + fertilityStart;
 	human->fertilityEnd = human->wasBorn + fertilityEnd;
 
@@ -243,28 +245,24 @@ LivingEntity * copyLiving(LivingEntity * living) {
 	return copyEntity(living->asEntity)->asLiving;
 }
 
-void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock, Stats stats) {
-    int children = stats.humanFemalesDied + stats.humanMalesDied;
-    int couples = stats.couplesMakingLove;
-    if(couples == 0) {
-        return;
-    }
-    
+void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock,
+		Stats stats) {
+	int children = stats.humanFemalesDied + stats.humanMalesDied;
+	int couples = stats.couplesMakingLove;
+	if (couples == 0) {
+		return;
+	}
+
 	double rnd = randomDouble();
-    
-    /*if(rnd > children / (double)couples) {
-        return;
-    }*/
-    
-    if(stats.humanFemales + stats.humanMales>12000){
-        if(rnd > children / (double)couples) {
-            return;
-        }
-    }else{
-        if (rnd > 10*PROBABILITY_FERTILIZATION) {//0.006 human stable
-            return;
-        }
-    }
+	if (stats.humanFemales + stats.humanMales > 12000) {
+		if (rnd > children / (double) couples) {
+			return;
+		}
+	} else {
+		if (rnd > 10 * PROBABILITY_FERTILIZATION) { //0.006 human stable
+			return;
+		}
+	}
 	int count = randomCountOfUnborn();
 	mother->children = newChildren(count, clock, false);
 }

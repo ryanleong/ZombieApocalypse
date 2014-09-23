@@ -183,10 +183,10 @@ void simulateStep(World * input, World * output) {
 							x, y, clock);
 					if (adjacentMale != NULL) {
 						stats.couplesMakingLove++;
-                        //if(stats.humanFemales<10*stats.zombies){
-                        makeLove(le, adjacentMale, clock, input->lastStats);
-                        //}
-						
+						//if(stats.humanFemales<10*stats.zombies){
+						makeLove(le, adjacentMale, clock, input->lastStats);
+						//}
+
 						stats.childrenConceived += le->children.count;
 						debug_printf("A couple made love\n");
 					}
@@ -405,7 +405,7 @@ static bearing getBearing(World * world, int x, int y) {
 	}
 	for (int dir = DIRECTION_BASIC + 1; dir <= DIRECTION_ALL; dir++) {
 		Tile * t = GET_TILE_DIR(world, dir, x, y);
-		bearing delta = BEARING_FROM_DIRECTION(dir);
+		bearing delta = BEARING_PROJECT(BEARING_FROM_DIRECTION(dir));
 		if (entity->type == ZOMBIE) {
 			if (t->type == BORDER) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_WALL_TWO;

@@ -29,11 +29,11 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 		}
 
 		Human * human = newHuman(clock);
-        if (human->gender == FEMALE) {
-            w->lastStats.humanFemales++;
-        } else {
-            w->lastStats.humanMales++;
-        }
+		if (human->gender == FEMALE) {
+			w->lastStats.humanFemales++;
+		} else {
+			w->lastStats.humanMales++;
+		}
 		tile->entity = human->asEntity;
 
 		i++;
@@ -48,7 +48,7 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 		}
 
 		Zombie * zombie = newZombie(clock);
-        w->lastStats.zombies++;
+		w->lastStats.zombies++;
 		tile->entity = zombie->asEntity;
 
 		i++;
@@ -213,8 +213,9 @@ void printPopulations(World * world) {
 			s.infectedFemales + s.infectedMales, s.zombies);
 
 #ifndef NDETAILED_STATS
-	printf("LHF: %6d \tLHM: %6d \tLIF: %6d \tLIM: %6d \tLZ:  %6d\n", s.humanFemales,
-			s.humanMales, s.infectedFemales, s.infectedMales, s.zombies);
+	printf("LHF: %6d \tLHM: %6d \tLIF: %6d \tLIM: %6d \tLZ:  %6d\n",
+			s.humanFemales, s.humanMales, s.infectedFemales, s.infectedMales,
+			s.zombies);
 	printf("DHF: %6d \tDHM: %6d \tDIF: %6d \tDIM: %6d \tDZ:  %6d\n",
 			s.humanFemalesDied, s.humanMalesDied, s.infectedFemalesDied,
 			s.infectedMalesDied, s.zombiesDecomposed);
@@ -253,7 +254,7 @@ int main(int argc, char **argv) {
 	unsigned int width = atoi(argv[1]);
 	unsigned int height = atoi(argv[2]);
 
-    unsigned int people = (int) (width * height * INITIAL_DENSITY);
+	unsigned int people = (int) (width * height * INITIAL_DENSITY);
 	unsigned int zombies = atoi(argv[3]);
 
 	unsigned int iters = atoi(argv[4]);
@@ -276,7 +277,7 @@ int main(int argc, char **argv) {
 		World * temp = input;
 		input = output;
 		output = temp;
-        input->lastStats=stats;
+		input->lastStats = stats;
 		copyStats(output, stats);
 	}
 
