@@ -127,7 +127,6 @@ Human * newHuman(simClock clock) {
 	} else {
 		human->gender = MALE;
 		human->children = NO_CHILDREN;
-
 		fertilityStart = randomEvent(FERTILITY_START_MALE_MEAN,
 		FERTILITY_START_MALE_STD_DEV);
 		fertilityEnd = randomEvent(FERTILITY_END_MALE_MEAN,
@@ -135,11 +134,21 @@ Human * newHuman(simClock clock) {
 	}
 
 	// TODO make the new human age dependent on age distribution, low priority
-	if (human->gender == FEMALE) {
-		human->wasBorn = clock - randomDouble() * LIFE_EXPECTANCY_FEMALE_MEAN;
-	} else {
-		human->wasBorn = clock - randomDouble() * LIFE_EXPECTANCY_MALE_MEAN;
-	}
+	//if (human->gender == FEMALE) {
+        double try=randomDouble();
+    
+        if(try<CHILD_POP){
+            human->wasBorn = clock - (randomDouble() * HUMAN_CHILD_YOUNG_BORDER);
+        }else if(try<YOUNG_POP+CHILD_POP){
+            human->wasBorn = clock - HUMAN_CHILD_YOUNG_BORDER - randomDouble() * YOUNG_PERIOD;
+        }else if(try<MIDDLEAGE_POP+YOUNG_POP+CHILD_POP){
+            human->wasBorn = clock - HUMAN_YOUNG_MIDDLEAGE_BORDER - randomDouble() * MIDDLEAGE_PERIOD;//65-37.5=27.5
+        }else{
+            human->wasBorn = clock - HUMAN_MIDDLEAGE_ELDERLY_BORDER - randomDouble() * ELDER_PERIOD;//110-65=45
+        }
+	//} else {
+		//human->wasBorn = clock - randomDouble() * LIFE_EXPECTANCY_MALE_MEAN;
+	//}
 
 // may or may not be in future
 	human->fertilityStart = human->wasBorn + fertilityStart;
@@ -234,12 +243,28 @@ LivingEntity * copyLiving(LivingEntity * living) {
 	return copyEntity(living->asEntity)->asLiving;
 }
 
-void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock) {
+void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock, Stats stats) {
+    int children = stats.humanFemalesDied + stats.humanMalesDied;
+    int couples = stats.couplesMakingLove;
+    if(couples == 0) {
+        return;
+    }
+    
 	double rnd = randomDouble();
-	if (rnd > PROBABILITY_FERTILIZATION) {
-		return;
-	}
-
+    
+    /*if(rnd > children / (double)couples) {
+        return;
+    }*/
+    
+    if(stats.humanFemales + stats.humanMales>12000){
+        if(rnd > children / (double)couples) {
+            return;
+        }
+    }else{
+        if (rnd > 10*PROBABILITY_FERTILIZATION) {//0.006 human stable
+            return;
+        }
+    }
 	int count = randomCountOfUnborn();
 	mother->children = newChildren(count, clock, false);
 }

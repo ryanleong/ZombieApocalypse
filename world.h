@@ -14,6 +14,7 @@
 #include "clock.h"
 #include "entity.h"
 #include "direction.h"
+#include "stats.h"
 
 /**
  * There are two types of Tiles:
@@ -33,35 +34,6 @@ typedef struct Tile {
 	TileType type;
 	Entity * entity;
 } Tile;
-
-typedef struct Stats {
-	int humanFemales;
-	int humanMales;
-	int infectedFemales;
-	int infectedMales;
-	int zombies;
-	int humanFemalesDied;
-	int humanMalesDied;
-	int infectedFemalesDied;
-	int infectedMalesDied;
-	int zombiesDecomposed;
-	int humanFemalesBorn;
-	int humanMalesBorn;
-	int humanFemalesGivingBirth;
-	int humanFemalesPregnant;
-	int infectedFemalesBorn;
-	int infectedMalesBorn;
-	int infectedFemalesGivingBirth;
-	int infectedFemalesPregnant;
-	int couplesMakingLove;
-	int childrenConceived;
-	int humanFemalesBecameInfected;
-	int humanMalesBecameInfected;
-	int infectedFemalesBecameZombies;
-	int infectedMalesBecameZombies;
-} Stats;
-
-#define NO_STATS ((const struct Stats) {0})
 
 /**
  * The World contains a 2D map.
@@ -87,6 +59,7 @@ typedef struct World {
 	unsigned int yStart; // first interior tile
 	unsigned int yEnd; // last interior tile
 	Stats stats; // detailed statistics
+    Stats lastStats;
 #ifdef _OPENMP
 	omp_lock_t * locks;
 #endif

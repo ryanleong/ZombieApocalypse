@@ -29,6 +29,11 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 		}
 
 		Human * human = newHuman(clock);
+        if (human->gender == FEMALE) {
+            w->lastStats.humanFemales++;
+        } else {
+            w->lastStats.humanMales++;
+        }
 		tile->entity = human->asEntity;
 
 		i++;
@@ -43,6 +48,7 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 		}
 
 		Zombie * zombie = newZombie(clock);
+        w->lastStats.zombies++;
 		tile->entity = zombie->asEntity;
 
 		i++;
@@ -239,18 +245,18 @@ void printStatistics(World * world) {
 }
 
 int main(int argc, char **argv) {
-	if (argc != 6) {
-		printf("I want width, height, people, zombies, iterations.\n");
+	if (argc != 5) {
+		printf("I want width, height, zombies, iterations.\n");
 		exit(1);
 	}
 
 	unsigned int width = atoi(argv[1]);
 	unsigned int height = atoi(argv[2]);
 
-	unsigned int people = atoi(argv[3]);
-	unsigned int zombies = atoi(argv[4]);
+    unsigned int people = (int) (width * height * INITIAL_DENSITY);
+	unsigned int zombies = atoi(argv[3]);
 
-	unsigned int iters = atoi(argv[5]);
+	unsigned int iters = atoi(argv[4]);
 
 	initRandom(0);
 
@@ -270,6 +276,7 @@ int main(int argc, char **argv) {
 		World * temp = input;
 		input = output;
 		output = temp;
+        input->lastStats=stats;
 		copyStats(output, stats);
 	}
 

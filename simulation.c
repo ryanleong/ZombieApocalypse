@@ -170,7 +170,7 @@ void simulateStep(World * input, World * output) {
 						if (le->type == HUMAN) {
 							stats.humanFemalesPregnant++;
 						} else {
-							stats.humanFemalesPregnant++;
+							stats.infectedFemalesPregnant++;
 						}
 					}
 				}
@@ -183,7 +183,10 @@ void simulateStep(World * input, World * output) {
 							x, y, clock);
 					if (adjacentMale != NULL) {
 						stats.couplesMakingLove++;
-						makeLove(le, adjacentMale, clock);
+                        //if(stats.humanFemales<10*stats.zombies){
+                        makeLove(le, adjacentMale, clock, input->lastStats);
+                        //}
+						
 						stats.childrenConceived += le->children.count;
 						debug_printf("A couple made love\n");
 					}

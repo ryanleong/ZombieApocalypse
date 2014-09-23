@@ -7,6 +7,7 @@
 
 #include "clock.h"
 #include "direction.h"
+#include "stats.h"
 
 /**
  * Entity may be of type HUMAN, INFECTED or ZOMBIE.
@@ -175,7 +176,7 @@ LivingEntity * copyLiving(LivingEntity * living);
  * The fertilization will happen with a probability.
  * Call this whenever a MALE is next to a FEMALE.
  */
-void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock);
+void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock, Stats stats);
 
 /**
  * Mother gives birth to all her children when they are scheduled.
