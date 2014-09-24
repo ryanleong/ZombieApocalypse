@@ -8,6 +8,7 @@
 \usepackage[super]{nth}
 \usepackage{fancyhdr}
 \usepackage{tabu}
+\usepackage{cite}
 
 
 \DeclareGraphicsExtensions{.pdf,.png,.jpg,.eps}
@@ -32,6 +33,14 @@
 \maketitle
 
 \section{Introduction} % Ryan
+
+Infectious diseases have been prevalent since the start of time. Modelling the spread of these diseases can serve to find a possible ways to stop or contain the spread. With the advancement of technology, computing power has increased tremendously, allowing these simulation models to be done on a greater scale. In this project, we are to implement a Zombie Infection simulation, modeling the spread of the infection on a human population. The entities in the simulation are split into three main categories, Humans, Infected and Zombies. Infected are humans which will eventually turn into Zombies. 
+
+In the first part of this project, the task was to simulate the population on a 500 by 500 grid. We had take into account the birth and death rate of humans, keeping close to the current demographics of the Northern Territory in Australia. 
+
+The zombies decay rate of 1 year (meaning that a Zombie would decompose after a year), which was adapted from \cite{zombiepedia}, had to also be taken into account. This meant that the zombies would die out without any humans to infected. These zombies naturally move towards the humans to infect them, converting humans into zombies. The gestation period for the infected humans to turn into zombies was also adapted from the same source. Movement also needs to be implemented correctly, as both humans and zombies have different speeds.
+
+With this model, we aim to be able to simulate an actual infection, by modeling a stable population of both humans and zombies, finding the right distribution for both to coexist. 
 
 \section{Model} % Adam
 
@@ -215,7 +224,9 @@ In our opinion it is not caused by locking parts of the world as there are still
 
 \section{Recommendations}
 
-TODO we should add bibliography to the end
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
 
 \end{document}
 
