@@ -1,7 +1,12 @@
 SRC = apocalypse.c entity.c direction.c random.c simulation.c utils.c world.c
 OBJS = $(SRC:%.c=%.o)
 
+ifeq ($(HOSTNAME), avoca)
+CC = mpicc
+else
 CC = gcc
+endif
+
 CFLAGS = --std=gnu99 -O2 -g -Wall -fopenmp
 
 ifdef NDEBUG
@@ -28,7 +33,11 @@ ifdef OUTPUT_EVERY
 CFLAGS += -DOUTPUT_EVERY=$(OUTPUT_EVERY)
 endif
 
-LIBS = -lm -lgomp -lpng
+LIBS = -lm -lgomp
+
+ifndef NIMAGES
+LIBS += -lpng
+endif
 
 all: dependencies apocalypse
 

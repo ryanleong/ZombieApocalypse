@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+
+#ifndef NIMAGES
 #include <png.h>
+#endif
 
 #include "world.h"
 #include "entity.h"
@@ -54,6 +57,8 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 		i++;
 	}
 }
+
+#ifndef NIMAGES
 
 /**
  * Fills an image pixel with a color based on properties of the tile and entity.
@@ -199,6 +204,7 @@ int printWorld(World * world) {
 
 	return code;
 }
+#endif
 
 /**
  *  Print the number of humans, infected people (who carry the disease, but
@@ -265,7 +271,9 @@ int main(int argc, char **argv) {
 	World * output = newWorld(width, height);
 
 	randomDistribution(input, people, zombies, 0);
+#ifndef NIMAGES
 	printWorld(input);
+#endif
 
 	for (int i = 0; i < iters; i++) {
 		simulateStep(input, output);
