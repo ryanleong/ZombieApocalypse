@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+
+#ifdef TIME
 #include <sys/time.h>
+#endif
 
 #ifndef NIMAGES
 #include <png.h>
@@ -276,9 +279,11 @@ int main(int argc, char **argv) {
 	printWorld(input);
 #endif
 
+#ifdef TIME
 	struct timeval t1, t2;
 	double elapsedTime;
 	gettimeofday(&t1, NULL);
+#endif
 
 	for (int i = 0; i < iters; i++) {
 		simulateStep(input, output);
@@ -294,6 +299,7 @@ int main(int argc, char **argv) {
 		copyStats(output, stats);
 	}
 
+#ifdef TIME
 	gettimeofday(&t2, NULL);
 	elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; // sec to ms
 	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; // us to ms
@@ -304,6 +310,7 @@ int main(int argc, char **argv) {
 	int numThreads = 1;
 #endif
 	printf("Took %f milliseconds with %d threads\n", elapsedTime, numThreads);
+#endif
 
 // this is a clean up
 // we destroy both worlds

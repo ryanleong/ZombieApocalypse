@@ -30,4 +30,12 @@
 .cproject
 
 # ignore the built executable.
+dependencies
 apocalypse
+
+# ignore intermediate files for tr building.
+/tr.aux
+/tr.dvi
+/tr.log
+/tr.pdf
+movement-eps-converted-to.pdf

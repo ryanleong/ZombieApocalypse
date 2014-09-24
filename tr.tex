@@ -165,6 +165,54 @@ TODO Alicia will describe her magic
 
 TODO two images of state and a graph of populations' count.
 
+\subsection{Demographics}
+
+TODO demographics during the simulation.
+Unfortunately we haven't implemented a function which prints information about individual people -- gender + age.
+
+\subsection{Scaling}
+
+\begin{figure*}[ht]
+    \centering
+    \begin{tabu} {| X[0.8,c,p] || X[1,c,p] | X[1,c,p] | X[1,c,p] |}
+        \rowfont{\bfseries}
+        \hline
+        Threads &
+        First attempt &
+        Second attempt&
+        Third attempt \\
+        \hline
+        \hline
+        \textbf{1} & 180588.734000 & 180633.477000 & 180441.396000 \\
+        \hline
+        \textbf{2} & 94541.958000 & 95547.356000 & 94704.053000 \\
+        \hline
+        \textbf{4} & 49689.704000 & 50052.682000 & 50359.165000 \\
+        \hline
+        \textbf{8} & 25863.988000 & 26373.077000 & 26276.703000 \\
+        \hline
+        \textbf{16} & 14365.825000 & 14386.286000 & 14363.556000 \\
+        \hline
+        \textbf{32} & 10598.242000 & 10936.435000 & 10854.121000 \\
+        \hline
+        \textbf{64} & 14785.381000 & 14363.065000 & 14936.496000 \\
+        \hline
+    \end{tabu}
+    \caption{Scaling depending on number of threads}
+\end{figure*}
+
+
+The model implemented in C using OpenMP can utilise several threads.
+On Avoca the IBM Blue Gene/Q supercomputer, a single node provides 16 cores with 4 threads each.
+Our model could utilise all 64 threads as most of the simulation does not need any thread synchronisation.
+
+We run the model three times for 1000 iterations in order to ensure the influence of randomness does not make the results odd.
+The results are in the table above, running times are in milliseconds.
+We expect a perfect scaling up to 16 threads -- each of them will be assigned to a dedicated core.
+Running with 32 cores still provides an improvement but not a significant one.
+The drop of performace when running with 64 threads is either caused by the hardware architecture of the CPU or by using wrong random generators.
+In our opinion it is not caused by locking parts of the world as there are still at least 7 columns for each thread (we lock only three of them).
+
 \section{Recommendations}
 
 TODO we should add bibliography to the end

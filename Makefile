@@ -33,6 +33,10 @@ ifdef OUTPUT_EVERY
 CFLAGS += -DOUTPUT_EVERY=$(OUTPUT_EVERY)
 endif
 
+ifdef TIME
+CFLAGS += -DTIME
+endif
+
 LIBS = -lm -lgomp
 
 ifndef NIMAGES
