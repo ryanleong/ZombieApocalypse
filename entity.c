@@ -23,10 +23,29 @@ typedef struct EntityAllocator {
 /**
  * There is only one allocator per thread.
  */
-EntityAllocator allocator; // initialized to { NULL, NULL, NULL };
+EntityAllocator * allocators = NULL;
+
+void initAllocators() {
 #ifdef _OPENMP
-#pragma omp threadprivate(allocator)
+	int threads = omp_get_max_threads();
+#else
+	int threads = 1;
 #endif
+	allocators = calloc(threads, sizeof(EntityAllocator));
+}
+
+void destroyAllocators() {
+	free(allocators);
+}
+
+static EntityAllocator * getAllocator() {
+#ifdef _OPENMP
+	int thread = omp_get_thread_num();
+#else
+	int thread = 0;
+#endif
+	return allocators + thread;
+}
 
 /**
  * Allocates new entity in memory if none can be recycled.
@@ -36,29 +55,30 @@ EntityAllocator allocator; // initialized to { NULL, NULL, NULL };
  */
 static Entity * newEntity(EntityType type) {
 	Entity * entity = NULL;
+	EntityAllocator * allocator = getAllocator();
 	switch (type) {
 	case HUMAN:
-		if (allocator.humans != NULL) {
-			entity = (Entity *) allocator.humans;
-			allocator.humans = entity->asHuman;
+		if (allocator->humans != NULL) {
+			entity = (Entity *) allocator->humans;
+			allocator->humans = entity->asHuman;
 		} else {
 			entity = ((Entity *) malloc(sizeof(Human)));
 		}
 		break;
 
 	case INFECTED:
-		if (allocator.infected != NULL) {
-			entity = (Entity *) allocator.infected;
-			allocator.infected = entity->asInfected;
+		if (allocator->infected != NULL) {
+			entity = (Entity *) allocator->infected;
+			allocator->infected = entity->asInfected;
 		} else {
 			entity = ((Entity *) malloc(sizeof(Infected)));
 		}
 		break;
 
 	case ZOMBIE:
-		if (allocator.zombies != NULL) {
-			entity = (Entity *) allocator.zombies;
-			allocator.zombies = entity->asZombie;
+		if (allocator->zombies != NULL) {
+			entity = (Entity *) allocator->zombies;
+			allocator->zombies = entity->asZombie;
 		} else {
 			entity = ((Entity *) malloc(sizeof(Zombie)));
 		}
@@ -318,18 +338,21 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 }
 
 void disposeHuman(Human * human) {
-	human->asHuman = allocator.humans;
-	allocator.humans = human;
+	EntityAllocator * allocator = getAllocator();
+	human->asHuman = allocator->humans;
+	allocator->humans = human;
 }
 
 void disposeInfected(Infected * infected) {
-	infected->asInfected = allocator.infected;
-	allocator.infected = infected;
+	EntityAllocator * allocator = getAllocator();
+	infected->asInfected = allocator->infected;
+	allocator->infected = infected;
 }
 
 void disposeZombie(Zombie * zombie) {
-	zombie->asZombie = allocator.zombies;
-	allocator.zombies = zombie;
+	EntityAllocator * allocator = getAllocator();
+	zombie->asZombie = allocator->zombies;
+	allocator->zombies = zombie;
 }
 
 void disposeEntity(Entity * entity) {
@@ -357,17 +380,18 @@ void destroyUnusedChain(Entity * entities) {
 }
 
 void destroyUnused() {
-	if (allocator.humans != NULL) {
-		destroyUnusedChain(allocator.humans->asEntity);
-		allocator.humans = NULL;
+	EntityAllocator * allocator = getAllocator();
+	if (allocator->humans != NULL) {
+		destroyUnusedChain(allocator->humans->asEntity);
+		allocator->humans = NULL;
 	}
-	if (allocator.infected != NULL) {
-		destroyUnusedChain(allocator.infected->asEntity);
-		allocator.infected = NULL;
+	if (allocator->infected != NULL) {
+		destroyUnusedChain(allocator->infected->asEntity);
+		allocator->infected = NULL;
 	}
-	if (allocator.zombies != NULL) {
-		destroyUnusedChain(allocator.zombies->asEntity);
-		allocator.zombies = NULL;
+	if (allocator->zombies != NULL) {
+		destroyUnusedChain(allocator->zombies->asEntity);
+		allocator->zombies = NULL;
 	}
 }
 

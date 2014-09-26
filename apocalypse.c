@@ -270,6 +270,7 @@ int main(int argc, char **argv) {
 	unsigned int iters = atoi(argv[4]);
 
 	initRandom(0);
+	initAllocators();
 
 	World * input = newWorld(width, height);
 	World * output = newWorld(width, height);
@@ -302,7 +303,7 @@ int main(int argc, char **argv) {
 #ifdef TIME
 	gettimeofday(&t2, NULL);
 	elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; // sec to ms
-	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; // us to ms
+	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;// us to ms
 
 #ifdef _OPENMP
 	int numThreads = omp_get_max_threads();
@@ -325,4 +326,6 @@ int main(int argc, char **argv) {
 	{
 		destroyUnused();
 	}
+
+	destroyAllocators();
 }

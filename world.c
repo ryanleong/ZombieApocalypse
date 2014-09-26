@@ -46,7 +46,7 @@ World * newWorld(unsigned int width, unsigned int height) {
 
 void resetWorld(World * world) {
 #ifdef _OPENMP
-#pragma omp parallel for collapse(2) schedule(guided, 10)
+#pragma omp parallel for schedule(static)
 #endif
 	for (int x = 0; x < world->width + 4; x++) {
 		for (int y = 0; y < world->height + 4; y++) {

@@ -10,6 +10,16 @@
 #include "stats.h"
 
 /**
+ * To be called only once before the first parallel region.
+ */
+void initAllocators();
+
+/**
+ * To be called at the end after the last parallel region.
+ */
+void destroyAllocators();
+
+/**
  * Entity may be of type HUMAN, INFECTED or ZOMBIE.
  * Each entity has its own attributes but some of them are shared.
  * HUMAN and INFECTED are together a LivingEntity.
