@@ -293,6 +293,7 @@ int main(int argc, char **argv) {
 
 		Stats stats = output->stats;
 		resetWorld(input);
+		resetWorld(output);
 		World * temp = input;
 		input = output;
 		output = temp;
@@ -328,4 +329,5 @@ int main(int argc, char **argv) {
 	}
 
 	destroyAllocators();
+	destroyRandom();
 }

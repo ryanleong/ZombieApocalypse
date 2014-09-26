@@ -18,6 +18,11 @@
 void initRandom(unsigned int seed);
 
 /**
+ * Destroys random generators.
+ */
+void destroyRandom();
+
+/**
  * Gaussian distribution with mean and standard deviation.
  */
 simClock randomEvent(simClock mean, simClock stdDev);

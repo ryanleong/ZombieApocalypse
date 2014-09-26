@@ -32,7 +32,8 @@ World * newWorld(unsigned int width, unsigned int height) {
 		for (unsigned int y = 0; y < height + 4; y++) {
 			Tile * tile = GET_TILE(world, x, y);
 			initTile(tile);
-			if (x <= 1 || y <= 1 || x >= width + 2 || y >= height + 2) {
+			if (x < world->xStart || y < world->yStart || x > world->xEnd
+					|| y > world->yEnd) {
 				tile->type = BORDER;
 			}
 		}

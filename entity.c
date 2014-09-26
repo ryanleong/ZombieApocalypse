@@ -38,6 +38,9 @@ void destroyAllocators() {
 	free(allocators);
 }
 
+/**
+ * Returns the allocator for this thread
+ */
 static EntityAllocator * getAllocator() {
 #ifdef _OPENMP
 	int thread = omp_get_thread_num();

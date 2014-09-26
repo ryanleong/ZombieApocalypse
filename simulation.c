@@ -58,6 +58,7 @@ void simulateStep(World * input, World * output) {
 		lockColumn(output, x);
 		for (int y = input->yStart; y <= input->yEnd; y++) {
 			Entity * entity = GET_TILE(input, x, y)->entity;
+			Entity * entity2 = NULL;
 			if (entity == NULL) {
 				continue;
 			}
@@ -93,7 +94,7 @@ void simulateStep(World * input, World * output) {
 					debug_printf("A Zombie decomposed\n");
 					continue; // just forgot this entity
 				}
-				entity = copyEntity(entity);
+				entity2 = copyEntity(entity);
 			}
 
 			// Convert Infected to Zombie
@@ -105,10 +106,10 @@ void simulateStep(World * input, World * output) {
 					} else {
 						stats.infectedMalesBecameZombies++;
 					}
-					entity = toZombie(infected, clock)->asEntity;
+					entity2 = toZombie(infected, clock)->asEntity;
 					debug_printf("An Infected became Zombie\n");
 				} else {
-					entity = copyEntity(entity);
+					entity2 = copyEntity(entity);
 				}
 			}
 
@@ -123,19 +124,21 @@ void simulateStep(World * input, World * output) {
 					} else {
 						stats.humanMalesBecameInfected++;
 					}
-					entity = toInfected(entity->asHuman, clock)->asEntity;
+					entity2 = toInfected(entity->asHuman, clock)->asEntity;
 					debug_printf("A Human became infected\n");
 				} else {
-					entity = copyEntity(entity);
+					entity2 = copyEntity(entity);
 				}
 			}
+
+			entity = NULL;
 
 			// Here the entity variable contains either copy or a new entity after transition.
 			// This is important. From now on, we may freely change it.
 
 			// Here are performed natural processed of humans and infected
-			if (entity->type == HUMAN || entity->type == INFECTED) {
-				LivingEntity * le = entity->asLiving;
+			if (entity2->type == HUMAN || entity2->type == INFECTED) {
+				LivingEntity * le = entity2->asLiving;
 				// giving birth
 				if (le->gender == FEMALE && le->children.count > 0) {
 					if (le->children.borns <= clock) {
@@ -193,14 +196,14 @@ void simulateStep(World * input, World * output) {
 				}
 			}
 
-			if (entity->type == HUMAN) {
-				if (entity->asHuman->gender == FEMALE) {
+			if (entity2->type == HUMAN) {
+				if (entity2->asHuman->gender == FEMALE) {
 					stats.humanFemales++;
 				} else {
 					stats.humanMales++;
 				}
-			} else if (entity->type == INFECTED) {
-				if (entity->asInfected->gender == FEMALE) {
+			} else if (entity2->type == INFECTED) {
+				if (entity2->asInfected->gender == FEMALE) {
 					stats.infectedFemales++;
 				} else {
 					stats.infectedMales++;
@@ -217,14 +220,14 @@ void simulateStep(World * input, World * output) {
 			// to make the entity bearing variable in terms of absolute value
 			double bearingRandomQuotient = (randomDouble() - 0.5)
 					* BEARING_ABS_QUOTIENT_VARIANCE + BEARING_ABS_QUOTIENT_MEAN;
-			entity->bearing = BEARING_PROJECT(bearing) * bearingRandomQuotient;
+			entity2->bearing = BEARING_PROJECT(bearing) * bearingRandomQuotient;
 
 			Direction dir = bearingToDirection(bearing);
 
 			// some randomness in direction
 			// the entity will never go in the opposite direction
 			if (dir != STAY) {
-				if (randomDouble() < getMaxSpeed(entity, clock)) {
+				if (randomDouble() < getMaxSpeed(entity2, clock)) {
 					double dirRnd = randomDouble();
 					if (dirRnd < DIRECTION_MISSED) {
 						dir = (dir + 2) % 4 + 1; // turn counter-clock-wise
@@ -260,7 +263,7 @@ void simulateStep(World * input, World * output) {
 			}
 
 			// actual assignment of entity to its destination
-			dest->entity = entity;
+			dest->entity = entity2;
 		}
 		unlockColumn(output, x);
 		mergeStats(output, stats);
@@ -275,6 +278,8 @@ void moveBack(World * world, int srcX, int srcY, int destX, int destY) {
 	if (in->entity != NULL) {
 		if (GET_TILE(world, destX, destY)->entity == NULL) {
 			GET_TILE(world, destX, destY)->entity = in->entity;
+		} else {
+			disposeEntity(in->entity);
 		}
 		in->entity = NULL;
 	}
