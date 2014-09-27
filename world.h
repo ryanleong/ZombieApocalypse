@@ -16,29 +16,32 @@
 #include "direction.h"
 #include "stats.h"
 
+typedef Entity Cell;
+typedef EntityPtr CellPtr;
+
 /**
  * The World contains a 2D map.
- * The map is slightly bigger to allow unchecked access to two tiles in each direction.
+ * The map is slightly bigger to allow unchecked access to two cells in each direction.
  * You should never iterate like this: for (int x = 0; x < w->width; x++)
  * But rather: for (int x = w->xStart; x <= w->xEnd; x++)
  * Remember that start and end are inclusive.
  * The main reason is to make it possible to divide the map into pieces
  * which will calculated independently on different nodes connected by MPI.
  *
- * As there is never access more than 2 tiles from REGULAR tile,
+ * As there is never access more than 2 cells from internal cell,
  * no border checks are necessary.
  *
  * Part of the world (set of three adjacent columns) can be locked.
  */
 typedef struct World {
 	simClock clock;
-	Entity ** map;
+	Cell ** map;
 	unsigned int width; // real width
 	unsigned int height; // real height
-	unsigned int xStart; // first interior tile
-	unsigned int xEnd; // last interior tile
-	unsigned int yStart; // first interior tile
-	unsigned int yEnd; // last interior tile
+	unsigned int xStart; // first interior cell
+	unsigned int xEnd; // last interior cell
+	unsigned int yStart; // first interior cell
+	unsigned int yEnd; // last interior cell
 	Stats stats; // detailed statistics
 	Stats lastStats;
 #ifdef _OPENMP
@@ -46,58 +49,70 @@ omp_lock_t * locks;
 #endif
 } World;
 
-/**
- * Returns the specified tile.
- * Does not check if the tile is in the world.
- */
-#define GET_ENTITY(world, x, y) \
-		((world)->map[(x)][(y)])
+typedef World * WorldPtr;
 
 /**
- * Returns the tile in direction from specified tile.
- * Does not check if the tile is in the world.
+ * Returns the specified entity.
+ * Does not check if the entity is in the world.
  */
-#define GET_ENTITY_DIR(world, dir, x, y) \
-		GET_ENTITY((world), (x) + direction_delta_x[(dir)], (y) + direction_delta_y[(dir)])
+#define GET_CELL(worldPtr, x, y) \
+		((worldPtr)->map[(x)][(y)])
+
+#define GET_CELL_PTR(worldPtr, x, y) \
+		(&GET_CELL((worldPtr), (x), (y)))
+
+/**
+ * Returns the cell in direction from specified cell.
+ * Does not check if the cell is in the world.
+ */
+#define GET_CELL_DIR(worldPtr, dir, x, y) \
+		GET_CELL((worldPtr), (x) + direction_delta_x[(dir)], (y) + direction_delta_y[(dir)])
+
+#define GET_CELL_PTR_DIR(worldPtr, dir, x, y) \
+		(&GET_CELL_DIR((worldPtr), (dir), (x), (y)))
 
 /**
  * Tests if the specified field is outside the world.
  */
-#define IS_BORDER(world, x, y) \
-	((x) < (world)->xStart || (y) < (world)->yStart \
-	|| (x) > (world)->xEnd || (y) > (world)->yEnd)
+#define IS_OUTSIDE(worldPtr, x, y) \
+	((x) < (worldPtr)->xStart || (y) < (worldPtr)->yStart \
+	|| (x) > (worldPtr)->xEnd || (y) > (worldPtr)->yEnd)
 
 /**
  * Creates a new world of specified dimensions.
  */
-World * newWorld(unsigned int width, unsigned int height);
+WorldPtr newWorld(unsigned int width, unsigned int height);
 
 /**
  * Resets the world - removes all entities.
  */
-void resetWorld(World * world);
+void resetWorld(WorldPtr world);
 
 /**
  * Destroys the entities in the world and than destroys the world.
  */
-void destroyWorld(World * world);
+void destroyWorld(WorldPtr world);
 
 /**
  * Locks three adjacent columns centered around x for exclusive access.
  */
-void lockColumn(World * world, int x);
+void lockColumn(WorldPtr world, int x);
 
 /**
  * Unlocks the locked columns so everybody can use them.
  */
-void unlockColumn(World * tile, int x);
+void unlockColumn(WorldPtr world, int x);
 
 /**
- * Returns the first adjacent tile to [x,y] in output which is free in both worlds.
+ * Returns the first adjacent cell to [x,y] in output which is free in both worlds.
+ * Returns NULL if none is free.
  */
-Entity * getFreeAdjacent(World * input, World * output, int x, int y);
+CellPtr getFreeAdjacent(WorldPtr input, WorldPtr output, int x, int y);
 
-void copyStats(World * world, Stats stats);
+/**
+ * Copies stats from earlier steps to this world
+ */
+void copyStats(WorldPtr world, Stats stats);
 
 #endif // WORLD_H_
 

@@ -13,8 +13,8 @@
 /**
  * Mapping names to indices of directions.
  * Direction 0 is STAY.
- * Directions 1-4 are the adjacent tiles.
- * Directions 5-12 are tiles accessible within two moves.
+ * Directions 1-4 are the adjacent cells.
+ * Directions 5-12 are cells accessible within two moves.
  * There are helper constants DIRECTION_START, DIRECTION_BASIC and DIRECTION_ALL.
  * Use them if you want to iterate over directions.
  */
@@ -85,7 +85,7 @@ typedef float complex bearing;
  * Constant which means that there is no bearing.
  * Another bearing can be added with normal arithmetics.
  */
-#define NO_BEARING ((const double complex) (0+0*I))
+#define NO_BEARING ((const bearing) (0+0*I))
 
 /**
  * Returns random bearing in terms of random angle and absolute value = 0.5.
@@ -95,7 +95,7 @@ typedef float complex bearing;
 bearing getRandomBearing();
 
 /**
- * Normalizes the bearing, stripping its absolute value.
+ * Normalizes the bearing, strips its absolute value.
  */
 #define BEARING_PROJECT(bearing) ((bearing) / cabs(bearing))
 

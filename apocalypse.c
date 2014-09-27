@@ -6,6 +6,26 @@
 #include <sys/time.h>
 #endif
 
+#ifndef OUTPUT_EVERY
+#define OUTPUT_EVERY 1
+#endif
+
+#ifndef IMAGES_EVERY
+#define IMAGES_EVERY OUTPUT_EVERY
+#endif
+
+#if IMAGES_EVERY <= 0 && ! defined(NIMAGES)
+#define NIMAGES
+#endif
+
+#ifndef POPULATION_EVERY
+#define POPULATION_EVERY OUTPUT_EVERY
+#endif
+
+#if POPULATION_EVERY <= 0 && ! defined(NPOPULATION)
+#define NIMAGES
+#endif
+
 #ifndef NIMAGES
 #include <png.h>
 #endif
@@ -18,43 +38,39 @@
 #include "constants.h"
 #include "common.h"
 
-#ifndef OUTPUT_EVERY
-#define OUTPUT_EVERY 1
-#endif
-
 /**
  * Fills the world with specified number of people and zombies.
  * The people are of different age; zombies are "brand new".
  */
-void randomDistribution(World * w, int people, int zombies, simClock clock) {
+void randomDistribution(WorldPtr world, int people, int zombies, simClock clock) {
 	for (int i = 0; i < people;) {
-		int x = randomInt(w->xStart, w->xEnd);
-		int y = randomInt(w->yStart, w->yEnd);
-		Entity * entityPtr = &GET_ENTITY(w, x, y);
-		if (entityPtr->type != NONE) {
+		int x = randomInt(world->xStart, world->xEnd);
+		int y = randomInt(world->yStart, world->yEnd);
+		CellPtr cellPtr = GET_CELL_PTR(world, x, y);
+		if (cellPtr->type != NONE) {
 			continue;
 		}
 
-		newHuman(entityPtr, clock);
-		if (entityPtr->gender == FEMALE) {
-			w->lastStats.humanFemales++;
+		newHuman(cellPtr, clock);
+		if (cellPtr->gender == FEMALE) {
+			world->lastStats.humanFemales++;
 		} else {
-			w->lastStats.humanMales++;
+			world->lastStats.humanMales++;
 		}
 
 		i++;
 	}
 
 	for (int i = 0; i < zombies;) {
-		int x = randomInt(w->xStart, w->xEnd);
-		int y = randomInt(w->yStart, w->yEnd);
-		Entity * entityPtr = &GET_ENTITY(w, x, y);
-		if (entityPtr->type != NONE) {
+		int x = randomInt(world->xStart, world->xEnd);
+		int y = randomInt(world->yStart, world->yEnd);
+		CellPtr cellPtr = GET_CELL_PTR(world, x, y);
+		if (cellPtr->type != NONE) {
 			continue;
 		}
 
-		newZombie(entityPtr, clock);
-		w->lastStats.zombies++;
+		newZombie(cellPtr, clock);
+		world->lastStats.zombies++;
 
 		i++;
 	}
@@ -63,21 +79,27 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 #ifndef NIMAGES
 
 /**
- * Fills an image pixel with a color based on properties of the tile and entity.
+ * Fills an image pixel with a color based on properties of the cell and entity.
  * Humans are green, infected are blue and zombies are red.
  */
-void setRGB(png_byte *ptr, Entity * entity, simClock clock) {
+void setRGB(png_byte * ptr, CellPtr cellPtr, simClock clock) {
 	// TODO make the color depend on age; this is low priority
 	// I tried it but the difference was not noticeable
 
-	switch (entity->type) {
+	switch (cellPtr->type) {
+	case NONE: {
+		ptr[0] = 255;
+		ptr[1] = 255;
+		ptr[2] = 255;
+		break;
+	}
 	case HUMAN: {
-		if (entity->children > 0) {
+		if (cellPtr->children > 0) {
 			ptr[0] = 100;
 		} else {
 			ptr[0] = 0;
 		}
-		if (entity->gender == FEMALE) {
+		if (cellPtr->gender == FEMALE) {
 			ptr[1] = 200;
 		} else {
 			ptr[1] = 150;
@@ -86,13 +108,13 @@ void setRGB(png_byte *ptr, Entity * entity, simClock clock) {
 		break;
 	}
 	case INFECTED: {
-		if (entity->children > 0) {
+		if (cellPtr->children > 0) {
 			ptr[0] = 100;
 		} else {
 			ptr[0] = 0;
 		}
 		ptr[1] = 0;
-		if (entity->gender == FEMALE) {
+		if (cellPtr->gender == FEMALE) {
 			ptr[2] = 200;
 		} else {
 			ptr[2] = 150;
@@ -100,24 +122,18 @@ void setRGB(png_byte *ptr, Entity * entity, simClock clock) {
 		break;
 	}
 	case ZOMBIE: {
-		//Zombie * z = tile->entity->asZombie;
 		ptr[0] = 200;
 		ptr[1] = 0;
 		ptr[2] = 0;
 		break;
 	}
-	case NONE:
-		ptr[0] = 255;
-		ptr[1] = 255;
-		ptr[2] = 255;
-		break;
 	}
 }
 
 /**
- * Generates an image for the world mapping each tile to a pixel.
+ * Generates an image for the world mapping each cell to a pixel.
  */
-int printWorld(World * world) {
+int printWorld(WorldPtr world) {
 	char filename[80];
 	sprintf(filename, "images/step-%06lld.png", world->clock);
 
@@ -180,7 +196,7 @@ int printWorld(World * world) {
 	for (int y = world->yStart; y <= world->yEnd; y++) {
 		for (int x = world->xStart; x <= world->xEnd; x++) {
 			setRGB(image[y - world->yStart] + (x - world->xStart) * 3,
-					&GET_ENTITY(world, x, y), world->clock);
+					&GET_CELL(world, x, y), world->clock);
 		}
 	}
 	png_write_image(png_ptr, image);
@@ -209,44 +225,47 @@ int printWorld(World * world) {
  *  Print the number of humans, infected people (who carry the disease, but
  *  haven't yet become zombies), and zombies, for debugging.
  */
-void printPopulations(World * world) {
-	Stats s = world->stats;
+void printPopulations(WorldPtr world) {
+	Stats stats = world->stats;
 	// make sure there are always blanks around numbers
 	// that way we can easily split the line
 	printf("Time: %6lld \tHumans: %6d \tInfected: %6d \tZombies: %6d\n",
-			world->clock, s.humanFemales + s.humanMales,
-			s.infectedFemales + s.infectedMales, s.zombies);
+			world->clock, stats.humanFemales + stats.humanMales,
+			stats.infectedFemales + stats.infectedMales, stats.zombies);
 
 #ifndef NDETAILED_STATS
 	printf("LHF: %6d \tLHM: %6d \tLIF: %6d \tLIM: %6d \tLZ:  %6d\n",
-			s.humanFemales, s.humanMales, s.infectedFemales, s.infectedMales,
-			s.zombies);
+			stats.humanFemales, stats.humanMales, stats.infectedFemales,
+			stats.infectedMales, stats.zombies);
 	printf("DHF: %6d \tDHM: %6d \tDIF: %6d \tDIM: %6d \tDZ:  %6d\n",
-			s.humanFemalesDied, s.humanMalesDied, s.infectedFemalesDied,
-			s.infectedMalesDied, s.zombiesDecomposed);
-	printf("BHF: %6d \tBHM: %6d \tBIF: %6d \tBIM: %6d\n", s.humanFemalesBorn,
-			s.humanMalesBorn, s.infectedFemalesBorn, s.infectedMalesBorn);
+			stats.humanFemalesDied, stats.humanMalesDied,
+			stats.infectedFemalesDied, stats.infectedMalesDied,
+			stats.zombiesDecomposed);
+	printf("BHF: %6d \tBHM: %6d \tBIF: %6d \tBIM: %6d\n",
+			stats.humanFemalesBorn, stats.humanMalesBorn,
+			stats.infectedFemalesBorn, stats.infectedMalesBorn);
 	printf("PH:  %6d \tPI:  %6d \tGBH: %6d \tGBI: %6d \tCML: %6d \tCC:  %6d\n",
-			s.humanFemalesPregnant, s.infectedFemalesPregnant,
-			s.humanFemalesBecameInfected, s.infectedFemalesGivingBirth,
-			s.couplesMakingLove, s.childrenConceived);
+			stats.humanFemalesPregnant, stats.infectedFemalesPregnant,
+			stats.humanFemalesBecameInfected, stats.infectedFemalesGivingBirth,
+			stats.couplesMakingLove, stats.childrenConceived);
 	printf("IHF: %6d \tIHM: %6d \tIFZ: %6d \tIMZ: %6d\n",
-			s.humanFemalesBecameInfected, s.humanMalesBecameInfected,
-			s.infectedFemalesBecameZombies, s.infectedMalesBecameZombies);
+			stats.humanFemalesBecameInfected, stats.humanMalesBecameInfected,
+			stats.infectedFemalesBecameZombies,
+			stats.infectedMalesBecameZombies);
 #endif
 }
 
-void printStatistics(World * world) {
-	if (world->clock % OUTPUT_EVERY > 0) {
-		return;
+void printStatistics(WorldPtr world) {
+#ifndef NIMAGES
+	if (world->clock % IMAGES_EVERY == 0) {
+		printWorld(world);
 	}
-
-#ifndef NPOPULATION
-	printPopulations(world);
 #endif
 
-#ifndef NIMAGES
-	printWorld(world);
+#ifndef NPOPULATION
+	if (world->clock % POPULATION_EVERY == 0) {
+		printPopulations(world);
+	}
 #endif
 }
 
@@ -266,8 +285,8 @@ int main(int argc, char **argv) {
 
 	initRandom(0);
 
-	World * input = newWorld(width, height);
-	World * output = newWorld(width, height);
+	WorldPtr input = newWorld(width, height);
+	WorldPtr output = newWorld(width, height);
 
 	randomDistribution(input, people, zombies, 0);
 #ifndef NIMAGES
@@ -282,11 +301,11 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < iters; i++) {
 		simulateStep(input, output);
-		finishStep(input, output);
+		finishStep(output);
 		printStatistics(output);
 
 		Stats stats = output->stats;
-		World * temp = input;
+		WorldPtr temp = input;
 		input = output;
 		output = temp;
 		input->lastStats = stats;
@@ -307,8 +326,8 @@ int main(int argc, char **argv) {
 	printf("Took %f milliseconds with %d threads\n", elapsedTime, numThreads);
 #endif
 
-// this is a clean up
-// we destroy both worlds
+	// this is a clean up
+	// we destroy both worlds
 	destroyWorld(input);
 	destroyWorld(output);
 

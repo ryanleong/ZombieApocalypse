@@ -25,21 +25,40 @@ static int randomCountOfUnborn() {
  * Creates chain of unborn.
  * Already means that it is the start of the simulation.
  */
-static void newChildren(Entity * entity, simClock clock, bool already) {
+static void newChildren(EntityPtr mother, simClock clock, bool already) {
 	int count = randomCountOfUnborn();
-	entity->children = count;
+	mother->children = count;
 	simClock event = randomEvent(PREGNANCY_DURATION_MEAN,
 	PREGNANCY_DURATION_STD_DEV);
 	if (already) {
 		double rate = randomDouble();
-		entity->borns = MAX(1, clock + (1 - rate) * event - entity->origin); // in future!
+		mother->borns = MAX(1, clock + (1 - rate) * event - mother->origin); // in future!
 	} else {
-		entity->borns = MAX(1, clock + event - entity->origin);
+		mother->borns = MAX(1, clock + event - mother->origin);
 	}
 }
 
-void newHuman(Entity * human, simClock clock) {
+void newHuman(EntityPtr human, simClock clock) {
 	human->type = HUMAN;
+
+	double ageClass = randomDouble();
+	double withinClass = randomDouble();
+
+	if (ageClass < HUMAN_CHILD_POPULATION_SIZE) {
+		human->origin = clock - (withinClass * HUMAN_CHILD_PERIOD);
+	} else if (ageClass
+			< HUMAN_YOUNG_POPULATION_SIZE + HUMAN_CHILD_POPULATION_SIZE) {
+		human->origin = clock - HUMAN_CHILD_YOUNG_BORDER
+				- withinClass * HUMAN_YOUNG_PERIOD;
+	} else if (ageClass
+			< HUMAN_MIDDLEAGE_POPULATION_SIZE + HUMAN_YOUNG_POPULATION_SIZE
+					+ HUMAN_CHILD_POPULATION_SIZE) {
+		human->origin = clock - HUMAN_YOUNG_MIDDLEAGE_BORDER
+				- randomDouble() * HUMAN_MIDDLEAGE_PERIOD;
+	} else {
+		human->origin = clock - HUMAN_MIDDLEAGE_ELDERLY_BORDER
+				- randomDouble() * HUMAN_ELDERLY_PERIOD;
+	}
 
 	double rnd = randomDouble();
 	simClock fertilityStart;
@@ -69,25 +88,6 @@ void newHuman(Entity * human, simClock clock) {
 		FERTILITY_END_MALE_STD_DEV);
 	}
 
-	double ageClass = randomDouble();
-	double withinClass = randomDouble();
-
-	if (ageClass < HUMAN_CHILD_POPULATION_SIZE) {
-		human->origin = clock - (withinClass * HUMAN_CHILD_PERIOD);
-	} else if (ageClass
-			< HUMAN_YOUNG_POPULATION_SIZE + HUMAN_CHILD_POPULATION_SIZE) {
-		human->origin = clock - HUMAN_CHILD_YOUNG_BORDER
-				- withinClass * HUMAN_YOUNG_PERIOD;
-	} else if (ageClass
-			< HUMAN_MIDDLEAGE_POPULATION_SIZE + HUMAN_YOUNG_POPULATION_SIZE
-					+ HUMAN_CHILD_POPULATION_SIZE) {
-		human->origin = clock - HUMAN_YOUNG_MIDDLEAGE_BORDER
-				- randomDouble() * HUMAN_MIDDLEAGE_PERIOD;
-	} else {
-		human->origin = clock - HUMAN_MIDDLEAGE_ELDERLY_BORDER
-				- randomDouble() * HUMAN_ELDERLY_PERIOD;
-	}
-
 	// may or may not be in future
 	human->fertilityStart = MAX(1, fertilityStart);
 	human->fertilityEnd = MAX(fertilityStart, fertilityEnd);
@@ -96,7 +96,7 @@ void newHuman(Entity * human, simClock clock) {
 	human->becameInfected = 0;
 }
 
-void newZombie(Entity * zombie, simClock clock) {
+void newZombie(EntityPtr zombie, simClock clock) {
 	zombie->type = ZOMBIE;
 	zombie->origin = clock; // right now
 	zombie->bearing = getRandomBearing();
@@ -108,12 +108,12 @@ void newZombie(Entity * zombie, simClock clock) {
 	zombie->becameInfected = 0;
 }
 
-void toInfected(Entity * infected, simClock clock) {
+void toInfected(EntityPtr infected, simClock clock) {
 	infected->type = INFECTED;
 	infected->becameInfected = clock - infected->origin;
 }
 
-void toZombie(Entity * zombie, simClock clock) {
+void toZombie(EntityPtr zombie, simClock clock) {
 	zombie->type = ZOMBIE;
 	zombie->origin = clock;
 	// after becoming zombie, the bearing is restarted
@@ -126,7 +126,7 @@ void toZombie(Entity * zombie, simClock clock) {
 	zombie->becameInfected = 0;
 }
 
-void makeLove(Entity * mother, Entity * father, simClock clock, Stats stats) {
+void makeLove(EntityPtr mother, EntityPtr father, simClock clock, Stats stats) {
 	int children = stats.humanFemalesDied + stats.humanMalesDied;
 	int couples = stats.couplesMakingLove;
 	if (couples == 0) {
@@ -146,7 +146,7 @@ void makeLove(Entity * mother, Entity * father, simClock clock, Stats stats) {
 	newChildren(mother, clock, false);
 }
 
-Entity giveBirth(Entity * mother, simClock clock) {
+Entity giveBirth(EntityPtr mother, simClock clock) {
 	Entity born;
 	born.type = NONE;
 
@@ -199,7 +199,7 @@ Entity giveBirth(Entity * mother, simClock clock) {
 	return born;
 }
 
-double getMaxSpeed(Entity * entity, simClock currentTime) {
+double getMaxSpeed(EntityPtr entity, simClock currentTime) {
 	if (entity->type == ZOMBIE) {
 		int age = currentTime - entity->origin;
 		if (age < ZOMBIE_YOUNG_OLD_BORDER) {
@@ -233,7 +233,7 @@ double getMaxSpeed(Entity * entity, simClock currentTime) {
 	}
 }
 
-double getDeathRate(Entity * living, simClock currentTime) {
+double getDeathRate(EntityPtr living, simClock currentTime) {
 	int age = currentTime - living->origin;
 	if (living->gender == FEMALE) {
 		if (age < HUMAN_CHILD_YOUNG_BORDER) {
@@ -258,7 +258,7 @@ double getDeathRate(Entity * living, simClock currentTime) {
 	}
 }
 
-double getDecompositionRate(Entity * zombie, simClock currentTime) {
+double getDecompositionRate(EntityPtr zombie, simClock currentTime) {
 	int age = currentTime - zombie->origin;
 	if (age < ZOMBIE_YOUNG_OLD_BORDER) {
 		return PROBABILITY_ZOMBIE_YOUNG_DEATH;

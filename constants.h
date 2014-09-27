@@ -121,7 +121,7 @@
 
 // #### DIRECTION ####
 
-// ## TILES RATING ##
+// ## CELLS RATING ##
 
 // TODO review these constants
 
@@ -160,7 +160,7 @@
 
 // #### OTHER PROBABILITIES ####
 
-// probability of becoming infected when a zombie as at the adjacent tile
+// probability of becoming infected when a zombie as at the adjacent cell
 #define PROBABILITY_INFECTION 0.01
 
 // probability of conceiving children during love making

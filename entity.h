@@ -11,8 +11,6 @@
 
 /**
  * Entity may be of type HUMAN, INFECTED, ZOMBIE or NONE.
- * Each entity has its own attributes but some of them are shared.
- * HUMAN and INFECTED are together a LivingEntity.
  */
 typedef enum EntityType {
 	NONE, HUMAN, INFECTED, ZOMBIE
@@ -27,7 +25,11 @@ typedef enum Gender {
 } Gender;
 
 /**
- * An Entity is an agent in the World
+ * An Entity is an agent in the World.
+ * All attributes are inside this one structure.
+ * To preserve space, we use bit-fields, which makes this structure  24 Bytes long;
+ * it also constraints us to simulation of 2^31 steps and maximal age 2^21 steps.
+ * Which is for 1 step a day: 5883516 years of simulation and 5745 years of age.
  */
 typedef struct Entity {
 	// this group has 32 bits in total; last 6 bits is padding
@@ -49,58 +51,60 @@ typedef struct Entity {
 	bearing bearing; // size is 2*sizeof(float) = 8
 } Entity;
 
+typedef Entity * EntityPtr;
+
 /**
  * Use only at the start of the simulation (clock should be 0)
  * Creates a new random human who was born prior to start of the simulation.
  * If the human is a female, she can be pregnant.
  */
-void newHuman(Entity * entity, simClock clock);
+void newHuman(EntityPtr human, simClock clock);
 
 /**
  * Use only at the start of the simulation (clock should be 0)
  * Creates a new zombie which was created at the time when simulation started.
  */
-void newZombie(Entity * entity, simClock clock);
+void newZombie(EntityPtr zombie, simClock clock);
 
 /**
  * Converts a human into infected.
  * All attributes are preserved.
  */
-void toInfected(Entity * human, simClock clock);
+void toInfected(EntityPtr infected, simClock clock);
 
 /**
  * Converts an infected into zombie.
  */
-void toZombie(Entity * infected, simClock clock);
+void toZombie(EntityPtr zombie, simClock clock);
 
 /**
  * Conceives up to three children in mother's body.
  * The fertilization will happen with a probability.
  * Call this whenever a MALE is next to a FEMALE.
  */
-void makeLove(Entity * mother, Entity * father, simClock clock, Stats stats);
+void makeLove(EntityPtr mother, EntityPtr father, simClock clock, Stats stats);
 
 /**
  * Mother gives birth to all her children when they are scheduled.
  * Type of children depends on mother's health condition.
  * Call this function repeatedly to born all children.
  */
-Entity giveBirth(Entity * mother, simClock clock);
+Entity giveBirth(EntityPtr mother, simClock clock);
 
 /**
  * Returns maximal speed which the entity can go.
  */
-double getMaxSpeed(Entity * entity, simClock clock);
+double getMaxSpeed(EntityPtr entity, simClock clock);
 
 /**
  * Returns probability of death for a living entity at given time.
  */
-double getDeathRate(Entity * living, simClock currentTime);
+double getDeathRate(EntityPtr living, simClock currentTime);
 
 /**
  * Returns probability of decomposition of zombie at given time.
  */
-double getDecompositionRate(Entity * zombie, simClock currentTime);
+double getDecompositionRate(EntityPtr zombie, simClock currentTime);
 
 #endif /* ENTITY_H_ */
 
