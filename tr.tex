@@ -8,7 +8,9 @@
 \usepackage[super]{nth}
 \usepackage{fancyhdr}
 \usepackage{tabu}
+\usepackage{multirow}
 \usepackage{cite}
+\usepackage{amsmath}
 
 
 \DeclareGraphicsExtensions{.pdf,.png,.jpg,.eps}
@@ -166,9 +168,69 @@ Then the tile in resulting direction is tested whether it is free; if it is not,
 In the worst case, the entity stays at its current tile.
 The entity moves only if its speed (expressed as probability) is sufficient.
 
-\subsubsection{Stability}
+\subsection{Initialize the population}
 
-TODO Alicia will describe her magic
+\subsubsection{Age structure and death rate}
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=0.6\textwidth]{USGompertzCurve}
+    \caption{Mortality rates graph for US in 2003}
+\end{figure*}
+
+According to Australia age structure\footnote{http://www.indexmundi.com/australia/age\_structure.html} and median age 37.3\footnote{http://en.wikipedia.org/wiki/Demographics\_of\_Australia}, initialized human are divided into four age classes, named child (0-15 years old), young (15-37.5 years old), middle age (37.5-65 years old) and elder (above 65 years old) in the program.
+Based on Gompertz–Makeham law\footnote{http://en.wikipedia.org/wiki/Gompertz\%E2\%80\%93Makeham\_law\_of\_mortality} and mortality rates graph for US in 2003 (shown in the figure) the average probabilities of human dying at these four age stages are approximately related as 
+$$ 20 : 10 : 80 : 160 $$
+
+As Australia death rate is
+
+The death rate of each age class can be calculated out as the table shown below:
+
+\begin{figure*}[ht]
+    \centering
+    \begin{tabu} {| X[1,c,p] || X[0.7,c,p] | X[1,c,p] | X[1,c,p] | X[1,c,p] |}
+        \rowfont{\bfseries}
+        \hline
+        Class Name &
+        Age Range &
+        Distribution &
+        Average Death Rate (per day) &
+        Death Rate (per day) \\
+        \hline
+        \hline
+        \textbf{Child} & 0--15 & 18.2\% & \multirow{4}{*}{0.0017\%} & 0.00006\% \\
+        \cline{1-3}\cline{5-5}
+        \textbf{Young} & 15--37.5 & 31.8\% & & 0.00012\% \\
+        \cline{1-3}\cline{5-5}
+        \textbf{Middle Age} & 37.5--65 & 35.6\% & & 0.00096\% \\
+        \cline{1-3}\cline{5-5}
+        \textbf{Elderly} & 65+ & 14.4\% & & 0.0096\% \\
+        \hline
+    \end{tabu}
+    \caption{Death rate of age classes}
+\end{figure*}
+
+\subsubsection{Birth rate}
+
+The Australia birth rate is:
+$$ P(\text{Australia Birth}) = \frac{\text{baby birth}}{\text{population}} = \frac{158988+150594}{23319400} = 1.33\% $$
+
+To achieve this birth rate when the world is simulated, some initialized women should be pregnant at this stage.
+If female fertility period is from 15 to 45, then women in genital stage is 41.5\%.
+Thus in initialization stage, pregnancy probability of women who is in fertility period is: 
+$$ P(\text{Pregnant Women in Fertility Period}) = \frac{\text{baby birth}}{\text{women population} \times 41.5\%} $$
+$$ = \frac{158988+150594}{11659700 \times 41.5\%} = 2.655\% $$
+
+\subsubsection{Sex ratio}
+
+There were 102,300 more females than males residing in Australia in 2012, with 11.3 million males and 11.4 million females.\footnote{http://www.abs.gov.au/ausstats/abs@.nsf/Products/3235.0~2012~Main+Features~Main+Features?OpenDocument\#PARALINK1}
+Thus the sex ratio is initialized as 
+$$ \text{Female} : \text{Male} = 0.502 : 0.498 $$
+
+\subsubsection{Population Density}
+
+TODO Adam
+
 
 \section{Results}
 
@@ -223,6 +285,26 @@ The drop of performace when running with 64 threads is either caused by the hard
 In our opinion it is not caused by locking parts of the world as there are still at least 7 columns for each thread (we lock only three of them).
 
 \section{Recommendations}
+
+Due to the large initialized population density and birth rate which is greater than average death rate, the human population will keep growing for a few years until the zombie population is large enough to meet and infect the human in significant speed.
+In this case, the infected population is much greater than the amount of new birth human.
+So the human will die out soon and the zombie population will be at its peak.
+However a zombie can only live for 3 years normally.
+If the human population is too low, zombie who has no birth income will die out soon as well.
+In addition, the more human in initialization stage, the sooner the world collapses.
+Theoretically the world should start with 21250 human.
+The flow diagram below shows a testing result of the world starting with only 8000 human and 2 zombies.
+After about only 20 years, both human and zombie die out.
+
+In order to make sure that the world lasts forever, we assume that the human can self-control the human birth rate to avoid dying out for being infected by a large amount of zombies.
+At the beginning, human calculate their death rate and set it as current expected birth rate dynamically.
+Some human will be infected as zombie so the human population will decrease.
+When the human population is under 12000, at the time when zombie and human populations are almost equal, the human will be alerted that they should have more babies otherwise they will die out.
+As the human birth has a gestation period and the zombie population will drop down sharply due to the low human population and meet chance, human population will grow remarkably after 10 years. 
+
+As another test diagram with 822 years time shows below, the change of populations of human, infected and zombie will follow the law of 55 years cycle.
+The population swings are fewer and fewer.
+And they are quite stable after 700 years.
 
 
 \bibliographystyle{IEEEtran}

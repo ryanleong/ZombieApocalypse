@@ -69,6 +69,9 @@ tags:
 %.eps: %.dia
 	dia -t eps -e $@ $<
 
+%.pdf: %.svg
+	inkscape -A $@ $<
+
 %.pdf: %.dot
 	dot -Tsvg -O $<
 	inkscape -A $@ $<.svg
@@ -76,7 +79,7 @@ tags:
 
 pdf: tr.pdf
 
-tr.pdf: tr.tex model.pdf movement.eps
+tr.pdf: tr.tex model.pdf movement.eps USGompertzCurve.pdf
 	pdflatex tr.tex
 
 cleanpdf:
