@@ -17,25 +17,6 @@
 #include "stats.h"
 
 /**
- * There are two types of Tiles:
- * REGULAR is inside the map where entities normally are
- * BORDER is a ghost tile which can host entities only temporarily
- */
-typedef enum TileType {
-	REGULAR, BORDER
-} TileType;
-
-/**
- * Each tile has its type: either REGULAR if it is inside or it is BORDER
- * Each tile also contains pointer to entity (which is NULL if the tile is empty)
- *
- */
-typedef struct Tile {
-	TileType type;
-	Entity entity;
-} Tile;
-
-/**
  * The World contains a 2D map.
  * The map is slightly bigger to allow unchecked access to two tiles in each direction.
  * You should never iterate like this: for (int x = 0; x < w->width; x++)
@@ -51,7 +32,7 @@ typedef struct Tile {
  */
 typedef struct World {
 	simClock clock;
-	Tile ** map;
+	Entity ** map;
 	unsigned int width; // real width
 	unsigned int height; // real height
 	unsigned int xStart; // first interior tile
@@ -61,7 +42,7 @@ typedef struct World {
 	Stats stats; // detailed statistics
 	Stats lastStats;
 #ifdef _OPENMP
-	omp_lock_t * locks;
+omp_lock_t * locks;
 #endif
 } World;
 
@@ -69,15 +50,22 @@ typedef struct World {
  * Returns the specified tile.
  * Does not check if the tile is in the world.
  */
-#define GET_TILE(world, x, y) \
-		((world)->map[(x)] + (y))
+#define GET_ENTITY(world, x, y) \
+		((world)->map[(x)][(y)])
 
 /**
  * Returns the tile in direction from specified tile.
  * Does not check if the tile is in the world.
  */
-#define GET_TILE_DIR(world, dir, x, y) \
-		GET_TILE((world), (x) + direction_delta_x[(dir)], (y) + direction_delta_y[(dir)])
+#define GET_ENTITY_DIR(world, dir, x, y) \
+		GET_ENTITY((world), (x) + direction_delta_x[(dir)], (y) + direction_delta_y[(dir)])
+
+/**
+ * Tests if the specified field is outside the world.
+ */
+#define IS_BORDER(world, x, y) \
+	((x) < (world)->xStart || (y) < (world)->yStart \
+	|| (x) > (world)->xEnd || (y) > (world)->yEnd)
 
 /**
  * Creates a new world of specified dimensions.
@@ -107,7 +95,7 @@ void unlockColumn(World * tile, int x);
 /**
  * Returns the first adjacent tile to [x,y] in output which is free in both worlds.
  */
-Tile * getFreeAdjacent(World * input, World * output, int x, int y);
+Entity * getFreeAdjacent(World * input, World * output, int x, int y);
 
 void copyStats(World * world, Stats stats);
 

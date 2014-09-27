@@ -30,13 +30,13 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 	for (int i = 0; i < people;) {
 		int x = randomInt(w->xStart, w->xEnd);
 		int y = randomInt(w->yStart, w->yEnd);
-		Tile * tile = GET_TILE(w, x, y);
-		if (tile->entity.type != NONE) {
+		Entity * entityPtr = &GET_ENTITY(w, x, y);
+		if (entityPtr->type != NONE) {
 			continue;
 		}
 
-		newHuman(&tile->entity, clock);
-		if (tile->entity.gender == FEMALE) {
+		newHuman(entityPtr, clock);
+		if (entityPtr->gender == FEMALE) {
 			w->lastStats.humanFemales++;
 		} else {
 			w->lastStats.humanMales++;
@@ -48,12 +48,12 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 	for (int i = 0; i < zombies;) {
 		int x = randomInt(w->xStart, w->xEnd);
 		int y = randomInt(w->yStart, w->yEnd);
-		Tile * tile = GET_TILE(w, x, y);
-		if (tile->entity.type != NONE) {
+		Entity * entityPtr = &GET_ENTITY(w, x, y);
+		if (entityPtr->type != NONE) {
 			continue;
 		}
 
-		newZombie(&tile->entity, clock);
+		newZombie(entityPtr, clock);
 		w->lastStats.zombies++;
 
 		i++;
@@ -66,19 +66,18 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
  * Fills an image pixel with a color based on properties of the tile and entity.
  * Humans are green, infected are blue and zombies are red.
  */
-void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
+void setRGB(png_byte *ptr, Entity * entity, simClock clock) {
 	// TODO make the color depend on age; this is low priority
 	// I tried it but the difference was not noticeable
 
-	switch (tile->entity.type) {
+	switch (entity->type) {
 	case HUMAN: {
-		Entity * h = &tile->entity;
-		if (h->children > 0) {
+		if (entity->children > 0) {
 			ptr[0] = 100;
 		} else {
 			ptr[0] = 0;
 		}
-		if (h->gender == FEMALE) {
+		if (entity->gender == FEMALE) {
 			ptr[1] = 200;
 		} else {
 			ptr[1] = 150;
@@ -87,14 +86,13 @@ void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
 		break;
 	}
 	case INFECTED: {
-		Entity * i = &tile->entity;
-		if (i->children > 0) {
+		if (entity->children > 0) {
 			ptr[0] = 100;
 		} else {
 			ptr[0] = 0;
 		}
 		ptr[1] = 0;
-		if (i->gender == FEMALE) {
+		if (entity->gender == FEMALE) {
 			ptr[2] = 200;
 		} else {
 			ptr[2] = 150;
@@ -182,7 +180,7 @@ int printWorld(World * world) {
 	for (int y = world->yStart; y <= world->yEnd; y++) {
 		for (int x = world->xStart; x <= world->xEnd; x++) {
 			setRGB(image[y - world->yStart] + (x - world->xStart) * 3,
-					GET_TILE(world, x, y), world->clock);
+					&GET_ENTITY(world, x, y), world->clock);
 		}
 	}
 	png_write_image(png_ptr, image);

@@ -4,9 +4,9 @@
 #include "random.h"
 
 // local util functions
-static void initTile(Tile *tile);
-static void resetTile(Tile * tile);
-static void destroyTile(Tile * tile);
+static void initEntity(Entity * entity);
+static void resetEntity(Entity * entity);
+static void destroyEntity(Entity * entity);
 
 World * newWorld(unsigned int width, unsigned int height) {
 	World * world = (World *) checked_malloc(sizeof(World));
@@ -26,16 +26,13 @@ World * newWorld(unsigned int width, unsigned int height) {
 #ifdef _OPENMP
 	world->locks = (omp_lock_t *) checked_malloc(sizeof(omp_lock_t) * (width + 4));
 #endif
-	world->map = (Tile **) checked_malloc(sizeof(Tile *) * (width + 4));
+	world->map = (Entity **) checked_malloc(sizeof(Entity *) * (width + 4));
 	for (unsigned int x = 0; x < width + 4; x++) {
-		world->map[x] = (Tile *) checked_malloc(sizeof(Tile) * (height + 4));
+		world->map[x] = (Entity *) checked_malloc(
+				sizeof(Entity) * (height + 4));
 		for (unsigned int y = 0; y < height + 4; y++) {
-			Tile * tile = GET_TILE(world, x, y);
-			initTile(tile);
-			if (x < world->xStart || y < world->yStart || x > world->xEnd
-					|| y > world->yEnd) {
-				tile->type = BORDER;
-			}
+			Entity * ePtr = &GET_ENTITY(world, x, y);
+			initEntity(ePtr);
 		}
 #ifdef _OPENMP
 		omp_init_lock(world->locks + x);
@@ -51,8 +48,8 @@ void resetWorld(World * world) {
 #endif
 	for (int x = 0; x < world->width + 4; x++) {
 		for (int y = 0; y < world->height + 4; y++) {
-			Tile * tile = GET_TILE(world, x, y);
-			resetTile(tile);
+			Entity * ePtr = &GET_ENTITY(world, x, y);
+			resetEntity(ePtr);
 		}
 	}
 	world->stats = NO_STATS;
@@ -62,8 +59,8 @@ void resetWorld(World * world) {
 void destroyWorld(World * world) {
 	for (unsigned int x = 0; x < world->width + 4; x++) {
 		for (unsigned int y = 0; y < world->height + 4; y++) {
-			Tile * tile = GET_TILE(world, x, y);
-			destroyTile(tile);
+			Entity * ePtr = &GET_ENTITY(world, x, y);
+			destroyEntity(ePtr);
 		}
 		free(world->map[x]);
 #ifdef _OPENMP
@@ -77,17 +74,16 @@ void destroyWorld(World * world) {
 	free(world);
 }
 
-static void initTile(Tile * tile) {
-	tile->type = REGULAR;
-	resetTile(tile);
+static void initEntity(Entity * entity) {
+	resetEntity(entity);
 }
 
-static void resetTile(Tile * tile) {
-	tile->entity.type = NONE;
+static void resetEntity(Entity * entity) {
+	entity->type = NONE;
 }
 
-static void destroyTile(Tile * tile) {
-	resetTile(tile);
+static void destroyEntity(Entity * entity) {
+	resetEntity(entity);
 }
 
 void lockColumn(World * world, int x) {
@@ -106,14 +102,14 @@ void unlockColumn(World * world, int x) {
 #endif
 }
 
-Tile * getFreeAdjacent(World * input, World * output, int x, int y) {
-	Tile * t;
+Entity * getFreeAdjacent(World * input, World * output, int x, int y) {
+	Entity * freePtr;
 	int permutation = randomInt(0, RANDOM_BASIC_DIRECTIONS - 1);
 	for (int i = 0; i < 4; i++) {
 		Direction dir = random_basic_directions[permutation][i];
-		if (GET_TILE_DIR(input, dir, x, y)->entity.type == NONE && (t =
-				GET_TILE_DIR(output, dir, x, y))->entity.type == NONE) {
-			return t;
+		if (GET_ENTITY_DIR(input, dir, x, y).type == NONE && (freePtr =
+				&GET_ENTITY_DIR(output, dir, x, y))->type == NONE) {
+			return freePtr;
 		}
 	}
 	return NULL;
