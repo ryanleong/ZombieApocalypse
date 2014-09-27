@@ -32,7 +32,7 @@ typedef enum TileType {
  */
 typedef struct Tile {
 	TileType type;
-	Entity * entity;
+	Entity entity;
 } Tile;
 
 /**

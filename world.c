@@ -78,15 +78,12 @@ void destroyWorld(World * world) {
 }
 
 static void initTile(Tile * tile) {
-	tile->entity = NULL;
 	tile->type = REGULAR;
+	resetTile(tile);
 }
 
 static void resetTile(Tile * tile) {
-	if (tile->entity != NULL) {
-		disposeEntity(tile->entity);
-		tile->entity = NULL;
-	}
+	tile->entity.type = NONE;
 }
 
 static void destroyTile(Tile * tile) {
@@ -114,8 +111,8 @@ Tile * getFreeAdjacent(World * input, World * output, int x, int y) {
 	int permutation = randomInt(0, RANDOM_BASIC_DIRECTIONS - 1);
 	for (int i = 0; i < 4; i++) {
 		Direction dir = random_basic_directions[permutation][i];
-		if (GET_TILE_DIR(input, dir, x, y)->entity == NULL
-				&& (t = GET_TILE_DIR(output, dir, x, y))->entity == NULL) {
+		if (GET_TILE_DIR(input, dir, x, y)->entity.type == NONE && (t =
+				GET_TILE_DIR(output, dir, x, y))->entity.type == NONE) {
 			return t;
 		}
 	}

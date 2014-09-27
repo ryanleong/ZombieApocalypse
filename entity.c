@@ -8,95 +8,10 @@
 #include "constants.h"
 
 /**
- * Contains linked lists of entities of different types.
- * EntityAllocator wraps malloc; its purpose is to reuse old entities.
- * All entities are created and removed in each step of the simulation.
- *
- * In allocator, despite their names the asXYZ pointers are used to point to next entity.
- */
-typedef struct EntityAllocator {
-	Human * humans;
-	Infected * infected;
-	Zombie * zombies;
-} EntityAllocator;
-
-/**
- * There is only one allocator per thread.
- */
-EntityAllocator * allocators = NULL;
-
-void initAllocators() {
-#ifdef _OPENMP
-	int threads = omp_get_max_threads();
-#else
-	int threads = 1;
-#endif
-	allocators = calloc(threads, sizeof(EntityAllocator));
-}
-
-void destroyAllocators() {
-	free(allocators);
-}
-
-/**
- * Returns the allocator for this thread
- */
-static EntityAllocator * getAllocator() {
-#ifdef _OPENMP
-	int thread = omp_get_thread_num();
-#else
-	int thread = 0;
-#endif
-	return allocators + thread;
-}
-
-/**
- * Allocates new entity in memory if none can be recycled.
- * It fills pointer asXYZ = this and also fills type.
- * Other fields are uninitialized!
- *
- */
-static Entity * newEntity(EntityType type) {
-	Entity * entity = NULL;
-	EntityAllocator * allocator = getAllocator();
-	switch (type) {
-	case HUMAN:
-		if (allocator->humans != NULL) {
-			entity = (Entity *) allocator->humans;
-			allocator->humans = entity->asHuman;
-		} else {
-			entity = ((Entity *) malloc(sizeof(Human)));
-		}
-		break;
-
-	case INFECTED:
-		if (allocator->infected != NULL) {
-			entity = (Entity *) allocator->infected;
-			allocator->infected = entity->asInfected;
-		} else {
-			entity = ((Entity *) malloc(sizeof(Infected)));
-		}
-		break;
-
-	case ZOMBIE:
-		if (allocator->zombies != NULL) {
-			entity = (Entity *) allocator->zombies;
-			allocator->zombies = entity->asZombie;
-		} else {
-			entity = ((Entity *) malloc(sizeof(Zombie)));
-		}
-		break;
-	}
-	entity->asEntity = entity;
-	entity->type = type;
-	return entity;
-}
-
-/**
  * Returns random number of children.
  */
 static int randomCountOfUnborn() {
-	double rnd = drand48();
+	double rnd = randomDouble();
 	if (rnd < PROBABILITY_ONE_CHILD) {
 		return 1;
 	} else if (rnd < PROBABILITY_TWO_CHILDREN) {
@@ -110,25 +25,21 @@ static int randomCountOfUnborn() {
  * Creates chain of unborn.
  * Already means that it is the start of the simulation.
  */
-static Children newChildren(int count, simClock clock, bool already) {
-	Children children;
-	children.count = count;
+static void newChildren(Entity * entity, simClock clock, bool already) {
+	int count = randomCountOfUnborn();
+	entity->children = count;
 	simClock event = randomEvent(PREGNANCY_DURATION_MEAN,
 	PREGNANCY_DURATION_STD_DEV);
 	if (already) {
 		double rate = randomDouble();
-		children.conceived = clock - rate * event;
-		children.borns = MAX(1, clock + (1 - rate) * event); // in future!
+		entity->borns = MAX(1, clock + (1 - rate) * event - entity->origin); // in future!
 	} else {
-		children.conceived = clock;
-		children.borns = clock + event;
+		entity->borns = MAX(1, clock + event - entity->origin);
 	}
-
-	return children;
 }
 
-Human * newHuman(simClock clock) {
-	Human * human = newEntity(HUMAN)->asHuman;
+void newHuman(Entity * human, simClock clock) {
+	human->type = HUMAN;
 
 	double rnd = randomDouble();
 	simClock fertilityStart;
@@ -137,10 +48,10 @@ Human * newHuman(simClock clock) {
 		human->gender = FEMALE;
 
 		if (randomDouble() < PROBABILITY_INITIAL_PREGNANCY) {
-			int count = randomCountOfUnborn();
-			human->children = newChildren(count, clock, true);
+			newChildren(human, clock, true);
 		} else {
-			human->children = NO_CHILDREN;
+			human->children = 0;
+			human->borns = 0;
 		}
 
 		fertilityStart = randomEvent(FERTILITY_START_FEMALE_MEAN,
@@ -149,7 +60,9 @@ Human * newHuman(simClock clock) {
 		FERTILITY_END_FEMALE_STD_DEV);
 	} else {
 		human->gender = MALE;
-		human->children = NO_CHILDREN;
+		human->children = 0;
+		human->borns = 0;
+
 		fertilityStart = randomEvent(FERTILITY_START_MALE_MEAN,
 		FERTILITY_START_MALE_STD_DEV);
 		fertilityEnd = randomEvent(FERTILITY_END_MALE_MEAN,
@@ -160,116 +73,60 @@ Human * newHuman(simClock clock) {
 	double withinClass = randomDouble();
 
 	if (ageClass < HUMAN_CHILD_POPULATION_SIZE) {
-		human->wasBorn = clock - (withinClass * HUMAN_CHILD_PERIOD);
+		human->origin = clock - (withinClass * HUMAN_CHILD_PERIOD);
 	} else if (ageClass
 			< HUMAN_YOUNG_POPULATION_SIZE + HUMAN_CHILD_POPULATION_SIZE) {
-		human->wasBorn = clock - HUMAN_CHILD_YOUNG_BORDER
+		human->origin = clock - HUMAN_CHILD_YOUNG_BORDER
 				- withinClass * HUMAN_YOUNG_PERIOD;
 	} else if (ageClass
 			< HUMAN_MIDDLEAGE_POPULATION_SIZE + HUMAN_YOUNG_POPULATION_SIZE
 					+ HUMAN_CHILD_POPULATION_SIZE) {
-		human->wasBorn = clock - HUMAN_YOUNG_MIDDLEAGE_BORDER
+		human->origin = clock - HUMAN_YOUNG_MIDDLEAGE_BORDER
 				- randomDouble() * HUMAN_MIDDLEAGE_PERIOD;
 	} else {
-		human->wasBorn = clock - HUMAN_MIDDLEAGE_ELDERLY_BORDER
+		human->origin = clock - HUMAN_MIDDLEAGE_ELDERLY_BORDER
 				- randomDouble() * HUMAN_ELDERLY_PERIOD;
 	}
 
 	// may or may not be in future
-	human->fertilityStart = human->wasBorn + fertilityStart;
-	human->fertilityEnd = human->wasBorn + fertilityEnd;
+	human->fertilityStart = MAX(1, fertilityStart);
+	human->fertilityEnd = MAX(fertilityStart, fertilityEnd);
 
 	human->bearing = getRandomBearing();
-
-	return human;
+	human->becameInfected = 0;
 }
 
-Zombie * newZombie(simClock clock) {
-	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
-
-	zombie->becameZombie = clock; // right now
+void newZombie(Entity * zombie, simClock clock) {
+	zombie->type = ZOMBIE;
+	zombie->origin = clock; // right now
 	zombie->bearing = getRandomBearing();
 
-	return zombie;
+	zombie->children = 0;
+	zombie->borns = 0;
+	zombie->fertilityStart = 0;
+	zombie->fertilityEnd = 0;
+	zombie->becameInfected = 0;
 }
 
-Infected * toInfected(Human * human, simClock clock) {
-	Infected * infected = newEntity(INFECTED)->asInfected;
-
-	infected->gender = human->gender;
-	infected->children = human->children;
-	infected->wasBorn = human->wasBorn;
-	infected->bearing = human->bearing;
-	infected->becameInfected = clock;
-
-	return infected;
+void toInfected(Entity * infected, simClock clock) {
+	infected->type = INFECTED;
+	infected->becameInfected = clock - infected->origin;
 }
 
-Zombie * toZombie(Infected * infected, simClock clock) {
-	Zombie * zombie = newEntity(ZOMBIE)->asZombie;
-
-	zombie->becameZombie = clock;
+void toZombie(Entity * zombie, simClock clock) {
+	zombie->type = ZOMBIE;
+	zombie->origin = clock;
 	// after becoming zombie, the bearing is restarted
 	zombie->bearing = getRandomBearing();
 
-	return zombie;
+	zombie->children = 0;
+	zombie->borns = 0;
+	zombie->fertilityStart = 0;
+	zombie->fertilityEnd = 0;
+	zombie->becameInfected = 0;
 }
 
-Human * copyHuman(Human * human) {
-	Human * h = newEntity(HUMAN)->asHuman;
-
-	h->gender = human->gender;
-	h->fertilityStart = human->fertilityStart;
-	h->fertilityEnd = human->fertilityEnd;
-	h->children = human->children;
-	h->wasBorn = human->wasBorn;
-	h->bearing = human->bearing;
-
-	return h;
-}
-
-Infected * copyInfected(Infected * infected) {
-	Infected * i = newEntity(INFECTED)->asInfected;
-
-	i->gender = infected->gender;
-	i->fertilityStart = infected->fertilityStart;
-	i->fertilityEnd = infected->fertilityEnd;
-	i->children = infected->children;
-	i->wasBorn = infected->wasBorn;
-	i->becameInfected = infected->becameInfected;
-	i->bearing = infected->bearing;
-
-	return i;
-}
-
-Zombie * copyZombie(Zombie * zombie) {
-	Zombie * z = newEntity(ZOMBIE)->asZombie;
-
-	z->becameZombie = zombie->becameZombie;
-	z->bearing = zombie->bearing;
-
-	return z;
-}
-
-Entity * copyEntity(Entity * entity) {
-	switch (entity->type) {
-	case HUMAN:
-		return copyHuman(entity->asHuman)->asEntity;
-	case INFECTED:
-		return copyInfected(entity->asInfected)->asEntity;
-	case ZOMBIE:
-		return copyZombie(entity->asZombie)->asEntity;
-	default: // won't happen
-		return NULL;
-	}
-}
-
-LivingEntity * copyLiving(LivingEntity * living) {
-	return copyEntity(living->asEntity)->asLiving;
-}
-
-void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock,
-		Stats stats) {
+void makeLove(Entity * mother, Entity * father, simClock clock, Stats stats) {
 	int children = stats.humanFemalesDied + stats.humanMalesDied;
 	int couples = stats.couplesMakingLove;
 	if (couples == 0) {
@@ -286,26 +143,26 @@ void makeLove(LivingEntity * mother, LivingEntity * father, simClock clock,
 			return;
 		}
 	}
-	int count = randomCountOfUnborn();
-	mother->children = newChildren(count, clock, false);
+	newChildren(mother, clock, false);
 }
 
-LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
-	if (mother->children.count <= 0) {
-		return NULL;
+Entity giveBirth(Entity * mother, simClock clock) {
+	Entity born;
+	born.type = NONE;
+
+	if (mother->children <= 0) {
+		return born;
 	}
 
-	LivingEntity * born = NULL;
 	switch (mother->type) {
 	case HUMAN: {
-		Human * human = newEntity(HUMAN)->asHuman;
-		born = human->asLiving;
+		born.type = HUMAN;
+		born.becameInfected = 0;
 		break;
 	}
 	case INFECTED: {
-		Infected * infected = newEntity(INFECTED)->asInfected;
-		infected->becameInfected = mother->asInfected->becameInfected;
-		born = infected->asLiving;
+		born.type = INFECTED;
+		born.becameInfected = 0;
 		break;
 	}
 	default: // won't happen, silent GCC
@@ -316,101 +173,43 @@ LivingEntity * giveBirth(LivingEntity * mother, simClock clock) {
 	simClock fertilityStart;
 	simClock fertilityEnd;
 	if (rnd < FEMALE_MALE_RATIO) {
-		born->gender = FEMALE;
+		born.gender = FEMALE;
 		fertilityStart = randomEvent(FERTILITY_START_FEMALE_MEAN,
 		FERTILITY_START_FEMALE_STD_DEV);
 		fertilityEnd = randomEvent(FERTILITY_END_FEMALE_MEAN,
 		FERTILITY_END_FEMALE_STD_DEV);
 	} else {
-		born->gender = MALE;
+		born.gender = MALE;
 		fertilityStart = randomEvent(FERTILITY_START_MALE_MEAN,
 		FERTILITY_START_MALE_STD_DEV);
 		fertilityEnd = randomEvent(FERTILITY_END_MALE_MEAN,
 		FERTILITY_END_MALE_STD_DEV);
 	}
 
-	born->children = NO_CHILDREN;
-	born->wasBorn = clock;
-	born->fertilityStart = clock + fertilityStart;
-	born->fertilityEnd = clock + fertilityEnd;
-	born->bearing = NO_BEARING;
+	born.origin = clock;
+	born.fertilityStart = fertilityStart;
+	born.fertilityEnd = fertilityEnd;
+
+	born.bearing = NO_BEARING;
+	born.children = 0;
+	born.borns = 0;
 
 	// decrease number of unborn children
-	mother->children.count--;
+	mother->children--;
 	return born;
-}
-
-void disposeHuman(Human * human) {
-	EntityAllocator * allocator = getAllocator();
-	human->asHuman = allocator->humans;
-	allocator->humans = human;
-}
-
-void disposeInfected(Infected * infected) {
-	EntityAllocator * allocator = getAllocator();
-	infected->asInfected = allocator->infected;
-	allocator->infected = infected;
-}
-
-void disposeZombie(Zombie * zombie) {
-	EntityAllocator * allocator = getAllocator();
-	zombie->asZombie = allocator->zombies;
-	allocator->zombies = zombie;
-}
-
-void disposeEntity(Entity * entity) {
-	switch (entity->type) {
-	case HUMAN:
-		disposeHuman(entity->asHuman);
-		break;
-	case INFECTED:
-		disposeInfected(entity->asInfected);
-		break;
-	case ZOMBIE:
-		disposeZombie(entity->asZombie);
-	}
-}
-
-/**
- * Traverses the chain and frees each element.
- */
-void destroyUnusedChain(Entity * entities) {
-	while (entities != NULL) {
-		Entity * ptr = entities;
-		entities = entities->asEntity;
-		free(ptr);
-	}
-}
-
-void destroyUnused() {
-	EntityAllocator * allocator = getAllocator();
-	if (allocator->humans != NULL) {
-		destroyUnusedChain(allocator->humans->asEntity);
-		allocator->humans = NULL;
-	}
-	if (allocator->infected != NULL) {
-		destroyUnusedChain(allocator->infected->asEntity);
-		allocator->infected = NULL;
-	}
-	if (allocator->zombies != NULL) {
-		destroyUnusedChain(allocator->zombies->asEntity);
-		allocator->zombies = NULL;
-	}
 }
 
 double getMaxSpeed(Entity * entity, simClock currentTime) {
 	if (entity->type == ZOMBIE) {
-		Zombie * zombie = entity->asZombie;
-		int age = currentTime - zombie->becameZombie;
+		int age = currentTime - entity->origin;
 		if (age < ZOMBIE_YOUNG_OLD_BORDER) {
 			return SPEED_ZOMBIE_YOUNG;
 		} else {
 			return SPEED_ZOMBIE_OLD;
 		}
 	} else {
-		LivingEntity * living = entity->asLiving;
-		int age = currentTime - living->wasBorn;
-		if (living->gender == FEMALE) {
+		int age = currentTime - entity->origin;
+		if (entity->gender == FEMALE) {
 			if (age < HUMAN_CHILD_YOUNG_BORDER) {
 				return SPEED_FEMALE_CHILD;
 			} else if (age < HUMAN_YOUNG_MIDDLEAGE_BORDER) {
@@ -434,8 +233,8 @@ double getMaxSpeed(Entity * entity, simClock currentTime) {
 	}
 }
 
-double getDeathRate(LivingEntity * living, simClock currentTime) {
-	int age = currentTime - living->wasBorn;
+double getDeathRate(Entity * living, simClock currentTime) {
+	int age = currentTime - living->origin;
 	if (living->gender == FEMALE) {
 		if (age < HUMAN_CHILD_YOUNG_BORDER) {
 			return PROBABILITY_FEMALE_CHILD_DEATH;
@@ -459,8 +258,8 @@ double getDeathRate(LivingEntity * living, simClock currentTime) {
 	}
 }
 
-double getDecompositionRate(Zombie * zombie, simClock currentTime) {
-	int age = currentTime - zombie->becameZombie;
+double getDecompositionRate(Entity * zombie, simClock currentTime) {
+	int age = currentTime - zombie->origin;
 	if (age < ZOMBIE_YOUNG_OLD_BORDER) {
 		return PROBABILITY_ZOMBIE_YOUNG_DEATH;
 	} else {

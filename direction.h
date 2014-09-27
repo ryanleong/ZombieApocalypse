@@ -79,7 +79,7 @@ static const int direction_delta_y[] = { 0, 0, -1, 0, 1, 0, -1, -2, -1, 0, 1, 2,
  * The bearing is simply a complex number.
  * Note that 0+1i means DOWN.
  */
-typedef double complex bearing;
+typedef float complex bearing;
 
 /**
  * Constant which means that there is no bearing.

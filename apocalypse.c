@@ -31,17 +31,16 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 		int x = randomInt(w->xStart, w->xEnd);
 		int y = randomInt(w->yStart, w->yEnd);
 		Tile * tile = GET_TILE(w, x, y);
-		if (tile->entity != NULL) {
+		if (tile->entity.type != NONE) {
 			continue;
 		}
 
-		Human * human = newHuman(clock);
-		if (human->gender == FEMALE) {
+		newHuman(&tile->entity, clock);
+		if (tile->entity.gender == FEMALE) {
 			w->lastStats.humanFemales++;
 		} else {
 			w->lastStats.humanMales++;
 		}
-		tile->entity = human->asEntity;
 
 		i++;
 	}
@@ -50,13 +49,12 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 		int x = randomInt(w->xStart, w->xEnd);
 		int y = randomInt(w->yStart, w->yEnd);
 		Tile * tile = GET_TILE(w, x, y);
-		if (tile->entity != NULL) {
+		if (tile->entity.type != NONE) {
 			continue;
 		}
 
-		Zombie * zombie = newZombie(clock);
+		newZombie(&tile->entity, clock);
 		w->lastStats.zombies++;
-		tile->entity = zombie->asEntity;
 
 		i++;
 	}
@@ -71,17 +69,11 @@ void randomDistribution(World * w, int people, int zombies, simClock clock) {
 void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
 	// TODO make the color depend on age; this is low priority
 	// I tried it but the difference was not noticeable
-	if (tile->entity == NULL) {
-		ptr[0] = 255;
-		ptr[1] = 255;
-		ptr[2] = 255;
-		return;
-	}
 
-	switch (tile->entity->type) {
+	switch (tile->entity.type) {
 	case HUMAN: {
-		Human * h = tile->entity->asHuman;
-		if (h->children.count > 0) {
+		Entity * h = &tile->entity;
+		if (h->children > 0) {
 			ptr[0] = 100;
 		} else {
 			ptr[0] = 0;
@@ -95,8 +87,8 @@ void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
 		break;
 	}
 	case INFECTED: {
-		Infected * i = tile->entity->asInfected;
-		if (i->children.count > 0) {
+		Entity * i = &tile->entity;
+		if (i->children > 0) {
 			ptr[0] = 100;
 		} else {
 			ptr[0] = 0;
@@ -116,6 +108,11 @@ void setRGB(png_byte *ptr, Tile * tile, simClock clock) {
 		ptr[2] = 0;
 		break;
 	}
+	case NONE:
+		ptr[0] = 255;
+		ptr[1] = 255;
+		ptr[2] = 255;
+		break;
 	}
 }
 
@@ -270,7 +267,6 @@ int main(int argc, char **argv) {
 	unsigned int iters = atoi(argv[4]);
 
 	initRandom(0);
-	initAllocators();
 
 	World * input = newWorld(width, height);
 	World * output = newWorld(width, height);
@@ -292,12 +288,11 @@ int main(int argc, char **argv) {
 		printStatistics(output);
 
 		Stats stats = output->stats;
-		resetWorld(input);
-		resetWorld(output);
 		World * temp = input;
 		input = output;
 		output = temp;
 		input->lastStats = stats;
+		resetWorld(output);
 		copyStats(output, stats);
 	}
 
@@ -319,15 +314,5 @@ int main(int argc, char **argv) {
 	destroyWorld(input);
 	destroyWorld(output);
 
-// and than we destroy all entities which have ever been used
-// we need to call this with all threads because allocator is thread-local
-#ifdef _OPENMP
-#pragma omp parallel num_threads(getNumThreads(width))
-#endif
-	{
-		destroyUnused();
-	}
-
-	destroyAllocators();
 	destroyRandom();
 }
