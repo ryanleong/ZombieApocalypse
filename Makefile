@@ -1,91 +1,33 @@
-SRC = apocalypse.c entity.c direction.c random.c simulation.c utils.c world.c
-OBJS = $(SRC:%.c=%.o)
+DATE=$(shell date +"%F_%T")
 
-ifeq ($(HOSTNAME), avoca)
-CC = mpicc
-else
-CC = gcc
-endif
-
-CFLAGS = --std=gnu99 -O2 -g -Wall -fopenmp
-
-ifdef NDEBUG
-CFLAGS += -DNDEBUG
-endif
-
-ifdef NIMAGES
-CFLAGS += -DNIMAGES
-endif
-
-ifdef NPOPULATION
-CFLAGS += -DNPOPULATION
-endif
-
-ifdef NDETAILED_STATS
-CFLAGS += -DNDETAILED_STATS
-endif
-
-ifdef NCUMULATIVE_STATS
-CFLAGS += -DNCUMULATIVE_STATS
-endif
-
-ifdef OUTPUT_EVERY
-CFLAGS += -DOUTPUT_EVERY=$(OUTPUT_EVERY)
-endif
-
-ifdef TIME
-CFLAGS += -DTIME
-endif
-
-LIBS = -lm -lgomp
-
-ifndef NIMAGES
-LIBS += -lpng
-endif
-
-all: dependencies apocalypse
-
-apocalypse: $(OBJS)
-	$(CC) $(CFLAGS) -o apocalypse $(OBJS) $(LIBS)
+all:
+	$(MAKE) -C apocalypse all
+	$(MAKE) -C visualise all
+	$(MAKE) -C report all
 	mkdir -p images
 
-clean: cleanpdf
-	rm -f $(OBJS)
+clean:
+	$(MAKE) -C apocalypse clean
+	$(MAKE) -C visualise clean
+	$(MAKE) -C report clean
 
-clobber: clean clobberpdf
-	rm -f apocalypse
-	rm -f dependencies
-	rm -f cscope.out
+localclean:
+
+clobber: localclean
+	$(MAKE) -C apocalypse clobber
+	$(MAKE) -C visualise clobber
+	$(MAKE) -C report clobber
 	rm -rf images/
+	rm -f out
+	
+backup: images out
+	mv images images_$(DATE)
+	mv out out_$(DATE)
 
-dependencies: $(SRC)
-	$(CC) $(CFLAGS) -MM $(SRC) > dependencies
+png: images
+	for f in images/*.img; do echo $$f; visualise/visualise $$f; done
 
-tags:
-	cscope -b
+plot: out
+	visualise/plot.py <out
 
-## Report ##
-
-%.eps: %.dia
-	dia -t eps -e $@ $<
-
-%.pdf: %.dot
-	dot -Tsvg -O $<
-	inkscape -A $@ $<.svg
-	rm $<.svg
-
-pdf: tr.pdf
-
-tr.pdf: tr.tex model.pdf movement.eps
-	pdflatex tr.tex
-
-cleanpdf:
-	rm -f *.aux *.out *.log
-
-clobberpdf: cleanpdf
-	rm -f tr.pdf
-
-.PHONY: all pdf clean cleanpdf clobber clobberpdf tags
-
-
-include dependencies
+.PHONY: all clean localclean clobber backup png plot

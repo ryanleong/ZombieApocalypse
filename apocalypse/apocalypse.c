@@ -6,6 +6,14 @@
 #include <sys/time.h>
 #endif
 
+#include "world.h"
+#include "entity.h"
+#include "random.h"
+#include "simulation.h"
+#include "common.h"
+#include "constants.h"
+#include "common.h"
+
 #ifndef OUTPUT_EVERY
 #define OUTPUT_EVERY 1
 #endif
@@ -25,18 +33,6 @@
 #if POPULATION_EVERY <= 0 && ! defined(NPOPULATION)
 #define NIMAGES
 #endif
-
-#ifndef NIMAGES
-#include <png.h>
-#endif
-
-#include "world.h"
-#include "entity.h"
-#include "random.h"
-#include "simulation.h"
-#include "common.h"
-#include "constants.h"
-#include "common.h"
 
 /**
  * Fills the world with specified number of people and zombies.
@@ -76,150 +72,52 @@ void randomDistribution(WorldPtr world, int people, int zombies, simClock clock)
 	}
 }
 
-#ifndef NIMAGES
-
 /**
- * Fills an image pixel with a color based on properties of the cell and entity.
- * Humans are green, infected are blue and zombies are red.
+ * Generates a dump for the world describing each entity.
  */
-void setRGB(png_byte * ptr, CellPtr cellPtr, simClock clock) {
-	// TODO make the color depend on age; this is low priority
-	// I tried it but the difference was not noticeable
+void printWorld(WorldPtr world) {
+	char gender[5] = { 'M', 'F', 'f', 'f', 'f' };
 
-	switch (cellPtr->type) {
-	case NONE: {
-		ptr[0] = 255;
-		ptr[1] = 255;
-		ptr[2] = 255;
-		break;
-	}
-	case HUMAN: {
-		if (cellPtr->children > 0) {
-			ptr[0] = 100;
-		} else {
-			ptr[0] = 0;
-		}
-		if (cellPtr->gender == FEMALE) {
-			ptr[1] = 200;
-		} else {
-			ptr[1] = 150;
-		}
-		ptr[2] = 0;
-		break;
-	}
-	case INFECTED: {
-		if (cellPtr->children > 0) {
-			ptr[0] = 100;
-		} else {
-			ptr[0] = 0;
-		}
-		ptr[1] = 0;
-		if (cellPtr->gender == FEMALE) {
-			ptr[2] = 200;
-		} else {
-			ptr[2] = 150;
-		}
-		break;
-	}
-	case ZOMBIE: {
-		ptr[0] = 200;
-		ptr[1] = 0;
-		ptr[2] = 0;
-		break;
-	}
-	}
-}
+	char filename[255];
+	sprintf(filename, "images/step-%06lld.img", world->clock);
 
-/**
- * Generates an image for the world mapping each cell to a pixel.
- */
-int printWorld(WorldPtr world) {
-	char filename[80];
-	sprintf(filename, "images/step-%06lld.png", world->clock);
-
-	int code = 0;
-	FILE *fp;
-	png_structp png_ptr;
-	png_infop info_ptr;
-
-	// Open file for writing (binary mode)
-	fp = fopen(filename, "wb");
-	if (fp == NULL) {
+	FILE * out = fopen(filename, "w");
+	if (out == NULL) {
 		fprintf(stderr, "Could not open file %s for writing\n", filename);
-		code = 1;
-		goto finalise;
+		return;
 	}
 
-	// Initialize write structure
-	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (png_ptr == NULL) {
-		fprintf(stderr, "Could not allocate write struct\n");
-		code = 1;
-		goto finalise;
-	}
+	int entities = world->stats.humanFemales + world->stats.humanMales
+			+ world->stats.infectedFemales + world->stats.infectedMales
+			+ world->stats.zombies;
+	fprintf(out, "Width %d; Height %d; Time %lld; Entities %d\n", world->width,
+			world->height, world->clock, entities);
 
-	// Initialize info structure
-	info_ptr = png_create_info_struct(png_ptr);
-	if (info_ptr == NULL) {
-		fprintf(stderr, "Could not allocate info struct\n");
-		code = 1;
-		goto finalise;
-	}
-
-	// Setup Exception handling
-	if (setjmp(png_jmpbuf(png_ptr))) {
-		fprintf(stderr, "Error during png creation\n");
-		code = 1;
-		goto finalise;
-	}
-
-	png_init_io(png_ptr, fp);
-
-	// Write header (8 bit colour depth)
-	png_set_IHDR(png_ptr, info_ptr, world->width, world->height, 8,
-	PNG_COLOR_TYPE_RGB,
-	PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
-	PNG_FILTER_TYPE_BASE);
-
-	png_write_info(png_ptr, info_ptr);
-
-	// Allocate memory for one row (3 bytes per pixel - RGB)
-	png_bytep * image = (png_bytep*) malloc(sizeof(png_bytep) * world->height);
-	for (int i = 0; i < world->height; i++) {
-		image[i] = (png_bytep) malloc(3 * world->width * sizeof(png_byte));
-	}
-
-	// Prepare image data; this can be done in parallel
-#ifdef _OPENMP
-#pragma omp parallel for collapse(2) schedule(guided, 10)
-#endif
-	for (int y = world->yStart; y <= world->yEnd; y++) {
-		for (int x = world->xStart; x <= world->xEnd; x++) {
-			setRGB(image[y - world->yStart] + (x - world->xStart) * 3,
-					&GET_CELL(world, x, y), world->clock);
+	for (int y = 0; y <= world->height; y++) {
+		for (int x = 0; x <= world->width; x++) {
+			CellPtr ptr = &GET_CELL(world, x + world->xStart,
+					y + world->yStart);
+			int age = world->clock - ptr->origin;
+			switch (ptr->type) {
+			case NONE:
+				// nothing
+				break;
+			case HUMAN:
+				fprintf(out, "[%d %d] H %c %d\n", x, y,
+						gender[ptr->gender + ptr->children], age);
+				break;
+			case INFECTED:
+				fprintf(out, "[%d %d] I %c %d\n", x, y,
+						gender[ptr->gender + ptr->children], age);
+				break;
+			case ZOMBIE:
+				fprintf(out, "[%d %d] Z _ %d\n", x, y, age);
+			}
 		}
 	}
-	png_write_image(png_ptr, image);
 
-	// End write
-	png_write_end(png_ptr, NULL);
-
-	finalise: if (fp != NULL)
-		fclose(fp);
-	if (info_ptr != NULL)
-		png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
-	if (png_ptr != NULL)
-		png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
-	if (image != NULL) {
-		for (int i = 0; i < world->height; i++) {
-			free(image[i]);
-		}
-		free(image);
-	}
-
-	return code;
+	fclose(out);
 }
-#endif
 
 /**
  *  Print the number of humans, infected people (who carry the disease, but
@@ -290,6 +188,8 @@ int main(int argc, char **argv) {
 
 	randomDistribution(input, people, zombies, 0);
 #ifndef NIMAGES
+	// we need to fake stats
+	input->stats = input->lastStats;
 	printWorld(input);
 #endif
 
