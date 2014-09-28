@@ -7,7 +7,7 @@
  * Runs one step of the world simulation.
  * The implementation should use the input map only for reading.
  */
-void simulateStep(World * input, World * output);
+void simulateStep(WorldPtr input, WorldPtr output);
 
 /**
  * Does the cleaning after each step of simulation.
@@ -15,7 +15,7 @@ void simulateStep(World * input, World * output);
  * 1) moving entities on BORDER back to REGULAR tiles.
  * 2) resetting the world.
  */
-void finishStep(World * input, World * output);
+void finishStep(WorldPtr world);
 
 /**
  * Returns optimal number of threads which to use for step simulating.

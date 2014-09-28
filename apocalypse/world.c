@@ -3,13 +3,8 @@
 #include "utils.h"
 #include "random.h"
 
-// local util functions
-static void initTile(Tile *tile);
-static void resetTile(Tile * tile);
-static void destroyTile(Tile * tile);
-
-World * newWorld(unsigned int width, unsigned int height) {
-	World * world = (World *) checked_malloc(sizeof(World));
+WorldPtr newWorld(unsigned int width, unsigned int height) {
+	WorldPtr world = (WorldPtr) checked_malloc(sizeof(World));
 
 	world->clock = 0;
 	world->width = width;
@@ -26,16 +21,11 @@ World * newWorld(unsigned int width, unsigned int height) {
 #ifdef _OPENMP
 	world->locks = (omp_lock_t *) checked_malloc(sizeof(omp_lock_t) * (width + 4));
 #endif
-	world->map = (Tile **) checked_malloc(sizeof(Tile *) * (width + 4));
+	world->map = (Cell **) checked_malloc(sizeof(Cell *) * (width + 4));
 	for (unsigned int x = 0; x < width + 4; x++) {
-		world->map[x] = (Tile *) checked_malloc(sizeof(Tile) * (height + 4));
+		world->map[x] = (Cell *) checked_malloc(sizeof(Cell) * (height + 4));
 		for (unsigned int y = 0; y < height + 4; y++) {
-			Tile * tile = GET_TILE(world, x, y);
-			initTile(tile);
-			if (x < world->xStart || y < world->yStart || x > world->xEnd
-					|| y > world->yEnd) {
-				tile->type = BORDER;
-			}
+			GET_CELL(world, x, y).type = NONE;
 		}
 #ifdef _OPENMP
 		omp_init_lock(world->locks + x);
@@ -45,25 +35,23 @@ World * newWorld(unsigned int width, unsigned int height) {
 	return world;
 }
 
-void resetWorld(World * world) {
+void resetWorld(WorldPtr world) {
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(guided, 10) collapse(2)
 #endif
 	for (int x = 0; x < world->width + 4; x++) {
 		for (int y = 0; y < world->height + 4; y++) {
-			Tile * tile = GET_TILE(world, x, y);
-			resetTile(tile);
+			GET_CELL(world, x, y).type = NONE;
 		}
 	}
 	world->stats = NO_STATS;
 	world->lastStats = NO_STATS;
 }
 
-void destroyWorld(World * world) {
+void destroyWorld(WorldPtr world) {
 	for (unsigned int x = 0; x < world->width + 4; x++) {
 		for (unsigned int y = 0; y < world->height + 4; y++) {
-			Tile * tile = GET_TILE(world, x, y);
-			destroyTile(tile);
+			GET_CELL(world, x, y).type = NONE;
 		}
 		free(world->map[x]);
 #ifdef _OPENMP
@@ -77,23 +65,7 @@ void destroyWorld(World * world) {
 	free(world);
 }
 
-static void initTile(Tile * tile) {
-	tile->entity = NULL;
-	tile->type = REGULAR;
-}
-
-static void resetTile(Tile * tile) {
-	if (tile->entity != NULL) {
-		disposeEntity(tile->entity);
-		tile->entity = NULL;
-	}
-}
-
-static void destroyTile(Tile * tile) {
-	resetTile(tile);
-}
-
-void lockColumn(World * world, int x) {
+void lockColumn(WorldPtr world, int x) {
 #ifdef _OPENMP
 	for (int i = x - 1; i <= x + 1; i++) {
 		omp_set_lock(world->locks + i);
@@ -101,7 +73,7 @@ void lockColumn(World * world, int x) {
 #endif
 }
 
-void unlockColumn(World * world, int x) {
+void unlockColumn(WorldPtr world, int x) {
 #ifdef _OPENMP
 	for (int i = x - 1; i <= x + 1; i++) {
 		omp_unset_lock(world->locks + i);
@@ -109,20 +81,20 @@ void unlockColumn(World * world, int x) {
 #endif
 }
 
-Tile * getFreeAdjacent(World * input, World * output, int x, int y) {
-	Tile * t;
+CellPtr getFreeAdjacent(WorldPtr input, WorldPtr output, int x, int y) {
+	CellPtr freePtr;
 	int permutation = randomInt(0, RANDOM_BASIC_DIRECTIONS - 1);
 	for (int i = 0; i < 4; i++) {
 		Direction dir = random_basic_directions[permutation][i];
-		if (GET_TILE_DIR(input, dir, x, y)->entity == NULL
-				&& (t = GET_TILE_DIR(output, dir, x, y))->entity == NULL) {
-			return t;
+		if (GET_CELL_DIR(input, dir, x, y).type == NONE && (freePtr =
+				GET_CELL_PTR_DIR(output, dir, x, y))->type == NONE) {
+			return freePtr;
 		}
 	}
 	return NULL;
 }
 
-void copyStats(World * world, Stats stats) {
+void copyStats(WorldPtr world, Stats stats) {
 #ifndef NCUMULATIVE_STATS
 	world->stats = stats;
 	// these are the global stats which we need to reset

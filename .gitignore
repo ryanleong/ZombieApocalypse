@@ -31,11 +31,12 @@
 
 # ignore the built executable.
 dependencies
-apocalypse
+/apocalypse/apocalypse
+/visualise/visualise
 
 # ignore intermediate files for tr building.
-/tr.aux
-/tr.dvi
-/tr.log
-/tr.pdf
-movement-eps-converted-to.pdf
+/report/tr.aux
+/report/tr.dvi
+/report/tr.log
+/report/tr.pdf
+/report/movement-eps-converted-to.pdf

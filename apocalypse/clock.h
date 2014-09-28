@@ -4,7 +4,12 @@
 /**
  * Type for time in simulation, the basic unit is defined as 1 day.
  */
-typedef long long int simClock;
+typedef signed long long int simClock;
+
+/**
+ * Type for events related to entity origin.
+ */
+typedef unsigned long long int simClockDelta;
 
 /**
  * The basic unit is defined as 1 day.

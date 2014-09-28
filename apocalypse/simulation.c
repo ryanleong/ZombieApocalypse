@@ -11,26 +11,26 @@
 #include "debug.h"
 #include "direction.h"
 
-static int countNeighbouringZombies(World *world, int row, int column);
-static LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
+static int countNeighbouringZombies(WorldPtr world, int row, int column);
+static EntityPtr findAdjacentFertileMale(WorldPtr world, int x, int y,
 		simClock clock);
-static bearing getBearing(World * world, int x, int y);
-static void mergeStats(World * dest, Stats src);
+static bearing getBearing(WorldPtr world, int x, int y);
+static void mergeStats(WorldPtr dest, Stats src);
 
 /**
  * These macros require the worlds to be named input and output.
- * CAN_MOVE tests if the tile is empty in both worlds
+ * CAN_MOVE tests if the cell is empty in both worlds
  */
 #define CAN_MOVE_TO(x, y, dir) \
-	(GET_TILE_DIR((input), (dir), (x), (y))->entity == NULL \
-	&& GET_TILE_DIR((output), (dir), (x), (y))->entity == NULL)
+	(GET_CELL_DIR((input), (dir), (x), (y)).type == NONE \
+	&& GET_CELL_DIR((output), (dir), (x), (y)).type == NONE)
 
 /**
- * IF_CAN_MOVE tests if the tile is empty in both worlds
- * and if it is, it returns the tile, otherwise it returns NULL
+ * IF_CAN_MOVE tests if the cell is empty in both worlds
+ * and if it is, it returns the cell, otherwise it returns NULL
  */
 #define IF_CAN_MOVE_TO(x, y, dir) \
-	(CAN_MOVE_TO((x), (y), (dir)) ? GET_TILE_DIR((output), (dir), (x), (y)) : NULL)
+	(CAN_MOVE_TO((x), (y), (dir)) ? &GET_CELL_DIR((output), (dir), (x), (y)) : NULL)
 
 /**
  * Note that this function is called by every thread.
@@ -44,11 +44,11 @@ static void mergeStats(World * dest, Stats src);
  * f) making love - changes input
  * g) movement
  */
-void simulateStep(World * input, World * output) {
+void simulateStep(WorldPtr input, WorldPtr output) {
 	simClock clock = output->clock = input->clock + 1;
 
 	// we want to force static scheduling because we suppose that the load
-	// is distributed evenly over the map
+	// is distributed evenly over the map and we need to have predictable locking
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(getNumThreads(input->width)) schedule(static)
 #endif
@@ -57,120 +57,108 @@ void simulateStep(World * input, World * output) {
 		Stats stats = NO_STATS;
 		lockColumn(output, x);
 		for (int y = input->yStart; y <= input->yEnd; y++) {
-			Entity * entity = GET_TILE(input, x, y)->entity;
-			Entity * entity2 = NULL;
-			if (entity == NULL) {
+			Entity entity = GET_CELL(input, x, y);
+			if (entity.type == NONE) {
 				continue;
 			}
 
 			// Death of living entity
-			if (entity->type == HUMAN || entity->type == INFECTED) {
-				LivingEntity * le = entity->asLiving;
-				if (randomDouble() < getDeathRate(le, clock)) {
-					if (le->type == HUMAN) {
-						if (le->gender == FEMALE) {
+			if (entity.type == HUMAN || entity.type == INFECTED) {
+				if (randomDouble() < getDeathRate(&entity, clock)) {
+					if (entity.type == HUMAN) {
+						if (entity.gender == FEMALE) {
 							stats.humanFemalesDied++;
 						} else {
 							stats.humanMalesDied++;
 						}
 					} else {
-						if (le->gender == FEMALE) {
+						if (entity.gender == FEMALE) {
 							stats.infectedFemalesDied++;
 						} else {
 							stats.infectedMalesDied++;
 						}
 					}
 					debug_printf("A %s died\n",
-							entity->type == HUMAN ? "Human" : "Infected");
+							entity.type == HUMAN ? "Human" : "Infected");
 					continue; // just forget this entity
 				}
 			}
 
 			// Decompose Zombie
-			if (entity->type == ZOMBIE) {
-				Zombie * zombie = entity->asZombie;
-				if (randomDouble() < getDecompositionRate(zombie, clock)) {
+			if (entity.type == ZOMBIE) {
+				if (randomDouble() < getDecompositionRate(&entity, clock)) {
 					stats.zombiesDecomposed++;
 					debug_printf("A Zombie decomposed\n");
 					continue; // just forgot this entity
 				}
-				entity2 = copyEntity(entity);
 			}
 
 			// Convert Infected to Zombie
-			if (entity->type == INFECTED) {
-				Infected * infected = entity->asInfected;
+			if (entity.type == INFECTED) {
 				if (randomDouble() < PROBABILITY_BECOME_ZOMBIE) {
-					if (infected->gender == FEMALE) {
+					if (entity.gender == FEMALE) {
 						stats.infectedFemalesBecameZombies++;
 					} else {
 						stats.infectedMalesBecameZombies++;
 					}
-					entity2 = toZombie(infected, clock)->asEntity;
+					toZombie(&entity, clock);
 					debug_printf("An Infected became Zombie\n");
-				} else {
-					entity2 = copyEntity(entity);
 				}
 			}
 
 			// Convert Human to Infected
-			if (entity->type == HUMAN) {
+			if (entity.type == HUMAN) {
 				int zombieCount = countNeighbouringZombies(input, x, y);
 				double infectionChance = zombieCount * PROBABILITY_INFECTION;
 
 				if (randomDouble() <= infectionChance) {
-					if (entity->asHuman->gender == FEMALE) {
+					if (entity.gender == FEMALE) {
 						stats.humanFemalesBecameInfected++;
 					} else {
 						stats.humanMalesBecameInfected++;
 					}
-					entity2 = toInfected(entity->asHuman, clock)->asEntity;
+					toInfected(&entity, clock);
 					debug_printf("A Human became infected\n");
-				} else {
-					entity2 = copyEntity(entity);
 				}
 			}
-
-			entity = NULL;
 
 			// Here the entity variable contains either copy or a new entity after transition.
 			// This is important. From now on, we may freely change it.
 
 			// Here are performed natural processed of humans and infected
-			if (entity2->type == HUMAN || entity2->type == INFECTED) {
-				LivingEntity * le = entity2->asLiving;
+			if (entity.type == HUMAN || entity.type == INFECTED) {
 				// giving birth
-				if (le->gender == FEMALE && le->children.count > 0) {
-					if (le->children.borns <= clock) {
-						if (le->type == HUMAN) {
+				if (entity.gender == FEMALE && entity.children > 0) {
+					if (entity.origin + entity.borns <= clock) {
+						if (entity.type == HUMAN) {
 							stats.humanFemalesGivingBirth++;
 						} else {
 							stats.infectedFemalesGivingBirth++;
 						}
 
-						Tile * freeTile;
-						while (le->children.count > 0 && (freeTile =
+						Entity * freePtr;
+						while (entity.children > 0 && (freePtr =
 								getFreeAdjacent(input, output, x, y)) != NULL) {
-							LivingEntity * child = giveBirth(le, clock);
-							if (child->type == HUMAN) {
-								if (child->gender == FEMALE) {
+							Entity child = giveBirth(&entity, clock);
+							if (child.type == HUMAN) {
+								if (child.gender == FEMALE) {
 									stats.humanFemalesBorn++;
 								} else {
 									stats.humanMalesBorn++;
 								}
 							} else {
-								if (child->gender == FEMALE) {
+								if (child.gender == FEMALE) {
 									stats.infectedFemalesBorn++;
 								} else {
 									stats.infectedMalesBorn++;
 								}
 							}
-							freeTile->entity = child->asEntity;
+							*freePtr = child;
 							debug_printf("A %s child was born\n",
-									child->type == HUMAN ? "Human" : "Infected");
+									child.type == HUMAN ? "Human" : "Infected");
 						}
 					} else {
-						if (le->type == HUMAN) {
+						if (entity.type == HUMAN) {
 							stats.humanFemalesPregnant++;
 						} else {
 							stats.infectedFemalesPregnant++;
@@ -179,31 +167,30 @@ void simulateStep(World * input, World * output) {
 				}
 
 				// making love
-				if (le->gender == FEMALE && le->children.count == 0
-						&& clock >= le->fertilityStart
-						&& clock < le->fertilityEnd) { // can have baby
-					LivingEntity *adjacentMale = findAdjacentFertileMale(input,
-							x, y, clock);
+				if (entity.gender == FEMALE && entity.children == 0
+						&& clock >= entity.origin + entity.fertilityStart
+						&& clock < entity.origin + entity.fertilityEnd) { // can have baby
+					EntityPtr adjacentMale = findAdjacentFertileMale(input, x,
+							y, clock);
 					if (adjacentMale != NULL) {
 						stats.couplesMakingLove++;
-						//if(stats.humanFemales<10*stats.zombies){
-						makeLove(le, adjacentMale, clock, input->lastStats);
-						//}
+						makeLove(&entity, adjacentMale, clock,
+								input->lastStats);
 
-						stats.childrenConceived += le->children.count;
+						stats.childrenConceived += entity.children;
 						debug_printf("A couple made love\n");
 					}
 				}
 			}
 
-			if (entity2->type == HUMAN) {
-				if (entity2->asHuman->gender == FEMALE) {
+			if (entity.type == HUMAN) {
+				if (entity.gender == FEMALE) {
 					stats.humanFemales++;
 				} else {
 					stats.humanMales++;
 				}
-			} else if (entity2->type == INFECTED) {
-				if (entity2->asInfected->gender == FEMALE) {
+			} else if (entity.type == INFECTED) {
+				if (entity.gender == FEMALE) {
 					stats.infectedFemales++;
 				} else {
 					stats.infectedMales++;
@@ -220,14 +207,14 @@ void simulateStep(World * input, World * output) {
 			// to make the entity bearing variable in terms of absolute value
 			double bearingRandomQuotient = (randomDouble() - 0.5)
 					* BEARING_ABS_QUOTIENT_VARIANCE + BEARING_ABS_QUOTIENT_MEAN;
-			entity2->bearing = BEARING_PROJECT(bearing) * bearingRandomQuotient;
+			entity.bearing = BEARING_PROJECT(bearing) * bearingRandomQuotient;
 
 			Direction dir = bearingToDirection(bearing);
 
 			// some randomness in direction
 			// the entity will never go in the opposite direction
 			if (dir != STAY) {
-				if (randomDouble() < getMaxSpeed(entity2, clock)) {
+				if (randomDouble() < getMaxSpeed(&entity, clock)) {
 					double dirRnd = randomDouble();
 					if (dirRnd < DIRECTION_MISSED) {
 						dir = (dir + 2) % 4 + 1; // turn counter-clock-wise
@@ -247,23 +234,23 @@ void simulateStep(World * input, World * output) {
 				dir = bearingToDirection(bearing);
 			}
 
-			// we will try to find the tile in the chosen direction
-			Tile * dest = NULL;
+			// we will try to find the cell in the chosen direction
+			CellPtr destPtr = NULL;
 			if (dir != STAY) {
-				dest = IF_CAN_MOVE_TO(x, y, dir);
-				if (dest == NULL) {
-					dest = IF_CAN_MOVE_TO(x, y, DIRECTION_CCW(dir));
+				destPtr = IF_CAN_MOVE_TO(x, y, dir);
+				if (destPtr == NULL) {
+					destPtr = IF_CAN_MOVE_TO(x, y, DIRECTION_CCW(dir));
 				}
-				if (dest == NULL) {
-					dest = IF_CAN_MOVE_TO(x, y, DIRECTION_CW(dir));
+				if (destPtr == NULL) {
+					destPtr = IF_CAN_MOVE_TO(x, y, DIRECTION_CW(dir));
 				}
 			}
-			if (dest == NULL) {
-				dest = GET_TILE(output, x, y);
+			if (destPtr == NULL) {
+				destPtr = GET_CELL_PTR(output, x, y);
 			}
 
 			// actual assignment of entity to its destination
-			dest->entity = entity2;
+			*destPtr = entity;
 		}
 		unlockColumn(output, x);
 		mergeStats(output, stats);
@@ -271,75 +258,62 @@ void simulateStep(World * input, World * output) {
 }
 
 /**
- * Moves back an entity which is on the BORDER tile.
+ * Moves back an entity which is on the ghost cell.
  */
-void moveBack(World * world, int srcX, int srcY, int destX, int destY) {
-	Tile * in = GET_TILE(world, srcX, srcY);
-	if (in->entity != NULL) {
-		if (GET_TILE(world, destX, destY)->entity == NULL) {
-			GET_TILE(world, destX, destY)->entity = in->entity;
-		} else {
-			disposeEntity(in->entity);
+void moveBack(WorldPtr world, int srcX, int srcY, int destX, int destY) {
+	EntityPtr in = GET_CELL_PTR(world, srcX, srcY);
+	if (in->type != NONE) {
+		if (GET_CELL(world, destX, destY).type == NONE) {
+			GET_CELL(world, destX, destY) = *in;
 		}
-		in->entity = NULL;
+		in->type = NONE;
 	}
 }
 
-void finishStep(World * input, World * output) {
+void finishStep(WorldPtr world) {
 	{
 #ifdef _OPENMP
 		int threads = omp_get_max_threads();
-		int numThreads = MIN(MAX(output->width / 10, 1), threads);
+		int numThreads = MIN(MAX(world->width / 10, 1), threads);
 #pragma omp parallel for schedule(guided, 10) num_threads(numThreads)
 #endif
-		for (int x = output->xStart; x <= output->xEnd; x++) {
-			moveBack(output, x, output->yStart - 1, x, output->yStart);
-			moveBack(output, x, output->yEnd + 1, x, output->yEnd);
+		for (int x = world->xStart; x <= world->xEnd; x++) {
+			moveBack(world, x, world->yStart - 1, x, world->yStart);
+			moveBack(world, x, world->yEnd + 1, x, world->yEnd);
 		}
 	}
 
 	{
 #ifdef _OPENMP
 		int threads = omp_get_max_threads();
-		int numThreads = MIN(MAX(output->height / 10, 1), threads);
+		int numThreads = MIN(MAX(world->height / 10, 1), threads);
 #pragma omp parallel for schedule(guided, 10) num_threads(numThreads)
 #endif
-		for (int y = output->yStart; y <= output->yEnd; y++) {
-			moveBack(output, output->xStart - 1, y, output->xStart, y);
-			moveBack(output, output->xEnd + 1, y, output->xEnd, y);
+		for (int y = world->yStart; y <= world->yEnd; y++) {
+			moveBack(world, world->xStart - 1, y, world->xStart, y);
+			moveBack(world, world->xEnd + 1, y, world->xEnd, y);
 		}
 	}
 }
 
 /**
- * Returns a MALE Living entity which is on an adjacent tile to the given one.
+ * Returns a MALE Living entity which is on an adjacent cell to the given one.
  * The MALE has to be able to reproduce.
  */
-static LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
+static EntityPtr findAdjacentFertileMale(WorldPtr world, int x, int y,
 		simClock clock) {
-	LivingEntity * getFertileMale(Entity * entity, simClock clock) {
-		if (entity == NULL) {
-			return NULL;
-		}
-
-		if (entity->type == HUMAN || entity->type == INFECTED) {
-			LivingEntity * le = entity->asLiving;
-			if (le->gender == MALE) {
-				if (clock >= le->fertilityStart && clock < le->fertilityEnd) {
-					return le;
-				}
-			}
-		}
-		return NULL;
-	}
-
-	LivingEntity * male;
 	int permutation = randomInt(0, RANDOM_BASIC_DIRECTIONS - 1);
 	for (int i = 0; i < 4; i++) {
 		Direction dir = random_basic_directions[permutation][i];
-		if ((male = getFertileMale(GET_TILE_DIR(world, dir, x, y)->entity,
-				clock)) != NULL) {
-			return male;
+		EntityPtr entityPtr = GET_CELL_PTR_DIR(world, dir, x, y);
+		if (entityPtr->type == HUMAN || entityPtr->type == INFECTED) {
+			if (entityPtr->gender == MALE) {
+				if (clock >= entityPtr->origin + entityPtr->fertilityStart
+						&& clock
+								< entityPtr->origin + entityPtr->fertilityEnd) {
+					return entityPtr;
+				}
+			}
 		}
 	}
 	return NULL;
@@ -348,14 +322,10 @@ static LivingEntity * findAdjacentFertileMale(World * world, int x, int y,
 /**
  * Returns the number of zombies in the cells bordering the cell at [x, y].
  */
-static int countNeighbouringZombies(World * world, int x, int y) {
-	bool isZombie(Entity * entity) {
-		return entity != NULL && entity->type == ZOMBIE;
-	}
-
+static int countNeighbouringZombies(WorldPtr world, int x, int y) {
 	int zombies = 0;
 	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
-		if (isZombie(GET_TILE_DIR(world, dir, x, y)->entity)) {
+		if (GET_CELL_DIR(world, dir, x, y).type == ZOMBIE) {
 			zombies++;
 		}
 	}
@@ -363,45 +333,46 @@ static int countNeighbouringZombies(World * world, int x, int y) {
 }
 
 /**
- * Returns the optimal bearing for an entity based on twelve adjacent tiles:
+ * Returns the optimal bearing for an entity based on twelve adjacent cells:
  * __#__
  * _###_
  * ##@##
  * _###_
  * __#__
- * The tiles in distance one and two are handled separately.
- * For each tile (and its entity) it is calculated the suitability to go that direction.
- * This may can produce a result which points to a tile which is occupied.
+ * The cells in distance one and two are handled separately.
+ * For each cell (and its entity) it is calculated the suitability to go that direction.
+ * This may can produce a result which points to a cell which is occupied.
  * It is an intentional feature.
  */
-static bearing getBearing(World * world, int x, int y) {
-	Entity * entity = GET_TILE(world, x, y)->entity;
-	bearing bearing_ = entity->bearing;
+static bearing getBearing(WorldPtr world, int x, int y) {
+	Entity entity = GET_CELL(world, x, y);
+	bearing bearing_ = entity.bearing;
 
 	for (int dir = DIRECTION_START; dir <= DIRECTION_BASIC; dir++) {
 		// all destinations are in the world
-		Tile * t = GET_TILE_DIR(world, dir, x, y);
+		CellPtr cellPtr = GET_CELL_PTR_DIR(world, dir, x, y);
 		bearing delta = BEARING_FROM_DIRECTION(dir);
 
-		if (entity->type == ZOMBIE) {
-			if (t->type == BORDER) {
+		if (entity.type == ZOMBIE) {
+			if (IS_OUTSIDE(world, x + direction_delta_x[dir],
+					y + direction_delta_y[dir])) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_WALL_ONE;
-			} else if (t->entity == NULL) {
+			} else if (cellPtr->type == NONE) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_EMPTY_ONE;
-			} else if (t->entity->type == ZOMBIE) {
+			} else if (cellPtr->type == ZOMBIE) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_ZOMBIE_ONE;
 			} else {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_LIVING_ONE;
 			}
 		} else {
-			if (t->type == BORDER) {
+			if (IS_OUTSIDE(world, x + direction_delta_x[dir],
+					y + direction_delta_y[dir])) {
 				bearing_ += delta * BEARING_RATE_LIVING_WALL_ONE;
-			} else if (t->entity == NULL) {
+			} else if (cellPtr->type == NONE) {
 				bearing_ += delta * BEARING_RATE_LIVING_EMPTY_ONE;
-			} else if (t->entity->type == ZOMBIE) {
+			} else if (cellPtr->type == ZOMBIE) {
 				bearing_ += delta * BEARING_RATE_LIVING_ZOMBIE_ONE;
-			} else if (t->entity->asLiving->gender
-					!= entity->asLiving->gender) {
+			} else if (cellPtr->gender != entity.gender) {
 				bearing_ += delta * BEARING_RATE_LIVING_OPPOSITE_SEX_ONE;
 			} else {
 				bearing_ += delta * BEARING_RATE_LIVING_SAME_SEX_ONE;
@@ -409,27 +380,29 @@ static bearing getBearing(World * world, int x, int y) {
 		}
 	}
 	for (int dir = DIRECTION_BASIC + 1; dir <= DIRECTION_ALL; dir++) {
-		Tile * t = GET_TILE_DIR(world, dir, x, y);
+		CellPtr cellPtr = GET_CELL_PTR_DIR(world, dir, x, y);
 		bearing delta = BEARING_PROJECT(BEARING_FROM_DIRECTION(dir));
-		if (entity->type == ZOMBIE) {
-			if (t->type == BORDER) {
+
+		if (entity.type == ZOMBIE) {
+			if (IS_OUTSIDE(world, x + direction_delta_x[dir],
+					y + direction_delta_y[dir])) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_WALL_TWO;
-			} else if (t->entity == NULL) {
+			} else if (cellPtr->type == NONE) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_EMPTY_TWO;
-			} else if (t->entity->type == ZOMBIE) {
+			} else if (cellPtr->type == ZOMBIE) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_ZOMBIE_TWO;
 			} else {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_LIVING_TWO;
 			}
 		} else {
-			if (t->type == BORDER) {
+			if (IS_OUTSIDE(world, x + direction_delta_x[dir],
+					y + direction_delta_y[dir])) {
 				bearing_ += delta * BEARING_RATE_LIVING_WALL_TWO;
-			} else if (t->entity == NULL) {
+			} else if (cellPtr->type == NONE) {
 				bearing_ += delta * BEARING_RATE_LIVING_EMPTY_TWO;
-			} else if (t->entity->type == ZOMBIE) {
+			} else if (cellPtr->type == ZOMBIE) {
 				bearing_ += delta * BEARING_RATE_LIVING_ZOMBIE_TWO;
-			} else if (t->entity->asLiving->gender
-					!= entity->asLiving->gender) {
+			} else if (cellPtr->gender != entity.gender) {
 				bearing_ += delta * BEARING_RATE_LIVING_OPPOSITE_SEX_TWO;
 			} else {
 				bearing_ += delta * BEARING_RATE_LIVING_SAME_SEX_TWO;
@@ -440,7 +413,7 @@ static bearing getBearing(World * world, int x, int y) {
 	return bearing_;
 }
 
-static void mergeStats(World * dest, Stats src) {
+static void mergeStats(WorldPtr dest, Stats src) {
 #ifdef _OPENMP
 #pragma omp critical (StatsCriticalRegion)
 #endif
