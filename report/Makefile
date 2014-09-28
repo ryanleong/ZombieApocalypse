@@ -14,7 +14,7 @@ FIGURES = model.pdf movement.eps USGompertzCurve.pdf equal_birth_8000.pdf  stabl
 	rm $<.svg
 
 %.pdf: %.population
-	../visualise/plot.py $@ < $<
+	../visualise/plot.py $@  < $<
 
 tr.pdf: tr.tex references.bib $(FIGURES)
 	pdflatex tr.tex
