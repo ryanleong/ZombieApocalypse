@@ -127,13 +127,26 @@ void toZombie(EntityPtr zombie, simClock clock) {
 }
 
 void makeLove(EntityPtr mother, EntityPtr father, simClock clock, Stats stats) {
-	int children = stats.humanFemalesDied + stats.humanMalesDied;
+	double rnd = randomDouble();
+
 	int couples = stats.couplesMakingLove;
 	if (couples == 0) {
 		return;
 	}
-
-	double rnd = randomDouble();
+#ifdef UNCONTROLLED_BIRTH_8000
+	int died = stats.humanFemalesDied + stats.humanMalesDied
+			+ stats.infectedFemalesDied + stats.infectedMalesDied
+			+ stats.infectedFemalesBecameZombies
+			+ stats.infectedMalesBecameZombies;
+	if (rnd > died / (double) couples) {
+		return;
+	}
+#elseif EQUAL_BIRTH_8000
+	if (rnd > PROBABILITY_FERTILIZATION) {
+		return;
+	}
+#else
+	int children = stats.humanFemalesDied + stats.humanMalesDied;
 	if (stats.humanFemales + stats.humanMales > 12000) {
 		if (rnd > children / (double) couples) {
 			return;
@@ -143,6 +156,7 @@ void makeLove(EntityPtr mother, EntityPtr father, simClock clock, Stats stats) {
 			return;
 		}
 	}
+#endif
 	newChildren(mother, clock, false);
 }
 

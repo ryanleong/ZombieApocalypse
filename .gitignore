@@ -39,4 +39,7 @@ dependencies
 /report/tr.dvi
 /report/tr.log
 /report/tr.pdf
+/report/tr.bbl
+/report/tr.blg
+
 /report/movement-eps-converted-to.pdf

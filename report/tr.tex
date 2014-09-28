@@ -4,7 +4,6 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage[english]{babel}
-\usepackage{url}
 \usepackage[super]{nth}
 \usepackage{fancyhdr}
 \usepackage{tabu}
@@ -12,6 +11,8 @@
 \usepackage{cite}
 \usepackage{amsmath}
 
+
+\newcommand*\mean[1]{\overline{#1}}
 
 \DeclareGraphicsExtensions{.pdf,.png,.jpg,.eps}
 
@@ -168,7 +169,7 @@ Then the tile in resulting direction is tested whether it is free; if it is not,
 In the worst case, the entity stays at its current tile.
 The entity moves only if its speed (expressed as probability) is sufficient.
 
-\subsection{Initialize the population}
+\subsection{Initialisation of the population}
 
 \subsubsection{Age structure and death rate}
 
@@ -178,17 +179,20 @@ The entity moves only if its speed (expressed as probability) is sufficient.
     \caption{Mortality rates graph for US in 2003}
 \end{figure*}
 
-According to Australia age structure\footnote{http://www.indexmundi.com/australia/age\_structure.html} and median age 37.3\footnote{http://en.wikipedia.org/wiki/Demographics\_of\_Australia}, initialized human are divided into four age classes, named child (0-15 years old), young (15-37.5 years old), middle age (37.5-65 years old) and elder (above 65 years old) in the program.
-Based on Gompertz–Makeham law\footnote{http://en.wikipedia.org/wiki/Gompertz\%E2\%80\%93Makeham\_law\_of\_mortality} and mortality rates graph for US in 2003 (shown in the figure) the average probabilities of human dying at these four age stages are approximately related as 
-$$ 20 : 10 : 80 : 160 $$
+According to Australia age structure\cite{agestructure} and median age 37.3\cite{demographicsaustralia}, initialized human are divided into four age classes, named child (0-15 years old), young (15-37.5 years old), middle age (37.5-65 years old) and elder (above 65 years old) in the program.
+Based on Gompertz–Makeham law\cite{mortalitylaw} and mortality rates graph for US in 2003 (shown in the figure) the average probabilities of human dying at these four age stages are approximately related as 
+$$ \mean{P(\text{Elder Death})} = 10\: \mean{P(\text{Middle Age Death})} $$
+$$ = 80\: \mean{P(\text{Young Death})} = 160\: \mean{P(\text{Child Death})} $$
 
-As Australia death rate is
+As Australia death rate\cite{absdeath} is
+$$ \mean{P(\text{Australia Death})} = \frac{\text{people dead (in 2012)}}{\text{population (in 2012)}} $$
+$$ = \frac{147098}{23319400} = 0.63\%/\text{year} = 0.0017\%/\text{day} $$
 
 The death rate of each age class can be calculated out as the table shown below:
 
 \begin{figure*}[ht]
     \centering
-    \begin{tabu} {| X[1,c,p] || X[0.7,c,p] | X[1,c,p] | X[1,c,p] | X[1,c,p] |}
+    \begin{tabu} {| X[1.1,c,p] || X[0.7,c,p] | X[1.2,c,p] | X[1.1,c,p] | X[1,c,p] |}
         \rowfont{\bfseries}
         \hline
         Class Name &
@@ -212,7 +216,7 @@ The death rate of each age class can be calculated out as the table shown below:
 
 \subsubsection{Birth rate}
 
-The Australia birth rate is:
+The Australia birth rate is\cite{absbirth}:
 $$ P(\text{Australia Birth}) = \frac{\text{baby birth}}{\text{population}} = \frac{158988+150594}{23319400} = 1.33\% $$
 
 To achieve this birth rate when the world is simulated, some initialized women should be pregnant at this stage.
@@ -223,14 +227,16 @@ $$ = \frac{158988+150594}{11659700 \times 41.5\%} = 2.655\% $$
 
 \subsubsection{Sex ratio}
 
-There were 102,300 more females than males residing in Australia in 2012, with 11.3 million males and 11.4 million females.\footnote{http://www.abs.gov.au/ausstats/abs@.nsf/Products/3235.0~2012~Main+Features~Main+Features?OpenDocument\#PARALINK1}
+There were 102,300 more females than males residing in Australia in 2012, with 11.3 million males and 11.4 million females.\cite{abspopulation}
 Thus the sex ratio is initialized as 
 $$ \text{Female} : \text{Male} = 0.502 : 0.498 $$
 
 \subsubsection{Population Density}
 
-TODO Adam
-
+The population density in Northern Territory prior to the zombie apocalypse was $0.17/\text{km}^2$. \cite{northernterritory}
+When the viral infection started, approximately half of the population left Australia to Sweden. \cite{project}
+As the simulated mesh is $500 \times 500$, the number of simulated people is
+$$ 500 \cdot 500 \cdot \frac{0.17}{2} = 21250 $$
 
 \section{Results}
 
@@ -288,27 +294,70 @@ In our opinion it is not caused by locking parts of the world as there are still
 
 Due to the large initialized population density and birth rate which is greater than average death rate, the human population will keep growing for a few years until the zombie population is large enough to meet and infect the human in significant speed.
 In this case, the infected population is much greater than the amount of new birth human.
-So the human will die out soon and the zombie population will be at its peak.
+So the human population will drop quickly and the zombie population will be at its peak.
 However a zombie can only live for 3 years normally.
-If the human population is too low, zombie who has no birth income will die out soon as well.
+If the human population is too low, zombie who has no birth income will die out soon.
 In addition, the more human in initialization stage, the sooner the world collapses.
+
+\subsection{Uncontrolled birth}
+
 Theoretically the world should start with 21250 human.
 The flow diagram below shows a testing result of the world starting with only 8000 human and 2 zombies.
-After about only 20 years, both human and zombie die out.
+After about only 63 years, zombies died out and human population dropped to 1809 people.
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{uncontrolled_birth_8000}
+    \caption{Uncontrolled birth with 8000 people and 2 zombies}
+\end{figure*}
+
+\subsection{Equal birth}
 
 In order to make sure that the world lasts forever, we assume that the human can self-control the human birth rate to avoid dying out for being infected by a large amount of zombies.
-At the beginning, human calculate their death rate and set it as current expected birth rate dynamically.
-Some human will be infected as zombie so the human population will decrease.
+At the beginning, humans and infected calculate their dead and infected who become zombies, and set the birth rate to maintan current population.
+Some pregnant females will be infected and become zombies so the human population will decrease.
+The result of the model is in the figure.
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{equal_birth_8000}
+    \caption{Equal birth with 8000 people and 2 zombies}
+\end{figure*}
+
+\subsection{Stable population}
+
 When the human population is under 12000, at the time when zombie and human populations are almost equal, the human will be alerted that they should have more babies otherwise they will die out.
 As the human birth has a gestation period and the zombie population will drop down sharply due to the low human population and meet chance, human population will grow remarkably after 10 years. 
+This way the human and zombie population gets to equilibrium as shown in the figure which shows 273 years of simulation.
 
-As another test diagram with 822 years time shows below, the change of populations of human, infected and zombie will follow the law of 55 years cycle.
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{stable}
+    \caption{Stable populations of humans and zombies}
+\end{figure*}
+
+As another test diagram of ten times longer simulation shown below, the change of populations of human, infected and zombie will follow the law of 40 years cycle.
 The population swings are fewer and fewer.
-And they are quite stable after 700 years.
+And they are quite stable after 465 years.
 
+\subsection{Real Recommendation}
+
+In order to get to the equilibrium, we can recommend people to behave normally until their population drops one half.
+Then they should stop using birth control (which as a human-made resource won't be available anyway) and start reproducing like rabbits.
+This strategy ensures that the populations of both, humans and zombies, gets stable over time.
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{stable_1000000}
+    \caption{2740 years long stable simulation}
+\end{figure*}
+
+\begingroup
+\raggedright
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
+\endgroup
 
 \end{document}
 

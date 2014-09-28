@@ -13,6 +13,12 @@
 // TODO study literature and find out the right values
 // TODO this is very important and boring
 
+// #### TESTING ####
+// these defines are necessary for report
+
+//#define UNCONTROLLED_BIRTH_8000
+//#define EQUAL_BIRTH_8000
+
 // humans are divided into 4 classes: CHILD, YOUNG, MIDDLEAGE, ELDERLY//
 // zombies have only two classes: YOUNG and OLD
 // age dependent constants must contain:
@@ -23,8 +29,8 @@
 // ## AGE CLASSES ##
 
 // these defines are deprecated and will be removed in the future
-#define LIFE_EXPECTANCY_MALE_MEAN (81 * IN_YEARS) // wiki
-#define LIFE_EXPECTANCY_FEMALE_MEAN (85 * IN_YEARS) // wiki
+//#define LIFE_EXPECTANCY_MALE_MEAN (81 * IN_YEARS) // wiki
+//#define LIFE_EXPECTANCY_FEMALE_MEAN (85 * IN_YEARS) // wiki
 #define ZOMBIE_DECOMPOSITION_MEAN (3 * IN_YEARS)
 // end of deprecated defines
 
@@ -164,7 +170,7 @@
 #define PROBABILITY_INFECTION 0.01
 
 // probability of conceiving children during love making
-#define PROBABILITY_FERTILIZATION 0.05//0.05-1.5
+#define PROBABILITY_FERTILIZATION 0.05
 
 // probability of an entity being a female
 #define FEMALE_MALE_RATIO 0.506
@@ -173,6 +179,10 @@
 #define PROBABILITY_INITIAL_PREGNANCY 0.02655
 
 // population density in NT
+#if defined(UNCONTROLLED_BIRTH_8000) || defined(EQUAL_BIRTH_8000)
+#define INITIAL_DENSITY 0.032
+#else
 #define INITIAL_DENSITY 0.085
+#endif
 
 #endif /* CONSTANTS_H_ */

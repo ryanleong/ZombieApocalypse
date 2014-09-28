@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import fileinput
+import sys
 
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
@@ -11,7 +12,7 @@ humansList = []
 infectedList = []
 zombiesList = []
 
-for line in fileinput.input():
+for line in fileinput.input('-'):
 	(x, time, x, humans, x, infected, x, zombies) = line.split()
 	timeList.append(int(time))
 	humansList.append(int(humans))
@@ -55,4 +56,8 @@ par1.axis["right"].label.set_color(p2.get_color())
 par2.axis["right"].label.set_color(p3.get_color())
 
 plt.draw()
-plt.show()
+
+if(len(sys.argv) > 1):
+	plt.savefig(sys.argv[1]);
+else:
+	plt.show()
