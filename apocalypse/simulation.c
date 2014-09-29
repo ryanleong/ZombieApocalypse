@@ -47,16 +47,23 @@ static void mergeStats(WorldPtr dest, Stats src);
 void simulateStep(WorldPtr input, WorldPtr output) {
 	simClock clock = output->clock = input->clock + 1;
 
+	// notice that we iterate over xx and yy
+	// and the real x and y are randomly switched between two directions
+	double xxDir = randomDouble();
+	double yyDir = randomDouble();
+
 	// we want to force static scheduling because we suppose that the load
 	// is distributed evenly over the map and we need to have predictable locking
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(getNumThreads(input->width)) schedule(static)
 #endif
-	for (int x = input->xStart; x <= input->xEnd; x++) {
+	for (int xx = input->xStart; xx <= input->xEnd; xx++) {
+		int x = (xxDir < 0.5) ? xx : (input->xEnd + input->xStart - xx);
 		// stats are counted per column and summed at the end
 		Stats stats = NO_STATS;
 		lockColumn(output, x);
-		for (int y = input->yStart; y <= input->yEnd; y++) {
+		for (int yy = input->yStart; yy <= input->yEnd; yy++) {
+			int y = (yyDir < 0.5) ? yy : (input->yEnd + input->yStart - yy);
 			Entity entity = GET_CELL(input, x, y);
 			if (entity.type == NONE) {
 				continue;
@@ -201,15 +208,19 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 
 			// MOVEMENT
 
-			bearing bearing = getBearing(input, x, y); // optimal bearing
-			bearing += getRandomBearing() * BEARING_FLUCTUATION;
+			bearing bearing_ = getBearing(input, x, y); // optimal bearing
+			bearing_ += getRandomBearing() * BEARING_FLUCTUATION;
 
-			// to make the entity bearing variable in terms of absolute value
-			double bearingRandomQuotient = (randomDouble() - 0.5)
-					* BEARING_ABS_QUOTIENT_VARIANCE + BEARING_ABS_QUOTIENT_MEAN;
-			entity.bearing = BEARING_PROJECT(bearing) * bearingRandomQuotient;
-
-			Direction dir = bearingToDirection(bearing);
+			Direction dir = bearingToDirection(bearing_);
+			if (dir != STAY) {
+				double bearingRandomQuotient = (randomDouble() - 0.5)
+						* BEARING_ABS_QUOTIENT_VARIANCE
+						+ BEARING_ABS_QUOTIENT_MEAN;
+				entity.bearing = bearing_ / cabsf(bearing_)
+						* bearingRandomQuotient;
+			} else {
+				entity.bearing = bearing_;
+			}
 
 			// some randomness in direction
 			// the entity will never go in the opposite direction
@@ -217,9 +228,9 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 				if (randomDouble() < getMaxSpeed(&entity, clock)) {
 					double dirRnd = randomDouble();
 					if (dirRnd < DIRECTION_MISSED) {
-						dir = (dir + 2) % 4 + 1; // turn counter-clock-wise
+						dir = DIRECTION_CCW(dir); // turn counter-clock-wise
 					} else if (dirRnd < DIRECTION_MISSED * 2) {
-						dir = dir % 4 + 1; // turn clock-wise
+						dir = DIRECTION_CW(dir); // turn clock-wise
 					} else if (dirRnd
 							> DIRECTION_FOLLOW + DIRECTION_MISSED * 2) {
 						dir = STAY;
@@ -229,9 +240,13 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 				}
 			} else {
 				// if the entity would STAY, we'll try again to make it move
-				// TODO this should be reviewed; does it make sense?
-				bearing += getRandomBearing() * (randomDouble() * 0.5 + 0.75);
-				dir = bearingToDirection(bearing);
+				// to make the entity bearing variable in terms of absolute value
+				double bearingRandomQuotient = (randomDouble() - 0.5)
+						* BEARING_ABS_QUOTIENT_VARIANCE
+						+ BEARING_ABS_QUOTIENT_MEAN;
+
+				bearing_ += getRandomBearing() * bearingRandomQuotient;
+				dir = bearingToDirection(bearing_);
 			}
 
 			// we will try to find the cell in the chosen direction
@@ -381,7 +396,8 @@ static bearing getBearing(WorldPtr world, int x, int y) {
 	}
 	for (int dir = DIRECTION_BASIC + 1; dir <= DIRECTION_ALL; dir++) {
 		CellPtr cellPtr = GET_CELL_PTR_DIR(world, dir, x, y);
-		bearing delta = BEARING_PROJECT(BEARING_FROM_DIRECTION(dir));
+		bearing delta = BEARING_FROM_DIRECTION(dir);
+		delta /= cabsf(delta);
 
 		if (entity.type == ZOMBIE) {
 			if (IS_OUTSIDE(world, x + direction_delta_x[dir],

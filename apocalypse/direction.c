@@ -11,15 +11,15 @@
 #include "random.h"
 
 bearing getRandomBearing() {
-	double angle = randomDouble() * 2 * M_PI;
-	return 0.5 * cos(angle) + 0.5 * I * sin(angle);
+	float angle = randomDouble() * 100 * M_PI;
+	return 0.5 * cexpf(I * angle);
 }
 
 Direction bearingToDirection(bearing bearing) {
 	if (cabs(bearing) < 1) {
 		return STAY;
 	}
-	double angle = carg(bearing); // in range [-PI, +PI]
+	double angle = cargf(bearing); // in range [-PI, +PI]
 
 	// note that negative imaginary part means UP
 	if (angle >= M_PI * (-3) / 4 && angle < M_PI * (-1) / 4) {

@@ -95,11 +95,6 @@ typedef float complex bearing;
 bearing getRandomBearing();
 
 /**
- * Normalizes the bearing, strips its absolute value.
- */
-#define BEARING_PROJECT(bearing) ((bearing) / cabs(bearing))
-
-/**
  * Converts a direction to bearing.
  * This function is useful when iterating over directions.
  */
