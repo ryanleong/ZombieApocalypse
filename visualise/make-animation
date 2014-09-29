@@ -5,13 +5,16 @@
 
 images_path="./images"
 
-ffmpeg -framerate 15 \
-	-i ./images/step-%06d.png \
+ffmpeg \
+    -framerate 15 \
+    -f image2 \
+    -pattern_type glob -i "./images/*.png" \
 	-vf scale=800:-1 \
 	-c:v libx264 \
 	-pix_fmt yuv420p \
 	out.mp4
 
+#	-i ./images/step-%06d.png \
 exit
 
 # vim: ts=4 sw=4 et
