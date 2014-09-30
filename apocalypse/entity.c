@@ -137,10 +137,11 @@ void makeLove(EntityPtr mother, EntityPtr father, simClock clock, Stats stats) {
 			+ stats.infectedFemales + stats.infectedMales;
 	double density = population / ((double) stats.width * stats.height);
 	double ratio = INITIAL_DENSITY / density;
-#if EQUAL_BIRTH
+#ifdef EQUAL_BIRTH
 	double q = ratio;
 #else // controlled with power
-	double q = pow(ratio, ratio * SITUATION_AWARENESS_COEFFICIENT);
+	double exp = ratio * SITUATION_AWARENESS_COEFFICIENT;
+	double q = pow(ratio, exp);
 #endif
 	double prob = PROBABILITY_FERTILIZATION * q;
 #endif

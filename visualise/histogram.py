@@ -70,7 +70,7 @@ host.set_xlim(0, m + 0.75)
 hml = [m / max(humanMales, 1) for m in humanMalesList]
 hfl = [m / max(humanFemales, 1) for m in humanFemalesList]
 hpl = [m / max(humanPregnant, 1) for m in humanPregnantList]
-p, = host.plot(dupp(ageList), dup(hml), '-', color='#008800', linewidth=1.5, label='Human Males', zorder=10)
+host.plot(dupp(ageList), dup(hml), '-', color='#008800', linewidth=1.5, label='Human Males', zorder=10)
 host.plot(dupp(ageList), dup(hfl), '-', color='#00dd00', linewidth=1.5, label='Human Females', zorder=10)
 host.fill(dupp(ageList), dup(hpl), '-', color='#77dd00', alpha=0.5, linewidth=1, label='Pregnant Human Females', zorder=1)
 m = max(max(hml), max(hfl))
@@ -80,20 +80,25 @@ host.axis['left'].label.set_color('green')
 host.axis['right'].label.set_color('green')
 
 if infected > 0:
+	m = 0
 	imlTouples = filter(dupp(ageList), dup([m / max(infectedMales, 1) for m in infectedMalesList]))
+	if imlTouples != []:
+		par1.plot(imlTouples[0], imlTouples[1], '.', color='#0000aa', linewidth=1, label='Infected Males', zorder=5)
+		m = max(m, max(imlTouples[1]))
 	iflTouples = filter(dupp(ageList), dup([m / max(infectedFemales, 1) for m in infectedFemalesList]))
+	if iflTouples != []:
+		par1.plot(iflTouples[0], iflTouples[1], '.', color='#8888dd', linewidth=1, label='Infected Females', zorder=5)
+		m = max(m, max(iflTouples[1]))
 	ipl = [m / max(infectedPregnant, 1) for m in infectedPregnantList]
-	p, = par1.plot(imlTouples[0], imlTouples[1], '.', color='#0000aa', linewidth=1, label='Infected Males', zorder=5)
-	par1.plot(iflTouples[0], iflTouples[1], '.', color='#8888dd', linewidth=1, label='Infected Females', zorder=5)
 	par1.fill(dupp(ageList), dup(ipl), '-', color='#dd88dd', alpha=0.5, linewidth=1, label='Pregnant Infected Females', zorder=2)
-	m = max(max(imlTouples[1]), max(iflTouples[1]))
+	
 	par1.set_ylim(-0.2 * m, 1.2 * m)
 	par1.set_ylabel('Age Distribution of Infected')
 	par1.axis['left'].label.set_color('blue')
 	par1.axis['right'].label.set_color('blue')
 
 zl = [m / max(zombies, 1) for m in zombiesList]
-p, = par2.plot(dupp(ageList), dup(zl), '-', color='#dd0000', linewidth=1.5, label='Zombies', zorder=20)
+par2.plot(dupp(ageList), dup(zl), '-', color='#dd0000', linewidth=1.5, label='Zombies', zorder=20)
 m = max(zl)
 par2.set_ylim(-0.2 * m, 1.2 * m)
 par2.set_ylabel('Age Distribution of Zombies')

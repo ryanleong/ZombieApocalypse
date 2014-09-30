@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
 #else
 	int numThreads = 1;
 #endif
-	fprintf(stderr,"Simulation took %f milliseconds with %d threads\n", elapsedTime, numThreads);
+	fprintf(stderr, "Simulation took %f milliseconds with %d threads\n", elapsedTime, numThreads);
 #endif
 
 	// this is a clean up
