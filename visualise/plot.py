@@ -46,7 +46,7 @@ par2 = host.twinx()
 
 
 
-entities=[ {'name': "Humans", 'list': humansList2, 'style': "g-", 'zorder': 10, 'coef': 1},
+entities = [ {'name': "Humans", 'list': humansList2, 'style': "g-", 'zorder': 10, 'coef': 1},
 	{'name': "Zombies", 'list': zombiesList2, 'style': "r-", 'zorder': 5, 'coef': 1},
 	{'name': "Infected", 'list': infectedList2, 'style': "b-", 'zorder': 1, 'coef': 1.4} ]
 plots = [host, par1, par2]
@@ -67,7 +67,7 @@ for i in range(len(entities)):
 	entities[i]['plot'] = p
 
 	m = max(entities[i]['list']) * entities[i]['coef']
-	plots[i].set_ylim(-0.2*m, 1.2*m)
+	plots[i].set_ylim(-0.2 * m, 1.2 * m)
 	plots[i].axis['left'].label.set_color(p.get_color())
 	plots[i].axis['right'].label.set_color(p.get_color())
 	

@@ -28,11 +28,19 @@
 # Eclipse project
 .project
 .cproject
+.pydevproject
 
 # ignore the built executable.
 dependencies
 /apocalypse/apocalypse
 /visualise/visualise
+/visualise/demographics
+
+# ignore outputs and backups
+/images/
+/images_*
+/out
+/out_*
 
 # ignore intermediate files for tr building.
 /report/tr.aux

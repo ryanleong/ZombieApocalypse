@@ -27,6 +27,12 @@ backup: images out
 png: images
 	for f in images/*.img; do echo $$f; visualise/visualise $$f; done
 
+dem: images
+	for f in images/*.img; do echo $$f; visualise/demographics $$f; done
+
+hist: images
+	for f in images/*.dem; do echo $$f; visualise/histogram.py $${f%.dem}-hist.png < $$f; done
+
 plot: out
 	visualise/plot.py <out
 

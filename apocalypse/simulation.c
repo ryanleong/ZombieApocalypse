@@ -46,6 +46,7 @@ static void mergeStats(WorldPtr dest, Stats src);
  */
 void simulateStep(WorldPtr input, WorldPtr output) {
 	simClock clock = output->clock = input->clock + 1;
+	output->stats.clock = clock;
 
 	// notice that we iterate over xx and yy
 	// and the real x and y are randomly switched between two directions

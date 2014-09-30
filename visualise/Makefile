@@ -1,4 +1,4 @@
-SRC = visualise.c
+SRC = visualise.c demographics.c
 OBJS = $(SRC:%.c=%.o)
 
 CC = gcc
@@ -7,16 +7,20 @@ CFLAGS = --std=gnu99 -O2 -g -Wall
 
 LIBS = -lpng
 
-all: dependencies visualise
+all: dependencies visualise demographics
 
-visualise: $(OBJS)
-	$(CC) $(CFLAGS) -o visualise $(OBJS) $(LIBS)
+visualise: visualise.o
+	$(CC) $(CFLAGS) -o visualise visualise.o $(LIBS)
+
+demographics: demographics.o
+	$(CC) $(CFLAGS) -o demographics demographics.o $(LIBS)
 
 clean: 
 	rm -f $(OBJS)
 
 clobber: clean
 	rm -f visualise
+	rm -f demographics
 	rm -f dependencies
 	rm -f cscope.out
 

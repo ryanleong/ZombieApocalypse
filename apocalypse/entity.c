@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <omp.h>
+#include <math.h>
 
 #include "entity.h"
 #include "common.h"
@@ -129,34 +130,24 @@ void toZombie(EntityPtr zombie, simClock clock) {
 void makeLove(EntityPtr mother, EntityPtr father, simClock clock, Stats stats) {
 	double rnd = randomDouble();
 
-	int couples = stats.couplesMakingLove;
-	if (couples == 0) {
-		return;
-	}
-#ifdef UNCONTROLLED_BIRTH_8000
-	int died = stats.humanFemalesDied + stats.humanMalesDied
-			+ stats.infectedFemalesDied + stats.infectedMalesDied
-			+ stats.infectedFemalesBecameZombies
-			+ stats.infectedMalesBecameZombies;
-	if (rnd > died / (double) couples) {
-		return;
-	}
-#elseif EQUAL_BIRTH_8000
-	if (rnd > PROBABILITY_FERTILIZATION) {
-		return;
-	}
-#else
-	int children = stats.humanFemalesDied + stats.humanMalesDied;
-	if (stats.humanFemales + stats.humanMales > 12000) {
-		if (rnd > children / (double) couples) {
-			return;
-		}
-	} else {
-		if (rnd > 10 * PROBABILITY_FERTILIZATION) { //0.006 human stable
-			return;
-		}
-	}
+#ifdef UNCONTROLLED_BIRTH
+	double prob = PROBABILITY_FERTILIZATION;
+#else // controlled
+	int population = stats.humanFemales + stats.humanMales
+			+ stats.infectedFemales + stats.infectedMales;
+	double density = population / ((double) stats.width * stats.height);
+	double ratio = INITIAL_DENSITY / density;
+#if EQUAL_BIRTH
+	double q = ratio;
+#else // controlled with power
+	double q = pow(ratio, ratio * SITUATION_AWARENESS_COEFFICIENT);
 #endif
+	double prob = PROBABILITY_FERTILIZATION * q;
+#endif
+	if (rnd > prob) {
+		return;
+	}
+
 	newChildren(mother, clock, false);
 }
 

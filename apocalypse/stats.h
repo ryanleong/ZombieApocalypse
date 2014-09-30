@@ -2,6 +2,12 @@
 #define STATS_H_
 
 typedef struct Stats {
+	// world related
+	simClock clock;
+	int width;
+	int height;
+
+	// entities related
 	int humanFemales;
 	int humanMales;
 	int infectedFemales;

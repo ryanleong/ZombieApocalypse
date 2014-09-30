@@ -16,8 +16,8 @@
 // #### TESTING ####
 // these defines are necessary for report
 
-//#define UNCONTROLLED_BIRTH_8000
-//#define EQUAL_BIRTH_8000
+#define UNCONTROLLED_BIRTH
+//#define EQUAL_BIRTH
 
 // humans are divided into 4 classes: CHILD, YOUNG, MIDDLEAGE, ELDERLY//
 // zombies have only two classes: YOUNG and OLD
@@ -170,13 +170,15 @@
 #define PROBABILITY_INFECTION 0.01
 
 // probability of conceiving children during love making
-#define PROBABILITY_FERTILIZATION 0.05
+#define PROBABILITY_FERTILIZATION 0.0004
 
 // probability of an entity being a female
 #define FEMALE_MALE_RATIO 0.506
 
 // probability of a female being pregnant when the simulation starts
 #define PROBABILITY_INITIAL_PREGNANCY 0.02655
+
+#define SITUATION_AWARENESS_COEFFICIENT 1.25
 
 // population density in NT
 #if defined(UNCONTROLLED_BIRTH_8000) || defined(EQUAL_BIRTH_8000)

@@ -39,6 +39,10 @@
  * The people are of different age; zombies are "brand new".
  */
 void randomDistribution(WorldPtr world, int people, int zombies, simClock clock) {
+	world->lastStats.clock = clock;
+	world->lastStats.infectedFemales = 0;
+	world->lastStats.infectedMales = 0;
+
 	for (int i = 0; i < people;) {
 		int x = randomInt(world->xStart, world->xEnd);
 		int y = randomInt(world->yStart, world->yEnd);
@@ -187,8 +191,8 @@ int main(int argc, char **argv) {
 	WorldPtr output = newWorld(width, height);
 
 	randomDistribution(input, people, zombies, 0);
+
 #ifndef NIMAGES
-	// we need to fake stats
 	input->stats = input->lastStats;
 	printWorld(input);
 #endif
@@ -223,7 +227,7 @@ int main(int argc, char **argv) {
 #else
 	int numThreads = 1;
 #endif
-	printf("Took %f milliseconds with %d threads\n", elapsedTime, numThreads);
+	fprintf(stderr,"Simulation took %f milliseconds with %d threads\n", elapsedTime, numThreads);
 #endif
 
 	// this is a clean up

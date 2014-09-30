@@ -16,7 +16,13 @@ WorldPtr newWorld(unsigned int width, unsigned int height) {
 	world->yEnd = height + 1;
 
 	world->stats = NO_STATS;
+	world->stats.clock = 0;
+	world->stats.width = width;
+	world->stats.height = height;
 	world->lastStats = NO_STATS;
+	world->lastStats.clock = 0;
+	world->lastStats.width = width;
+	world->lastStats.height = height;
 
 #ifdef _OPENMP
 	world->locks = (omp_lock_t *) checked_malloc(sizeof(omp_lock_t) * (width + 4));
@@ -44,8 +50,13 @@ void resetWorld(WorldPtr world) {
 			GET_CELL(world, x, y).type = NONE;
 		}
 	}
+
 	world->stats = NO_STATS;
+	world->stats.width = world->width;
+	world->stats.height = world->height;
 	world->lastStats = NO_STATS;
+	world->lastStats.width = world->width;
+	world->lastStats.height = world->height;
 }
 
 void destroyWorld(WorldPtr world) {
@@ -99,6 +110,7 @@ void copyStats(WorldPtr world, Stats stats) {
 	world->stats = stats;
 	// these are the global stats which we need to reset
 	// we want to keep just the event-driven
+	world->stats.clock = 0;
 	world->stats.humanFemales = 0;
 	world->stats.humanMales = 0;
 	world->stats.infectedFemales = 0;
@@ -109,4 +121,6 @@ void copyStats(WorldPtr world, Stats stats) {
 #else
 	world->stats = NO_STATS;
 #endif
+	world->stats.width = world->width;
+	world->stats.height = world->height;
 }
