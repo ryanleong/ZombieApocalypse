@@ -10,9 +10,6 @@
 
 #include "clock.h"
 
-// TODO study literature and find out the right values
-// TODO this is very important and boring
-
 // #### TESTING ####
 // these defines are necessary for report
 
@@ -31,7 +28,7 @@
 // these defines are deprecated and will be removed in the future
 //#define LIFE_EXPECTANCY_MALE_MEAN (81 * IN_YEARS) // wiki
 //#define LIFE_EXPECTANCY_FEMALE_MEAN (85 * IN_YEARS) // wiki
-#define ZOMBIE_DECOMPOSITION_MEAN (3 * IN_YEARS)
+#define ZOMBIE_DECOMPOSITION_MEAN (3 * IN_YEARS) // 3 to 5 years
 // end of deprecated defines
 
 #define HUMAN_CHILD_PERIOD (15 * IN_YEARS)
@@ -54,18 +51,20 @@
 
 // ## HUMAN DEATH PROBABILITIES ##
 
-// FIXME tweak values to make the population demographically correct
-#define PROBABILITY_MALE_CHILD_DEATH (0.0000006)
-#define PROBABILITY_FEMALE_CHILD_DEATH (0.0000006)
+// difference between lifespan of males and females
+#define GENDER_DEATH_DIFF 1.0493
 
-#define PROBABILITY_MALE_YOUNG_DEATH (0.0000012)
-#define PROBABILITY_FEMALE_YOUNG_DEATH (0.0000012)
+#define PROBABILITY_MALE_CHILD_DEATH (0.0000006 * GENDER_DEATH_DIFF)
+#define PROBABILITY_FEMALE_CHILD_DEATH (0.0000006 / GENDER_DEATH_DIFF)
 
-#define PROBABILITY_MALE_MIDDLEAGE_DEATH (0.0000096)
-#define PROBABILITY_FEMALE_MIDDLEAGE_DEATH (0.0000096)
+#define PROBABILITY_MALE_YOUNG_DEATH (0.0000012 * GENDER_DEATH_DIFF)
+#define PROBABILITY_FEMALE_YOUNG_DEATH (0.0000012 / GENDER_DEATH_DIFF)
 
-#define PROBABILITY_MALE_ELDERLY_DEATH (0.000096)
-#define PROBABILITY_FEMALE_ELDERLY_DEATH (0.000096)
+#define PROBABILITY_MALE_MIDDLEAGE_DEATH (0.0000096 * GENDER_DEATH_DIFF)
+#define PROBABILITY_FEMALE_MIDDLEAGE_DEATH (0.0000096 / GENDER_DEATH_DIFF)
+
+#define PROBABILITY_MALE_ELDERLY_DEATH (0.000096 * GENDER_DEATH_DIFF)
+#define PROBABILITY_FEMALE_ELDERLY_DEATH (0.000096 / GENDER_DEATH_DIFF)
 
 // ## ZOMBIE AND INFECTED RELATED PROBABILITIES
 
@@ -106,7 +105,8 @@
 
 // ## HUMANS ##
 
-#define FEMALE_TO_MALE_SPEED_RATIO 0.85714311076 // Base of ratio of male to female avg speed (0.85714311076)
+// Base of ratio of male to female avg speed (0.85714311076)
+#define FEMALE_TO_MALE_SPEED_RATIO 0.85714311076
 
 #define SPEED_MALE_CHILD 0.64
 #define SPEED_FEMALE_CHILD (SPEED_MALE_CHILD * FEMALE_TO_MALE_SPEED_RATIO)
@@ -170,7 +170,7 @@
 #define PROBABILITY_INFECTION 0.0075
 
 // probability of conceiving children during love making
-#define PROBABILITY_FERTILIZATION 0.0004
+#define PROBABILITY_FERTILIZATION 0.00073
 
 // probability of an entity being born as a female
 #define FEMALE_MALE_RATIO_WHEN_BORN 0.4854
@@ -178,8 +178,13 @@
 // probability of an entity being a female when the simulation stats
 #define FEMALE_MALE_RATIO_INITIAL 0.498
 
+// per whole life
+#define CHILDREN_PER_FEMALE 1.77
+
 // probability of a female being pregnant when the simulation starts
-#define PROBABILITY_INITIAL_PREGNANCY 0.02655
+#define PROBABILITY_INITIAL_PREGNANCY \
+		(CHILDREN_PER_FEMALE * PREGNANCY_DURATION_MEAN) \
+		/ (FERTILITY_END_FEMALE_MEAN - FERTILITY_START_FEMALE_MEAN)
 
 #define SITUATION_AWARENESS_COEFFICIENT 2.5
 

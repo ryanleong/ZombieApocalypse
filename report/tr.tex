@@ -253,27 +253,26 @@ The death rates for each age class can be calculated and expresses as shown in t
 
 \subsubsection{Birth rate}
 
-The Australian birth rate is \cite{absbirth}:
-$$ P(\text{Australian Birth}) = \frac{\text{baby births}}{\text{female population size}} = \frac{158988+150594}{23319400} = 1.33\% $$
+There are two situations when the birth rate is used in a way.
 
-To achieve this birth rate when the simulation is started, some of the initialial females should be pregnant at this stage.
-If a female fertility period is from 15 to 45, then there are approximately 41.5\% fertile females.
-Thus in the initialization stage, the pregnancy probability of females who are in the fertility period is: 
-$$ P(\text{Pregnant Female in Fertility Period}) = \frac{\text{baby births}}{\text{female population size} \times 41.5\%} $$
-$$ = \frac{158988+150594}{11659700 \times 41.5\%} = 2.655\% $$
+First, when the simulation starts, some females should be pregnant.
+The estimated probability of a female in fertility period being pregnant is:
+$$ P(\text{Pregnant Female in Fertility Period}) $$
+$$ = \frac{\text{average number of children per female life} \times \text{pregnancy duration}}{\text{average length of fertility period}} $$
+$$ = \frac{1.77 \times 9 (\text{months})}{30 (\text{years})} = 4.36\% $$
 
 Although we had access to birth rates, we didn't try to untilise them during the simulation because of the excessive difficulty of calculations.
 Simple approach of counting probabilities of a male-female couples on a mesh do not work when the movement is targeted (as discussed earlier).
 We also model fertilisation and pregnancy periods which naturally limit the baby procreation.
 
 Our approach is to run the simulation of them model for several generations without presence of zombies, and by trials and errors find the right rate when the population size is stable or slightly increasing.
-That way we got a probability of child being conceived each time a couple makes love equal to 0.0004, which is a number that doesn't make sense without context of the implemented model.
+That way we got a probability of child being conceived each time a couple makes love equal to 0.00073, which is a number that doesn't make sense without context of the implemented model.
 This is just a small price for much more realistic model of child birth.
 
 \subsubsection{Sex ratio}
 
 The birth ratio between males and females is 1.06. \cite{cia}
-Thus the ratio of a child being a male of female is initialized a
+Thus the ratio of a child being a male of female is initialized as
 $$ \text{Male Child} : \text{Female Child} = 0.5146 : 0.4854 $$
 
 However, the ratio is different when the simulation starts.
@@ -289,12 +288,162 @@ $$ 500 \cdot 500 \cdot \frac{0.17}{2} = 21250 $$
 
 \section{Results}
 
-TODO two images of state and a graph of populations' count.
+Before presenting the actual results, we would like to describe an intermediate model which contained a flaw which made it stable.
+
+\subsection{A flaw and its consequences}
+
+When implementing the simulation of entities movement on a 2D mesh, we chose to use two nested for loops (the outer went through columns, the inner through rows) copying entities from the input mesh to the outer one.
+For each entity the optimal decision where to move was calculated (as discussed earlier) and then tested whether the destination cell is free.
+Unfortunatelly the chosen directino of processing causes that the cells to the left and to the up are already processed and there exists a chance that those cells will contain an entity.
+On the other hand, the cells to the right and to the down are unprocessed and therefore the conflict is less likely.
+This slight inequality causes that the overall movement is targeted to right and down and clusters of entities appear the the world border.
+
+These clusters proved to be important for zombies.
+It is an ideal place where they can feastand keep their number high untill the rest of the world regenerate.
+They are also often places where the infection starts and spreads very quickly with creating a lot of zombies.
+
+When the flaw was repaired (by randomizing the processing directions), the zombies could not survive under the previously stable conditions.
+No matter what changes we did to the model, the infection probability had to be lowered from original value 0.01 to 0.0075.
+The new probability keeps the zombie population size of at least 100 individuals at all time.
+
+\subsection{Population size}
+
+Making the model stable without zombies was easy.
+In order to add zombies we had to change the model a bit to deal with zombies and their dynamic population size.
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{uncontrolled_birth_8000}
+    \caption{Uncontrolled birth with 8000 people and 2 zombies}
+\end{figure*}
+
+The natural choice to change was the birth rate, which was first set to be constant.
+As there are less humans, the constant birth rate, which works for original population, cannot be used any more.
+Humans don't meet as often and therefore their likelihood of making love decrease and their population will as well.
+The higher the initial population the more zombies will be created, and the sooner the model will collapse.
+We run the simulation starting with only 8000 humans; the failure is clearly visible.
+After about only 63 years, zombies died out and human population dropped to 1809 people.
+TODO create a new figure
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{equal_birth_8000}
+    \caption{Equal birth with 8000 people and 2 zombies}
+\end{figure*}
+
+The next attempt used the initial birth rate multiplied by a quotient which was defined as a ratio of initial and current population.
+As the population drops down, the humans shall reproduce more often and therefore raise back to the original population size.
+The model without zombies using this technique is much more stable, however the quotient is not strong enough to deal with zombies.
+A simulation starting with 8000 humans is shown in the figure.
+Starting with more humans would cause more zombies, and therefore steeper decrease of humans and the eventual lack of human supply would be the reason why zombies would die out quicker.
+TODO create a new figure
+
+\subsubsection{Function of densities ratio}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{stable}
+    \caption{Stable populations of humans and zombies}
+\end{figure*}
+
+The aim of the birth rate function, which depends on population density, is to allow free initial decrease of humans, and then ``kick-in'' when the population is lower.
+The initial stage is important because otherwise the population of zombies would become too high and the model would not be stable.
+We tried to use several function which has the mentioned properties and also become identity close to initial density.
+Our candidate for the quotient function was $r^{const}$, where $r$ is the ratio of population densities.
+
+The optimal value for the constant in exponent, let's call it situation awareness, is 2.5.
+Higher values make the populations oscillate in time, and lower values makes the population unnaturally stable.
+The population sizes for the full initial human population of 21,250 is shown in the figure.
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{stable_1000000}
+    \caption{2740 years long stable simulation}
+\end{figure*}
+
+We have also run the simulation for a longer period to discover its other properties.
+As another figure of ten times longer simulation shows, the sizes of populations of human, infected and zombie make 40 years long cycles.
+When the simulation starts, the swings of population sizes are smaller and they eventually become constant, non-zero.
+It is also interesting that the initial cycle break each into two individual ones.
+To this quite stable stage the model gets after 465 years.
+TODO correct simulation figure
+TODO adjust number according to the figure
 
 \subsection{Demographics}
 
-TODO demographics during the simulation.
-Unfortunately we haven't implemented a function which prints information about individual people -- gender + age.
+When the simulation starts, the number of demographics is exactly as described earlier.
+There are noticeable four horizontal areas which correspond to age classes.
+
+After 10 years, there demographic situation remains the same, only shifted to the right.
+Zombies start to appear and their age distribution starts to spread.
+
+Afert 50 years, after the first zombie peak, which is noticeable by the low number of young zombies and few infected, the demographic distribution has changed.
+According to model, more femals are born, however being slower (and having lower daily death probability), their number becomes less than number of males.
+
+After 150 years, the populations have stabilized, there are many infected and the population distributions got their final shape.
+This figure is also an example of pregnant infected female.
+
+The situation at the end of the simulation after 100,000 days (appoximately 274 years) is no different from the previous situation.
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{step-000000.png}
+    \caption{Simulation mesh at the beginning}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{step-000000.pdf}
+    \caption{Demographics at the beginning}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{step-003650.png}
+    \caption{Simulation mesh after 10 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{step-003650.pdf}
+    \caption{Demographics after 10 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{step-018250.png}
+    \caption{Simulation mesh after 50 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{step-018250.pdf}
+    \caption{Demographics after 50 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{step-053100.png}
+    \caption{Simulation mesh after 150 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{step-053100.pdf}
+    \caption{Demographics after 150 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{step-100000.png}
+    \caption{Simulation mesh after 274 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{step-100000.pdf}
+    \caption{Demographics after 274 years}
+\end{figure*}
 
 \subsection{Scaling}
 
@@ -327,79 +476,21 @@ Unfortunately we haven't implemented a function which prints information about i
     \caption{Scaling depending on number of threads}
 \end{figure*}
 
-
-The model implemented in C using OpenMP can utilise several threads.
-On Avoca the IBM Blue Gene/Q supercomputer, a single node provides 16 cores with 4 threads each.
+The model implemented in C using OpenMP, running in several threads.
+On Avoca, the IBM Blue Gene/Q supercomputer, a single node provides 16 cores with 4 threads each.
 Our model could utilise all 64 threads as most of the simulation does not need any thread synchronisation.
 
 We run the model three times for 1000 iterations in order to ensure the influence of randomness does not make the results odd.
 The results are in the table above, running times are in milliseconds.
-We expect a perfect scaling up to 16 threads -- each of them will be assigned to a dedicated core.
-Running with 32 cores still provides an improvement but not a significant one.
-The drop of performace when running with 64 threads is either caused by the hardware architecture of the CPU or by using wrong random generators.
+We expected a perfect scaling up to 16 threads -- each of them will be assigned to a dedicated core.
+Running with 32 cores still provides an improvement, but not a significant one.
+The drop of performace when running with 64 threads is probably caused by the hardware architecture of the CPU.
 In our opinion it is not caused by locking parts of the world as there are still at least 7 columns for each thread (we lock only three of them).
 
 \section{Recommendations}
 
-Due to the large initialized population density and birth rate which is greater than average death rate, the human population will keep growing for a few years until the zombie population is large enough to meet and infect the human in significant speed.
-In this case, the infected population is much greater than the amount of new birth human.
-So the human population will drop quickly and the zombie population will be at its peak.
-However a zombie can only live for 3 years normally.
-If the human population is too low, zombie who has no birth income will die out soon.
-In addition, the more human in initialization stage, the sooner the world collapses.
+TODO write recommendation
 
-\subsection{Uncontrolled birth}
-
-Theoretically the world should start with 21250 human.
-The flow diagram below shows a testing result of the world starting with only 8000 human and 2 zombies.
-After about only 63 years, zombies died out and human population dropped to 1809 people.
-
-\begin{figure*}[pht]
-    \centering
-    \includegraphics[width=\textwidth]{uncontrolled_birth_8000}
-    \caption{Uncontrolled birth with 8000 people and 2 zombies}
-\end{figure*}
-
-\subsection{Equal birth}
-
-In order to make sure that the world lasts forever, we assume that the human can self-control the human birth rate to avoid dying out for being infected by a large amount of zombies.
-At the beginning, humans and infected calculate their dead and infected who become zombies, and set the birth rate to maintan current population.
-Some pregnant females will be infected and become zombies so the human population will decrease.
-The result of the model is in the figure.
-
-\begin{figure*}[pht]
-    \centering
-    \includegraphics[width=\textwidth]{equal_birth_8000}
-    \caption{Equal birth with 8000 people and 2 zombies}
-\end{figure*}
-
-\subsection{Stable population}
-
-When the human population is under 12000, at the time when zombie and human populations are almost equal, the human will be alerted that they should have more babies otherwise they will die out.
-As the human birth has a gestation period and the zombie population will drop down sharply due to the low human population and meet chance, human population will grow remarkably after 10 years. 
-This way the human and zombie population gets to equilibrium as shown in the figure which shows 273 years of simulation.
-
-\begin{figure*}[pht]
-    \centering
-    \includegraphics[width=\textwidth]{stable}
-    \caption{Stable populations of humans and zombies}
-\end{figure*}
-
-As another test diagram of ten times longer simulation shown below, the change of populations of human, infected and zombie will follow the law of 40 years cycle.
-The population swings are fewer and fewer.
-And they are quite stable after 465 years.
-
-\subsection{Real Recommendation}
-
-In order to get to the equilibrium, we can recommend people to behave normally until their population drops one half.
-Then they should stop using birth control (which as a human-made resource won't be available anyway) and start reproducing like rabbits.
-This strategy ensures that the populations of both, humans and zombies, gets stable over time.
-
-\begin{figure*}[pht]
-    \centering
-    \includegraphics[width=\textwidth]{stable_1000000}
-    \caption{2740 years long stable simulation}
-\end{figure*}
 
 \begingroup
 \raggedright
