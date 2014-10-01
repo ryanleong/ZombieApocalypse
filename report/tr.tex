@@ -12,38 +12,68 @@
 \usepackage{amsmath}
 
 
-\newcommand*\mean[1]{\overline{#1}}
-
 \DeclareGraphicsExtensions{.pdf,.png,.jpg,.eps}
 
-\newcommand{\myauthor}{TODO Names of Authors}
 \newcommand{\mytitle}{Zombie Apocalypse Report}
-
-\lhead{\mytitle}
-\rhead{\myauthor}
+\newcommand*\mean[1]{\overline{#1}}
 
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{TODO names of authors}
+\fancyhead[L]{Juraszek, Shiong, Signorini, Yang}
 \fancyhead[R]{\mytitle}
 
 \fancyfoot[C]{\thepage}
 
 \title{\mytitle}
-\author{\myauthor}
+\author{Adam Juraszek \and Ryan Leong Wei Shiong \and Matthew Signorini \and Ziying Yang}
 
 \begin{document}
 \maketitle
 
 \section{Introduction} % Ryan
 
-Infectious diseases have been prevalent since the start of time. Modelling the spread of these diseases can serve to find a possible ways to stop or contain the spread. With the advancement of technology, computing power has increased tremendously, allowing these simulation models to be done on a greater scale. In this project, we are to implement a Zombie Infection simulation, modeling the spread of the infection on a human population. The entities in the simulation are split into three main categories, Humans, Infected and Zombies. Infected are humans which will eventually turn into Zombies. 
+Infectious diseases have been prevalent since the start of time.
+Modelling the spread of these diseases can serve to find possible ways to stop or limit the spreading.
+With the advancement of technology, computing power has increased tremendously, allowing these simulation models to be done on a greater scale.
+In this project, we are to implement a Zombie Infection simulation, modeling the spread of the infection on a human population.
+The entities in the simulation are split into three main categories, Humans, Infected and Zombies.
+Infected are humans which will eventually turn into Zombies.
 
-In the first part of this project, the task was to simulate the population on a 500 by 500 grid. We had take into account the birth and death rate of humans, keeping close to the current demographics of the Northern Territory in Australia. 
+\subsection{Zombie description}
 
-We also had to simulate zombie conversion, decay and movement. Since this is a, currently, fictional virus, the various different literatures have different zombie characteristics. In an article on the zombies of “World War Z”, the zombies in this lore are slow moving until they sense humans around. They will then move as fast, if not, faster than human running speed \cite{guidetozombies}. In this project, we set the zombie decay rate of 1 year (meaning that a Zombie would decompose after a year), which was adapted from \cite{zombiepedia}, had to also be taken into account. This meant that the zombies would die out without any humans to infected. These zombies naturally move towards the humans to infect them, converting humans into zombies. The gestation period for the infected humans to turn into zombies was also adapted from the same source. Movement also needs to be implemented correctly, as both humans and zombies have different speeds.
+Since this is a, currently, fictional situation, the various different literatures provide different zombie characteristics.
+For an instance, an article on the zombies of ``World War Z'', the zombies in the lore are slow moving until they sense humans around.
+They will then move as fast, if not, faster than human running speed. \cite{guidetozombies}
 
-With this model, we aim to be able to simulate an actual infection, by modeling a stable population of both humans and zombies, finding the right distribution for both to coexist. 
+In our model, the zombies are reanimated dead human bodies controlled by a viral infection, which is one of known types of zombies. \cite{survivingthedead}
+A human becomes infected when it is bitten by a zombie.
+The infection doesn't have any symptoms except for bite marks and short term memory loss.
+The infection is latent and secretly spreads inside the body until it dominates.
+The incubation period is 14 days on average, which is significantly longer than we are accustomed, however it has a medical support. \cite{mogk2011everything}
+Later, during a weak moment (usually while sleeping) it causes death of the person and starts act on its own.
+
+The zombies are naturally strongly atracted to humans to infect them and humans run away from zombies when they spot them.
+The control of the body is poor and therefore the movement and motorics is slower and inaccurate.
+The durability period of a reanimated dead body is shortend to about 3 years on average. \cite{zombiepedia}
+Eventually a zombie falls and decomposes.
+
+\subsection{Requirements}
+
+\begin{enumerate}
+\item In the first part of this project, the task was to simulate the human and zombie population on a 500 by 500 grid.
+\item We had to take into account the birth and death rate of humans, keeping them close to the current demographics of the Northern Territory in Australia.
+    This hold except for the population size which is reduced to one half. \cite{project}
+\item We had to model zombies which are eager to chase and infect humans.
+    We had to model zombie processes starting with infection and ending with decomposition.
+\item With this model, we aim to find parameters which support coexisting of both populations of humans and zombies, and also don't contradict reality.
+\end{enumerate}
+
+\subsubsection{Stability requirement}
+
+The last requirment makes the model hard as we cannot allow either population to drop too low and, as a consequence, to rise too high either.
+If there were too little humans, the zombies couldn't infect anybody often enough to compensate their shorter lifespan.
+On the other hand, if there are too many humans, the infection can spread very quickly and the zombies outnumber humans.
+This is followed by steep decrease of both populations and finally becomes the former case with possibility of humans extinction.
 
 \section{Model} % Adam
 
@@ -55,77 +85,84 @@ With this model, we aim to be able to simulate an actual infection, by modeling 
         \caption{Infection model}
 \end{figure*}
 
-Since there has not been found cure for zombies to become humans, our model presumes only four possible stages.
-An entity begins in state Human which represent a normal human being which was born, has a gender (is either male of female) and eventually dies.
+Since we don't suppose that there has not been found cure for infected (nor zombies) to become humans again, our model presumes only four possible stages and strictly one-way transitions.
+This and non-existence of immunity is the main difference between our model and clasic SIR model and its variations.
+
+An entity begins in state Human which represents a normal human being which was born, has a gender (is either male or female), and eventually dies.
 If a human gets in contact with a zombie, it may become infected.
-Infected entity is basically a human which eventually becomes a zombie which means that it can reproduce and die of natural death.
+The probability of infection is unknown but for the purpose of our model it was set to $0.75\%$ for a human within 1 kilometer proximity to a zombie.
+However small the probablility seems to be, it is quite acceptable concerning the smallest time and space units being 1 day and 1 kilometer.
+
+Infected entity is basically a human which eventually becomes a zombie that means it can reproduce and die of natural death.
 Infected entity is not a danger to the surrounding humans until it becomes a zombie.
-When in contact with a human, a zombie may infect him or her.
-Zombie is concidered death -- it is just a virus driven moving body; therefore we say that a zombie eventually decomposes insead of it dies.
+Zombie is concidered death -- it is just a virus-driven moving body; therefore we say that a zombie eventually decomposes insead of it dies.
 In our model, zombie doesn't have gender as it cannot reproduce nor its properties depend on gender of the human which it used to be.
 
-When a human becomes infected, the length of the infection is determined by the strength of the body fighting zombie virus.
-The virus seems to be latent once a day it tries to gain control over the body.
-It will happen with a certain probability.
+When a human becomes infected, the length of the infection depends on the strength of the body fighting the zombie virus.
+The transition happens with a certain probability that makes the average length of infection 14 days.
 
 \subsubsection{Reproduction}
 
-If two fertile living entities (no matter if human or infected) of different genders meet, they can make love and conceive a child or children.
-It takes approximately 9 months for the children to develop inside mother's womb before they are born.
+If two fertile living entities (no matter if humans infected) of different genders meet, they can make love and conceive a baby.
+It takes approximately 9 months for a child to develop inside mother's womb before it is born. \cite{pregnancy}
 As the zombies are of viral nature, we presume that the virus in infected mother's body is passed to unborn children.
-The virus is not transmitted when an infected has an intercourse with a human.
+The virus is not transmitted when an infected has an intercourse with a healthy human.
 
-A woman can become pregnat if she is not already pregnant and she is an a fertile age (roughtly between 15 and 45 years) and her partner is a male in a fertile age (roughtly between 15 and 80).
-More than one baby can be conceived during one intercourse -- our model supports that a female can have up to three children at once.
-The probabilities of multiple births are in accordance with Hellin's law. (TODO reference)
+A female can become pregnant if she is not already pregnant, and she is in a fertile age (roughtly between 15 and 45 years) and her partner is a male in a fertile age (roughtly between 15 and 80).
+More than one baby can be conceived during one intercourse -- our model supports that a female can expect up to three babies at once.
+The probabilities of multiple births are in accordance with Hellin's law. \cite{hellinslaw}
 
 \subsubsection{Age}
 
 The model follows the Australian age distribution for both males and females.
-When the simulation starts, the people are didided into age classes based on their gender.
-Within the age class the people are distributed uniformly.
+When the simulation starts, the humans are divided into age classes based on their actual age.
+Within an age class, the people are distributed uniformly.
 
 Humans and infected are sorted into four age classes:
 \begin{enumerate}
-\item a child (0 -- 15 years)
-\item young (15 -- 37.5 years)
-\item middle aged (37.5 -- 65 years)
-\item elderly (54 -- $\infty$)
+\item a child (0--15 years),
+\item young (15--37.5 years),
+\item middle aged (37.5--65 years),
+\item elderly (65+).
 \end{enumerate}
 
-According to latest scientific research (TODO reference), zombies live 3 to 5 years. 
+According to the latest scientific research, zombies live 3 to 5 years. \cite{zombiepedia}
 Zombies are divided into two age classes:
 \begin{enumerate}
-\item young (0 -- 1.5 years)
-\item old (1.5 -- $\infty$)
+\item young (0--1.5 years),
+\item old (1.5+).
 \end{enumerate}
 
-Most of the properties of the entities are dependent on their age class rather than on their actual age.
-Those properties are:
+Most of the properties of the entities are dependent on their gender and on age class rather than on their actual age.
+The properties are:
 \begin{itemize}
-\item daily death rate -- probability of natural death per each day
-\item speed -- probability of entity to leave current tile if it was its original intension
+\item daily death rate -- the probability of a natural death per each day,
+\item speed -- the probability of the entity to leave its current cell if it was its original intension.
 \end{itemize}
 
-We have good estimates for living entities, but we are still waiting for our colleagues to determine the values for zombies depending on their age.
+Since the moving speed is a probability and the cell size is enormous, it only makes sense to compare the probabilities.
+Females are slightly slower but still faster than zombies.
+Speed of a young zombie equals to speed of an elderly human male.
+
+Details about death probabilities are discusses later in the report.
 
 \subsection{World representation}
 
-The simulated world is a mesh of size $1000 \times 1500$ which correspond with size of Northern Territory. (TODO reference)
-Parts of the mesh are called tiles.
-On each tile, there may be at most one entity of any type.
-Adjacency of two entities means that the two entities are touching each other, sharing one side of their tiles.
-The simulated world has fixed boundaries and no entity can pass through them; this is often refered as no-flux boundary. (TODO reference)
+The final simulated world will be a mesh of size $1000 \times 1500$ which correspond with size of Northern Territory. \cite{northernterritory}
+Parts of the mesh are called cells.
+On each cell, there may be at most one entity of any type; otherwise the cell is considered empty.
+Adjacency of two entities means that the two entities are touching each other, sharing one side of their cells.
+The simulated world has fixed boundaries, no entity can pass through them; this is often refered as to no-flux boundary condition.
 
 For the purpose of this report, only part of the world is simulated.
-The actual size of the mesh is $500 \times 500$ tiles.
+The actual size of the mesh is $500 \times 500$ cells.
 
 \subsubsection{Movement}
 
 \begin{figure*}[ht]
     \centering
     \includegraphics[width=0.3\textwidth]{movement}
-    \caption{Considered tiles when planning movement}
+    \caption{Considered cells when planning movement}
 \end{figure*}
 
 \begin{figure*}[ht]
@@ -149,23 +186,23 @@ The actual size of the mesh is $500 \times 500$ tiles.
     \caption{Affinity to directed situations for each type}
 \end{figure*}
 
-
-All entities share the same intelligence, even zombies.
+All entities, including zombies, share the same movement planning model.
 They differ mainly in preference where to go.
 
-Each entity determines its optimal direction based on surrounding 12 tiles as shown on the diagram.
-The tiles which it can get within one move are marked with a fancy star; tiles accessible within two moves are marked with a simple star.
-The adjacent tiles always have higher priority.
+Each entity determines its optimal direction based on surrounding 12 cells as shown on the diagram.
+The cells to which it can get within one move are marked with a fancy star; cells accessible within two moves are marked with a simple star.
+When considering directions, the adjacent cells always have higher priority.
 
-Each living entity and zombie rate each of these tiles based on their content.
-The preference for direction is then calculated as a weighted sum of complex numbers corresponding to direction.
-The exact values of preferences may change as soon as we obtain a broader set of observations of entities in various situations.
-However the estimates can be seen in the table.
-To the current preffered direction the direction from the last move is added, which simulates inertia of movement and as a result it makes the movement targeted.
+Each entity rates each of these cells based on their content.
+The preference for direction is then calculated as a weighted sum of complex numbers corresponding to particular directions.
+The values of preference were chosen to mimic expected bahaviour.
+Better results could be achieved by a more sophisticated (genetic) algorithm or by a more thorough analysis.
+The current estimates can be seen in the table below.
+To the current preffered direction the potential direction of the last move is added, that simulates inertia of movement and as a result it makes the movement targeted.
 
-After the optimal weighted direction is calculated, it is translated to a direction or stay instruction if the absolute value is not sufficient.
+After the optimal weighted direction is calculated, it is translated to a particular direction, or stay instruction if the absolute value is not sufficient.
 The direction may randomly change clock-wise or counter-clock-wise simulating evading obstacles, which are not modeled in the world.
-Then the tile in resulting direction is tested whether it is free; if it is not, the clock-wise or cunter-clock-wise is chosen.
+Then the cell in the resulting direction is tested whether it is free; if it is not, the clock-wise or cunter-clock-wise one is chosen.
 In the worst case, the entity stays at its current tile.
 The entity moves only if its speed (expressed as probability) is sufficient.
 
@@ -176,19 +213,19 @@ The entity moves only if its speed (expressed as probability) is sufficient.
 \begin{figure*}[ht]
     \centering
     \includegraphics[width=0.6\textwidth]{USGompertzCurve}
-    \caption{Mortality rates graph for US in 2003}
+    \caption{Mortality rates for US in 2003}
 \end{figure*}
 
-According to Australia age structure\cite{agestructure} and median age 37.3\cite{demographicsaustralia}, initialized human are divided into four age classes, named child (0-15 years old), young (15-37.5 years old), middle age (37.5-65 years old) and elder (above 65 years old) in the program.
-Based on Gompertz–Makeham law\cite{mortalitylaw} and mortality rates graph for US in 2003 (shown in the figure) the average probabilities of human dying at these four age stages are approximately related as 
+According to the Australian age structure\cite{agestructure} and median of age 37.3 years \cite{demographicsaustralia}, initialized humans are divided into four age clasess.
+Based on Gompertz–Makeham law \cite{mortalitylaw} and mortality rates graph for US in 2003 (shown in the figure) the average probabilities of a human dying in these four age stages are approximately related as 
 $$ \mean{P(\text{Elder Death})} = 10\: \mean{P(\text{Middle Age Death})} $$
 $$ = 80\: \mean{P(\text{Young Death})} = 160\: \mean{P(\text{Child Death})} $$
 
-As Australia death rate\cite{absdeath} is
-$$ \mean{P(\text{Australia Death})} = \frac{\text{people dead (in 2012)}}{\text{population (in 2012)}} $$
+As the Australian death rate \cite{absdeath} is
+$$ \mean{P(\text{Australia Death})} = \frac{\text{people who died (in 2012)}}{\text{population size (in 2012)}} $$
 $$ = \frac{147098}{23319400} = 0.63\%/\text{year} = 0.0017\%/\text{day} $$
 
-The death rate of each age class can be calculated out as the table shown below:
+The death rates for each age class can be calculated and expresses as shown in the table below.
 
 \begin{figure*}[ht]
     \centering
@@ -216,26 +253,38 @@ The death rate of each age class can be calculated out as the table shown below:
 
 \subsubsection{Birth rate}
 
-The Australia birth rate is\cite{absbirth}:
-$$ P(\text{Australia Birth}) = \frac{\text{baby birth}}{\text{population}} = \frac{158988+150594}{23319400} = 1.33\% $$
+The Australian birth rate is \cite{absbirth}:
+$$ P(\text{Australian Birth}) = \frac{\text{baby births}}{\text{female population size}} = \frac{158988+150594}{23319400} = 1.33\% $$
 
-To achieve this birth rate when the world is simulated, some initialized women should be pregnant at this stage.
-If female fertility period is from 15 to 45, then women in genital stage is 41.5\%.
-Thus in initialization stage, pregnancy probability of women who is in fertility period is: 
-$$ P(\text{Pregnant Women in Fertility Period}) = \frac{\text{baby birth}}{\text{women population} \times 41.5\%} $$
+To achieve this birth rate when the simulation is started, some of the initialial females should be pregnant at this stage.
+If a female fertility period is from 15 to 45, then there are approximately 41.5\% fertile females.
+Thus in the initialization stage, the pregnancy probability of females who are in the fertility period is: 
+$$ P(\text{Pregnant Female in Fertility Period}) = \frac{\text{baby births}}{\text{female population size} \times 41.5\%} $$
 $$ = \frac{158988+150594}{11659700 \times 41.5\%} = 2.655\% $$
+
+Although we had access to birth rates, we didn't try to untilise them during the simulation because of the excessive difficulty of calculations.
+Simple approach of counting probabilities of a male-female couples on a mesh do not work when the movement is targeted (as discussed earlier).
+We also model fertilisation and pregnancy periods which naturally limit the baby procreation.
+
+Our approach is to run the simulation of them model for several generations without presence of zombies, and by trials and errors find the right rate when the population size is stable or slightly increasing.
+That way we got a probability of child being conceived each time a couple makes love equal to 0.0004, which is a number that doesn't make sense without context of the implemented model.
+This is just a small price for much more realistic model of child birth.
 
 \subsubsection{Sex ratio}
 
-There were 102,300 more females than males residing in Australia in 2012, with 11.3 million males and 11.4 million females.\cite{abspopulation}
-Thus the sex ratio is initialized as 
-$$ \text{Female} : \text{Male} = 0.502 : 0.498 $$
+The birth ratio between males and females is 1.06. \cite{cia}
+Thus the ratio of a child being a male of female is initialized a
+$$ \text{Male Child} : \text{Female Child} = 0.5146 : 0.4854 $$
+
+However, the ratio is different when the simulation starts.
+The ratio in Australia is currently 1.01 and can be expressed as \cite{cia}
+$$ \text{Male} : \text{Female} = 0.5025 : 0.4975 $$
 
 \subsubsection{Population Density}
 
-The population density in Northern Territory prior to the zombie apocalypse was $0.17/\text{km}^2$. \cite{northernterritory}
-When the viral infection started, approximately half of the population left Australia to Sweden. \cite{project}
-As the simulated mesh is $500 \times 500$, the number of simulated people is
+The population density in the Northern Territory prior to the zombie apocalypse is $0.17/\text{km}^2$. \cite{northernterritory}
+When the viral infection starts, the authorities estimate that approximately half of the population will move from Australia to Sweden. \cite{project}
+As the simulated mesh is $500 \times 500$, the initial number of simulated humans is
 $$ 500 \cdot 500 \cdot \frac{0.17}{2} = 21250 $$
 
 \section{Results}

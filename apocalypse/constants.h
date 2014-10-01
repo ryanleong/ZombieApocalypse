@@ -54,7 +54,7 @@
 
 // ## HUMAN DEATH PROBABILITIES ##
 
-// TODO replace temporary values with actual ones
+// FIXME tweak values to make the population demographically correct
 #define PROBABILITY_MALE_CHILD_DEATH (0.0000006)
 #define PROBABILITY_FEMALE_CHILD_DEATH (0.0000006)
 
@@ -79,13 +79,13 @@
 
 // ## NUMBER OF CHILDREN ##
 
-// FIXME http://en.wikipedia.org/wiki/Multiple_birth#Causes_and_frequency
+// http://en.wikipedia.org/wiki/Multiple_birth#Causes_and_frequency
 // 1:89 (= 1.1%) or 1:80 (= 1.25%) for twins
 // 1:892 (= 1:7921, about 0.013%) or 1:802 (= 1:6400) for triplets
 
-#define PROBABILITY_ONE_CHILD 0.8
-#define PROBABILITY_TWO_CHILDREN (PROBABILITY_ONE_CHILD + 0.19)
-#define PROBABILITY_THREE_CHILDEN (PROBABILITY_TWO_CHILDREN + 0.01)
+#define PROBABILITY_TWO_CHILDREN (0.011)
+#define PROBABILITY_THREE_CHILDEN (0.00013)
+#define PROBABILITY_ONE_CHILD (1 - PROBABILITY_TWO_CHILDREN - PROBABILITY_THREE_CHILDEN)
 
 // ## PREGNANCY DURATION ##
 #define PREGNANCY_DURATION_MEAN (9 * IN_MONTHS)
@@ -172,8 +172,11 @@
 // probability of conceiving children during love making
 #define PROBABILITY_FERTILIZATION 0.0004
 
-// probability of an entity being a female
-#define FEMALE_MALE_RATIO 0.506
+// probability of an entity being born as a female
+#define FEMALE_MALE_RATIO_WHEN_BORN 0.4854
+
+// probability of an entity being a female when the simulation stats
+#define FEMALE_MALE_RATIO_INITIAL 0.498
 
 // probability of a female being pregnant when the simulation starts
 #define PROBABILITY_INITIAL_PREGNANCY 0.02655

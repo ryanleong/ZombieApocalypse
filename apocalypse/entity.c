@@ -64,7 +64,7 @@ void newHuman(EntityPtr human, simClock clock) {
 	double rnd = randomDouble();
 	simClock fertilityStart;
 	simClock fertilityEnd;
-	if (rnd < FEMALE_MALE_RATIO) {
+	if (rnd < FEMALE_MALE_RATIO_INITIAL) {
 		human->gender = FEMALE;
 
 		if (randomDouble() < PROBABILITY_INITIAL_PREGNANCY) {
@@ -178,7 +178,7 @@ Entity giveBirth(EntityPtr mother, simClock clock) {
 	double rnd = randomDouble();
 	simClock fertilityStart;
 	simClock fertilityEnd;
-	if (rnd < FEMALE_MALE_RATIO) {
+	if (rnd < FEMALE_MALE_RATIO_WHEN_BORN) {
 		born.gender = FEMALE;
 		fertilityStart = randomEvent(FERTILITY_START_FEMALE_MEAN,
 		FERTILITY_START_FEMALE_STD_DEV);
