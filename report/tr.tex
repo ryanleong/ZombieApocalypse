@@ -29,6 +29,8 @@
 
 \begin{document}
 \maketitle
+\tableofcontents
+\newpage
 
 \section{Introduction} % Ryan
 
@@ -69,9 +71,9 @@ Reanimated dead bodies have only a limited durability, which we assume to be abo
 
 Finding parameters that result in stable populations of both humans and zombies proved to be a challenging problem.
 Since zombies decompose after a short period of time (relative to a human lifespan), it is imperative that there are regular new infection cases in order for the zombies to survive.
-If there were too few humans, the zombies couldn't infect anybody often enough to compensate their shorter lifespan.
-On the other hand, if there are too many humans, the infection can spread very quickly, overwhelming the human population. 
-This is followed by steep decrease of both populations, typically resulting in both humans and zombies becoming extinct.
+If there were too few humans, the zombies couldn't infect anybody often enough to compensate for their shorter lifespan.
+On the other hand, if there are too many humans, the infection spreads very quickly, overwhelming the human population. 
+This is followed by a steep decrease of both populations, typically resulting in both humans and zombies becoming extinct.
 An interesting aspect of this dynamic is that zombies cannot possibly survive without humans: Zombies are not able to reproduce on their own; they depend completely on infecting humans to produce more zombies, and to replace zombies lost to decomposition. 
 If the human population dies out, so too will the zombies.
 
@@ -91,15 +93,12 @@ These assumptions allow us to use a simpler form of the SIR model of disease pro
 In terms of the SIR model (or in this case SEIR), our model consists of four states: Humans (the susceptible group), infected humans (the exposed group), zombies (the infected group) and lastly the dead state, as there is no way for a person to recover from the infection.
 An entity begins in state Human which represents a normal human being who was born, has a biological gender (either male or female), and eventually dies.
 Humans become infected only by being in close proximity to a zombie.
-% ===========================
-% TODO: clean me!
 The probability of infection is unknown but for the purpose of our model it was set to $0.75\%$ for a human within 1 kilometer of a zombie.
 However small the probablility seems to be, it is quite acceptable concerning the smallest time and space units being 1 day and 1 kilometer.
-% ===========================
 
-Humans with a latent infection, who have not developed full zombie symptoms, are in all respects normal people as far as our model is concerned, and hence can reproduce and die of a natural death.
+Humans with a latent infection, who have not developed full zombie symptoms, are in every respect normal people as far as our model is concerned, and hence can reproduce and die of a natural death.
 Infected people are not contagious to the surrounding humans until they become a zombie.
-Zombies are considered dead -- it is just a virus-driven moving body; therefore we say that a zombie eventually decomposes insead of it dies.
+Zombies are considered dead -- they are just virus-driven moving bodies; therefore we say that zombies eventually decompose insead of die.
 Our model does not need to represent zombies as having a gender as they cannot reproduce nor do their properties depend on the gender of the human host.
 
 When a human becomes infected, the length of the infection depends on the strength of the body fighting the zombie virus.
@@ -107,13 +106,15 @@ The transition happens with a certain probability that makes the average length 
 
 \subsubsection{Reproduction}
 
-If two fertile living entities (no matter if humans infected) of different genders meet, they can make love and conceive a baby.
-It takes approximately 9 months for a child to develop inside mother's womb before it is born. \cite{pregnancy}
-As the zombies are of viral nature, we presume that the virus in infected mother's body is passed to unborn children.
-The virus is not transmitted when an infected has an intercourse with a healthy human.
+Our model provides a reasonably realistic simulation of human reproduction.
+A female person can become pregnant if she is adjacent to a male person in the simulated world.
+The simulation creates a child in any free cell adjacent to the mother, after a nine month gestation period has elapsed\cite{pregnancy}.
+If there is no free cell available, as all adjacent cells are occupied by either people or zombies, no child is created in the simulation, and the woman is no longer pregnant.
+As the zombies are of viral nature, our model assumes that an infected mother will pass on the virus to her child.
+We also assume that the virus is not sexually transmitted, so there would be no virus transmission when an infected person has intercourse with a healthy human.
 
-A female can become pregnant if she is not already pregnant, and she is in a fertile age (roughtly between 15 and 45 years) and her partner is a male in a fertile age (roughtly between 15 and 80).
-More than one baby can be conceived during one intercourse -- our model supports that a female can expect up to three babies at once.
+We have also factored in age based fertility: A female can produce children if she is between 15 and 45 years of age, and males between 15 and 80.
+More than one baby can be carried in a single pregnancy -- our model supports that a female can expect up to three babies at once.
 The probabilities of multiple births are in accordance with Hellin's law. \cite{hellinslaw}
 
 \subsubsection{Age}
@@ -152,10 +153,9 @@ Details about death probabilities are discusses later in the report.
 
 \subsection{World representation}
 
-The final simulated world will be a mesh of size $1000 \times 1500$ which correspond with size of Northern Territory. \cite{northernterritory}
-Parts of the mesh are called cells.
-On each cell, there may be at most one entity of any type; otherwise the cell is considered empty.
-Adjacency of two entities means that the two entities are touching each other, sharing one side of their cells.
+The simulated world consists of a mesh of size $1000 \times 1500$, corresponding to the geographical dimensions of the Northern Territory, a region in the north of Australia\cite{northernterritory}.
+Each square of this mesh is referred to as a cell, and a cell can contain at most one entity of any type; otherwise the cell is considered empty.
+Two entities are said to be adjacent if they are in cells that share a border.
 The simulated world has fixed boundaries, no entity can pass through them; this is often refered as to no-flux boundary condition.
 
 For the purpose of this report, only part of the world is simulated.
@@ -225,7 +225,7 @@ Based on Gompertz–Makeham law \cite{mortalitylaw} and mortality rates graph fo
 $$ \mean{P(\text{Elder Death})} = 10\: \mean{P(\text{Middle Age Death})} $$
 $$ = 80\: \mean{P(\text{Young Death})} = 160\: \mean{P(\text{Child Death})} $$
 
-As the Australian death rate \cite{absdeath} is
+We worked out the probability of a person dying on any given day based on data from the Australian Bureau of Statistics on the number of people who died in 2012\cite{absdeath}:
 $$ \mean{P(\text{Australia Death})} = \frac{\text{people who died (in 2012)}}{\text{population size (in 2012)}} $$
 $$ = \frac{147098}{23319400} = 0.63\%/\text{year} = 0.0017\%/\text{day} $$
 
@@ -269,14 +269,14 @@ Although we had access to birth rates, we didn't try to untilise them during the
 Simple approach of counting probabilities of a male-female couples on a mesh do not work when the movement is targeted (as discussed earlier).
 We also model fertilisation and pregnancy periods which naturally limit the baby procreation.
 
-Our approach is to run the simulation of them model for several generations without presence of zombies, and by trials and errors find the right rate when the population size is stable or slightly increasing.
+Our approach was to run the simulation of them model for several generations without presence of zombies, and by trial and error find the right rate when the population size is stable or slightly increasing.
 That way we got a probability of child being conceived each time a couple makes love equal to 0.00073, which is a number that doesn't make sense without context of the implemented model.
 This is just a small price for much more realistic model of child birth.
 
 \subsubsection{Sex ratio}
 
 The birth ratio between males and females is 1.06. \cite{cia}
-Thus the ratio of a child being a male of female is initialized as
+Hence the ratio of male to female children is initialized as
 $$ \text{Male Child} : \text{Female Child} = 0.5146 : 0.4854 $$
 
 However, the ratio is different when the simulation starts.
@@ -285,9 +285,9 @@ $$ \text{Male} : \text{Female} = 0.5025 : 0.4975 $$
 
 \subsubsection{Population Density}
 
-The population density in the Northern Territory prior to the zombie apocalypse is $0.17/\text{km}^2$. \cite{northernterritory}
+The population density in the Northern Territory prior to the zombie apocalypse is $0.17\text{people}/\text{km}^2$. \cite{northernterritory}
 When the viral infection starts, the authorities estimate that approximately half of the population will move from Australia to Sweden. \cite{project}
-As the simulated mesh is $500 \times 500$, the initial number of simulated humans is
+Since the simulated mesh is $500 \times 500$, the initial number of simulated humans is
 $$ 500 \cdot 500 \cdot \frac{0.17}{2} = 21250 $$
 
 \section{Results}
