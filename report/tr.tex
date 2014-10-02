@@ -1,6 +1,6 @@
 \documentclass[a4paper]{article}
 \usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
+%\usepackage[T1]{fontenc}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage[english]{babel}
@@ -35,27 +35,24 @@
 Infectious diseases have been prevalent since the start of time.
 Modelling the spread of these diseases can serve to find possible ways to stop or limit the spreading.
 With the advancement of technology, computing power has increased tremendously, allowing these simulation models to be done on a greater scale.
-In this project, we are to implement a Zombie Infection simulation, modeling the spread of the infection on a human population.
-The entities in the simulation are split into three main categories, Humans, Infected and Zombies.
-Infected are humans which will eventually turn into Zombies.
+In this project, we will implement a Zombie Infection simulation, modeling the spread of the infection on a human population.
 
 \subsection{Zombie description}
 
-Since this is a, currently, fictional situation, the various different literatures provide different zombie characteristics.
-For an instance, an article on the zombies of ``World War Z'', the zombies in the lore are slow moving until they sense humans around.
+Since this is a fictional situation, we turned to zombie references in popular culture in order to derive the characteristics of zombies.
+For instance, an article on the zombies of ``World War Z'' indicates that zombies are slow moving until they sense humans around.
 They will then move as fast, if not, faster than human running speed. \cite{guidetozombies}
 
 In our model, the zombies are reanimated dead human bodies controlled by a viral infection, which is one of known types of zombies. \cite{survivingthedead}
-A human becomes infected when it is bitten by a zombie.
-The infection doesn't have any symptoms except for bite marks and short term memory loss.
+A human becomes infected when he or she is bitten by a zombie.
+The initial infection doesn't have any symptoms except for bite marks and short term memory loss.
 The infection is latent and secretly spreads inside the body until it dominates.
 The incubation period is 14 days on average, which is significantly longer than we are accustomed, however it has a medical support. \cite{mogk2011everything}
 Later, during a weak moment (usually while sleeping) it causes death of the person and starts act on its own.
 
-The zombies are naturally strongly atracted to humans to infect them and humans run away from zombies when they spot them.
-The control of the body is poor and therefore the movement and motorics is slower and inaccurate.
-The durability period of a reanimated dead body is shortend to about 3 years on average. \cite{zombiepedia}
-Eventually a zombie falls and decomposes.
+Zombies are strongly atracted to humans in order to infect them and humans flee from zombies.
+For zombies, control of the body is poor and therefore zombie motor skills are slower and more inaccurate.
+Reanimated dead bodies have only a limited durability, which we assume to be about 3 years on average\cite{zombiepedia}, and the corpse will ultimately decompose. After this point, the zombie is no longer active or contagious.
 
 \subsection{Requirements}
 
@@ -70,10 +67,13 @@ Eventually a zombie falls and decomposes.
 
 \subsubsection{Stability requirement}
 
-The last requirment makes the model hard as we cannot allow either population to drop too low and, as a consequence, to rise too high either.
-If there were too little humans, the zombies couldn't infect anybody often enough to compensate their shorter lifespan.
-On the other hand, if there are too many humans, the infection can spread very quickly and the zombies outnumber humans.
-This is followed by steep decrease of both populations and finally becomes the former case with possibility of humans extinction.
+Finding parameters that result in stable populations of both humans and zombies proved to be a challenging problem.
+Since zombies decompose after a short period of time (relative to a human lifespan), it is imperative that there are regular new infection cases in order for the zombies to survive.
+If there were too few humans, the zombies couldn't infect anybody often enough to compensate their shorter lifespan.
+On the other hand, if there are too many humans, the infection can spread very quickly, overwhelming the human population. 
+This is followed by steep decrease of both populations, typically resulting in both humans and zombies becoming extinct.
+An interesting aspect of this dynamic is that zombies cannot possibly survive without humans: Zombies are not able to reproduce on their own; they depend completely on infecting humans to produce more zombies, and to replace zombies lost to decomposition. 
+If the human population dies out, so too will the zombies.
 
 \section{Model} % Adam
 
@@ -85,18 +85,22 @@ This is followed by steep decrease of both populations and finally becomes the f
         \caption{Infection model}
 \end{figure*}
 
-Since we don't suppose that there has not been found cure for infected (nor zombies) to become humans again, our model presumes only four possible stages and strictly one-way transitions.
-This and non-existence of immunity is the main difference between our model and clasic SIR model and its variations.
+Our understanding is that there is no cure for the infection, and also that there is no level of immunity in the human population.
+These assumptions allow us to use a simpler form of the SIR model of disease propagation, with strictly one way transitions.
 
-An entity begins in state Human which represents a normal human being which was born, has a gender (is either male or female), and eventually dies.
-If a human gets in contact with a zombie, it may become infected.
-The probability of infection is unknown but for the purpose of our model it was set to $0.75\%$ for a human within 1 kilometer proximity to a zombie.
+In terms of the SIR model (or in this case SEIR), our model consists of four states: Humans (the susceptible group), infected humans (the exposed group), zombies (the infected group) and lastly the dead state, as there is no way for a person to recover from the infection.
+An entity begins in state Human which represents a normal human being who was born, has a biological gender (either male or female), and eventually dies.
+Humans become infected only by being in close proximity to a zombie.
+% ===========================
+% TODO: clean me!
+The probability of infection is unknown but for the purpose of our model it was set to $0.75\%$ for a human within 1 kilometer of a zombie.
 However small the probablility seems to be, it is quite acceptable concerning the smallest time and space units being 1 day and 1 kilometer.
+% ===========================
 
-Infected entity is basically a human which eventually becomes a zombie that means it can reproduce and die of natural death.
-Infected entity is not a danger to the surrounding humans until it becomes a zombie.
-Zombie is concidered death -- it is just a virus-driven moving body; therefore we say that a zombie eventually decomposes insead of it dies.
-In our model, zombie doesn't have gender as it cannot reproduce nor its properties depend on gender of the human which it used to be.
+Humans with a latent infection, who have not developed full zombie symptoms, are in all respects normal people as far as our model is concerned, and hence can reproduce and die of a natural death.
+Infected people are not contagious to the surrounding humans until they become a zombie.
+Zombies are considered dead -- it is just a virus-driven moving body; therefore we say that a zombie eventually decomposes insead of it dies.
+Our model does not need to represent zombies as having a gender as they cannot reproduce nor do their properties depend on the gender of the human host.
 
 When a human becomes infected, the length of the infection depends on the strength of the body fighting the zombie virus.
 The transition happens with a certain probability that makes the average length of infection 14 days.
@@ -514,7 +518,7 @@ We recommend and appeal the human population and its government to use the ...
 \begingroup
 \raggedright
 
-\bibliographystyle{IEEEtran}
+\bibliographystyle{plain}
 \bibliography{references}
 \endgroup
 
