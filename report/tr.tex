@@ -269,8 +269,8 @@ Although we had access to birth rates, we didn't try to untilise them during the
 Simple approach of counting probabilities of a male-female couples on a mesh do not work when the movement is targeted (as discussed earlier).
 We also model fertilisation and pregnancy periods which naturally limit the baby procreation.
 
-Our approach was to run the simulation of them model for several generations without presence of zombies, and by trial and error find the right rate when the population size is stable or slightly increasing.
-That way we got a probability of child being conceived each time a couple makes love equal to 0.00073, which is a number that doesn't make sense without context of the implemented model.
+In order to determine the appropriate birth rate, we ran the simulation for several generations without any zombies, and by trial and error found the right rate that ensured that the human population size was stable or slightly increasing.
+In this way we determined a probability of child being conceived each time a couple makes love equal to 0.00073, which is a number that doesn't make sense without context of the implemented model.
 This is just a small price for much more realistic model of child birth.
 
 \subsubsection{Sex ratio}
