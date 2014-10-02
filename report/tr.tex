@@ -313,32 +313,47 @@ In order to add zombies we had to change the model a bit to deal with zombies an
 
 \begin{figure*}[pht]
     \centering
-    \includegraphics[width=\textwidth]{uncontrolled_birth_8000}
-    \caption{Uncontrolled birth with 8000 people and 2 zombies}
+    \includegraphics[width=\textwidth]{uncontrolled_birth}
+    \caption{Uncontrolled birth}
 \end{figure*}
 
 The natural choice to change was the birth rate, which was first set to be constant.
 As there are less humans, the constant birth rate, which works for original population, cannot be used any more.
 Humans don't meet as often and therefore their likelihood of making love decrease and their population will as well.
 The higher the initial population the more zombies will be created, and the sooner the model will collapse.
-We run the simulation starting with only 8000 humans; the failure is clearly visible.
-After about only 63 years, zombies died out and human population dropped to 1809 people.
-TODO create a new figure
+After about only 74 years, zombies died out and human population dropped to 940 individuals; humans eventually die out.
 
 \begin{figure*}[pht]
     \centering
-    \includegraphics[width=\textwidth]{equal_birth_8000}
-    \caption{Equal birth with 8000 people and 2 zombies}
+    \includegraphics[width=\textwidth]{equal_birth}
+    \caption{Equal birth}
+\end{figure*}
+
+Then we tried to compensate the deaths (both natural and humans becomming zombies) by producing the same number of children.
+This should have kept the population stable at any population size.
+We hoped that after the initial drop, the population would become stable at a lower number of humans and zombies.
+Unfortunately, it didn't work as expected; it was even worse than the uncontrolled one.
+The zombies died out after 72 years with 578 humans left alive (not for long).
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{density_birth}
+    \caption{Desnity dependent birth}
 \end{figure*}
 
 The next attempt used the initial birth rate multiplied by a quotient which was defined as a ratio of initial and current population.
 As the population drops down, the humans shall reproduce more often and therefore raise back to the original population size.
 The model without zombies using this technique is much more stable, however the quotient is not strong enough to deal with zombies.
-A simulation starting with 8000 humans is shown in the figure.
-Starting with more humans would cause more zombies, and therefore steeper decrease of humans and the eventual lack of human supply would be the reason why zombies would die out quicker.
-TODO create a new figure
+A populations sizes during the simulation are shown in the figure.
+Zombies still died out after 82 years with 2170 humans alive, however this time the human population could recover and get close to the initial size in two centuries.
 
 \subsubsection{Function of densities ratio}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{fertilisation_probability}
+    \caption{Density dependent fertilisation functions}
+\end{figure*}
 
 \begin{figure*}[pht]
     \centering
@@ -369,21 +384,61 @@ To this quite stable stage the model gets after 465 years.
 TODO correct simulation figure
 TODO adjust number according to the figure
 
+\subsection{Scaling}
+
+\begin{figure*}[ht]
+    \centering
+    \begin{tabu} {| X[0.8,c,p] || X[1,c,p] | X[1,c,p] | X[1,c,p] |}
+        \rowfont{\bfseries}
+        \hline
+        Threads &
+        First attempt &
+        Second attempt&
+        Third attempt \\
+        \hline
+        \hline
+        \textbf{1} & 180588.734000 & 180633.477000 & 180441.396000 \\
+        \hline
+        \textbf{2} & 94541.958000 & 95547.356000 & 94704.053000 \\
+        \hline
+        \textbf{4} & 49689.704000 & 50052.682000 & 50359.165000 \\
+        \hline
+        \textbf{8} & 25863.988000 & 26373.077000 & 26276.703000 \\
+        \hline
+        \textbf{16} & 14365.825000 & 14386.286000 & 14363.556000 \\
+        \hline
+        \textbf{32} & 10598.242000 & 10936.435000 & 10854.121000 \\
+        \hline
+        \textbf{64} & 14785.381000 & 14363.065000 & 14936.496000 \\
+        \hline
+    \end{tabu}
+    \caption{Scaling depending on number of threads}
+\end{figure*}
+
+The model implemented in C using OpenMP, running in several threads.
+On Avoca, the IBM Blue Gene/Q supercomputer, a single node provides 16 cores with 4 threads each.
+Our model could utilise all 64 threads as most of the simulation does not need any thread synchronisation.
+
+We run the model three times for 1000 iterations in order to ensure the influence of randomness does not make the results odd.
+The results are in the table above, running times are in milliseconds.
+We expected a perfect scaling up to 16 threads -- each of them will be assigned to a dedicated core.
+Running with 32 cores still provides an improvement, but not a significant one.
+The drop of performace when running with 64 threads is probably caused by the hardware architecture of the CPU.
+In our opinion it is not caused by locking parts of the world as there are still at least 7 columns for each thread (we lock only three of them).
+
 \subsection{Demographics}
 
-When the simulation starts, the number of demographics is exactly as described earlier.
-There are noticeable four horizontal areas which correspond to age classes.
-
-After 10 years, there demographic situation remains the same, only shifted to the right.
-Zombies start to appear and their age distribution starts to spread.
-
-Afert 50 years, after the first zombie peak, which is noticeable by the low number of young zombies and few infected, the demographic distribution has changed.
-According to model, more femals are born, however being slower (and having lower daily death probability), their number becomes less than number of males.
-
-After 150 years, the populations have stabilized, there are many infected and the population distributions got their final shape.
-This figure is also an example of pregnant infected female.
-
-The situation at the end of the simulation after 100,000 days (appoximately 274 years) is no different from the previous situation.
+\begin{itemize}
+\item When the simulation starts, the number of demographics is exactly as described earlier.
+    There are noticeable four horizontal areas which correspond to age classes.
+\item After 10 years, there demographic situation remains the same, only shifted to the right.
+    Zombies start to appear and their age distribution starts to spread.
+\item After 50 years, after the first zombie peak, which is noticeable by the low number of young zombies and few infected, the demographic distribution has changed.
+    According to model, more femals are born, however being slower (and having lower daily death probability), their number becomes less than number of males.
+\item After 150 years, the populations have stabilized, there are many infected and the population distributions got their final shape.
+    This figure is also an example of pregnant infected female.
+\item The situation at the end of the simulation after 100,000 days (appoximately 274 years) is no different from the previous situation.
+\end{itemize}
 
 \begin{figure*}[pht]
     \centering
@@ -445,51 +500,15 @@ The situation at the end of the simulation after 100,000 days (appoximately 274 
     \caption{Demographics after 274 years}
 \end{figure*}
 
-\subsection{Scaling}
-
-\begin{figure*}[ht]
-    \centering
-    \begin{tabu} {| X[0.8,c,p] || X[1,c,p] | X[1,c,p] | X[1,c,p] |}
-        \rowfont{\bfseries}
-        \hline
-        Threads &
-        First attempt &
-        Second attempt&
-        Third attempt \\
-        \hline
-        \hline
-        \textbf{1} & 180588.734000 & 180633.477000 & 180441.396000 \\
-        \hline
-        \textbf{2} & 94541.958000 & 95547.356000 & 94704.053000 \\
-        \hline
-        \textbf{4} & 49689.704000 & 50052.682000 & 50359.165000 \\
-        \hline
-        \textbf{8} & 25863.988000 & 26373.077000 & 26276.703000 \\
-        \hline
-        \textbf{16} & 14365.825000 & 14386.286000 & 14363.556000 \\
-        \hline
-        \textbf{32} & 10598.242000 & 10936.435000 & 10854.121000 \\
-        \hline
-        \textbf{64} & 14785.381000 & 14363.065000 & 14936.496000 \\
-        \hline
-    \end{tabu}
-    \caption{Scaling depending on number of threads}
-\end{figure*}
-
-The model implemented in C using OpenMP, running in several threads.
-On Avoca, the IBM Blue Gene/Q supercomputer, a single node provides 16 cores with 4 threads each.
-Our model could utilise all 64 threads as most of the simulation does not need any thread synchronisation.
-
-We run the model three times for 1000 iterations in order to ensure the influence of randomness does not make the results odd.
-The results are in the table above, running times are in milliseconds.
-We expected a perfect scaling up to 16 threads -- each of them will be assigned to a dedicated core.
-Running with 32 cores still provides an improvement, but not a significant one.
-The drop of performace when running with 64 threads is probably caused by the hardware architecture of the CPU.
-In our opinion it is not caused by locking parts of the world as there are still at least 7 columns for each thread (we lock only three of them).
-
 \section{Recommendations}
 
-TODO write recommendation
+In the results section we have shown how crucial is to keep the right birth rate.
+If it was underestimated, the human population drops very quickly and zombies die out as humans do a few decades later.
+When it is overestimated, the simulation has the same result for zombies but is much more favourable for humans, which can eventually recover.
+We found a function which describes the right conditions when both populations become stable and can coexist.
+
+We recommend and appeal the human population and its government to use the ...
+
 
 
 \begingroup

@@ -13,8 +13,9 @@
 // #### TESTING ####
 // these defines are necessary for report
 
-//#define UNCONTROLLED_BIRTH
-//#define EQUAL_BIRTH
+//#define UNCONTROLLED_BIRTH 1
+//#define EQUAL_BIRTH 1
+//#define DENSITY_BIRTH 1
 
 // humans are divided into 4 classes: CHILD, YOUNG, MIDDLEAGE, ELDERLY//
 // zombies have only two classes: YOUNG and OLD

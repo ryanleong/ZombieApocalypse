@@ -134,12 +134,19 @@ void makeLove(EntityPtr mother, EntityPtr father, simClock clock, Stats stats) {
 
 #ifdef UNCONTROLLED_BIRTH
 	double prob = PROBABILITY_FERTILIZATION;
-#else // controlled
+#elif EQUAL_BIRTH
+	int died = stats.humanFemalesDied + stats.humanMalesDied
+	+ stats.infectedFemalesDied + stats.infectedMalesDied
+	+ stats.infectedFemalesBecameZombies
+	+ stats.infectedMalesBecameZombies;
+	int couples = stats.couplesMakingLove;
+	double prob = couples == 0 ? 1 : died / couples;
+#else // controlled by density
 	int population = stats.humanFemales + stats.humanMales
 			+ stats.infectedFemales + stats.infectedMales;
 	double density = population / ((double) stats.width * stats.height);
 	double ratio = INITIAL_DENSITY / density;
-#ifdef EQUAL_BIRTH
+#ifdef DENSITY_BIRTH
 	double q = ratio;
 #else // controlled with power
 	double exp = ratio * SITUATION_AWARENESS_COEFFICIENT;
