@@ -1,6 +1,5 @@
 \documentclass[a4paper]{article}
 \usepackage[utf8]{inputenc}
-%\usepackage[T1]{fontenc}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage[english]{babel}
@@ -57,7 +56,8 @@ Later, during a weak moment (usually while sleeping) it causes death of the pers
 
 Zombies are strongly atracted to humans in order to infect them and humans flee from zombies.
 For zombies, control of the body is poor and therefore zombie motor skills are slower and more inaccurate.
-Reanimated dead bodies have only a limited durability, which we assume to be about 3 years on average\cite{zombiepedia}, and the corpse will ultimately decompose. After this point, the zombie is no longer active or contagious.
+Reanimated dead bodies have only a limited durability, which we assume to be about 3 years on average\cite{zombiepedia}, and the corpse will ultimately decompose.
+After this point, the zombie is no longer active or contagious.
 
 \subsection{Requirements}
 
@@ -224,7 +224,7 @@ The entity moves only if its speed (expressed as probability) is sufficient.
 \end{figure*}
 
 According to the Australian age structure\cite{agestructure} and median of age 37.3 years \cite{demographicsaustralia}, initialized humans are divided into four age clasess.
-Based on Gompertz–Makeham law \cite{mortalitylaw} and mortality rates graph for US in 2003 (shown in the figure) the average probabilities of a human dying in these four age stages are approximately related as 
+Based on mortality rates graph for US in 2003 (shown in the figure) and Gompertz–Makeham law \cite{mortalitylaw} the average probabilities of a human dying in these four age stages are approximately related as 
 $$ \mean{P(\text{Elder Death})} = 10\: \mean{P(\text{Middle Age Death})} $$
 $$ = 80\: \mean{P(\text{Young Death})} = 160\: \mean{P(\text{Child Death})} $$
 
