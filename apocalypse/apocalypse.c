@@ -199,38 +199,48 @@ int sizeOfPart(int size, int parts, int part) {
 
 double divideWorld(int * width, int * height, WorldPtr * input,
 		WorldPtr * output) {
-	int columns, rows, x, y;
 #ifdef USE_MPI
-	int rank, size;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	int size;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	columns = divideArea(*width, *height, size);
-	rows = size / columns;
-	x = rank % columns;
-	y = rank / columns;
+	int columns = divideArea(*width, *height, size);
+
+	coords worldSize = {columns, size / columns};
+	coords periods = {0, 0};
+	int reorder = 1;
+	MPI_Comm commCart;
+	MPI_Cart_create(MPI_COMM_WORLD, DIMENSIONS, worldSize, periods, reorder,
+			&commCart);
+
+	int rank;
+	coords position;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Cart_coords(commCart, rank, DIMENSIONS, position);
+
 #else
-	columns = 1;
-	rows = 1;
-	x = 0;
-	y = 0;
+	coords worldSize = { 1, 1 };
+	coords position = { 0, 0 };
 #endif
-	int newWidth = sizeOfPart(*width, columns, x);
-	int newHeight = sizeOfPart(*height, rows, y);
+	int newWidth = sizeOfPart(*width, worldSize[0], position[0]);
+	int newHeight = sizeOfPart(*height, worldSize[1], position[1]);
 
 	WorldPtr worlds[2] = { newWorld(newWidth, newHeight), newWorld(newWidth,
 			newHeight) };
 
-	LOG_DEBUG("World size is %d x %d at position [%d, %d] of %d x %d ",
-			newWidth, newHeight, x, y, columns, rows);
+	LOG_DEBUG("World size is %d x %d at position [%d, %d] of %d x %d\n",
+			newWidth, newHeight, position[0], position[1], worldSize[0],
+			worldSize[1]);
 
 	for (int i = 0; i < 2; i++) {
 		WorldPtr w = worlds[i];
-		w->globalColumns = columns;
-		w->globalRows = rows;
 		w->globalWidth = *width;
 		w->globalHeight = *height;
-		w->globalX = x;
-		w->globalY = y;
+		w->globalSize[0] = worldSize[0];
+		w->globalSize[1] = worldSize[1];
+		w->globalPosition[0] = position[0];
+		w->globalPosition[1] = position[1];
+#ifdef USE_MPI
+		w->comm = commCart;
+#endif
 	}
 
 	*input = worlds[0];

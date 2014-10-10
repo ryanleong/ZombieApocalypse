@@ -12,8 +12,10 @@ WorldPtr newWorld(unsigned int width, unsigned int height) {
 	world->stats.width = width;
 	world->stats.height = height;
 
-	world->globalColumns = 1;
-	world->globalRows = 1;
+	world->globalSize[0] = 1;
+	world->globalSize[1] = 1;
+	world->globalPosition[0] = 0;
+	world->globalPosition[1] = 0;
 	world->globalWidth = width;
 	world->globalHeight = height;
 
@@ -30,9 +32,9 @@ WorldPtr newWorld(unsigned int width, unsigned int height) {
 #endif
 	world->map1d = (Cell *) malloc(sizeof(Cell) * (width + 4) * (height + 4));
 	world->map = (Cell **) malloc(sizeof(Cell *) * (width + 4));
-	for (unsigned int x = 0; x < width + 4; x++) {
+	for (int x = 0; x < width + 4; x++) {
 		world->map[x] = world->map1d + x * (height + 4);
-		for (unsigned int y = 0; y < height + 4; y++) {
+		for (int y = 0; y < height + 4; y++) {
 			GET_CELL(world, x, y).type = NONE;
 		}
 #ifdef _OPENMP

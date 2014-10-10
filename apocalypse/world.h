@@ -42,10 +42,8 @@ typedef struct World {
 
 	unsigned int globalWidth; // real width
 	unsigned int globalHeight; // real height
-	unsigned int globalColumns; // number of worlds next to each other
-	unsigned int globalRows; // number of worlds on top of each other
-	unsigned int globalX; // my position among worlds
-	unsigned int globalY; // my position among worlds
+	coords globalSize;
+	coords globalPosition;
 
 	unsigned int localWidth; // real width of this world part
 	unsigned int localHeight; // real height of this world part
@@ -59,7 +57,7 @@ typedef struct World {
 omp_lock_t * locks;
 #endif
 #ifdef USE_MPI
-MPI_Comm * comm;
+MPI_Comm comm;
 #endif
 } World;
 
