@@ -1,17 +1,7 @@
-SRC = apocalypse.c entity.c direction.c random.c simulation.c utils.c world.c
+SRC = apocalypse.c entity.c direction.c random.c simulation.c world.c
 OBJS = $(SRC:%.c=%.o)
 
-ifeq ($(HOSTNAME), avoca)
-CC = mpicc
-else
-CC = gcc
-endif
-
 CFLAGS = --std=gnu99 -O2 -g -Wall -fopenmp
-
-ifdef NDEBUG
-CFLAGS += -DNDEBUG
-endif
 
 ifdef NIMAGES
 CFLAGS += -DNIMAGES
@@ -43,6 +33,20 @@ endif
 
 ifndef NTIME
 CFLAGS += -DTIME
+endif
+
+ifdef USE_MPI
+CFLAGS += -DUSE_MPI
+endif
+
+ifeq ($(HOSTNAME), avoca)
+CC = mpicc
+else
+CC = gcc
+endif
+
+ifdef USE_MPI
+CC = mpicc
 endif
 
 LIBS = -lm -lgomp

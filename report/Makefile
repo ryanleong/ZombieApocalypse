@@ -35,7 +35,7 @@ fertilisation_probability.pdf: fertilisation_probability.py
 	./fertilisation_probability.py $@
 
 clean:
-	rm -f *.aux *.out *.log *.bbl  *.blg  *.dvi
+	rm -f *.aux *.out *.log *.bbl  *.blg  *.dvi *.toc
 
 clobber: clean
 	rm -f *.pdf *.png

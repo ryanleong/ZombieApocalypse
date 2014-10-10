@@ -15,6 +15,7 @@
 #include "entity.h"
 #include "direction.h"
 #include "stats.h"
+#include "mpistuff.h"
 
 typedef Entity Cell;
 typedef EntityPtr CellPtr;
@@ -35,17 +36,30 @@ typedef EntityPtr CellPtr;
  */
 typedef struct World {
 	simClock clock;
-	Cell ** map;
-	unsigned int width; // real width
-	unsigned int height; // real height
+	Cell ** map; // 2D array which is allocated as 1D
+	Cell * map1d; // 1D array representation of the map
+	Stats stats; // stats first for the local then for the global world
+
+	unsigned int globalWidth; // real width
+	unsigned int globalHeight; // real height
+	unsigned int globalColumns; // number of worlds next to each other
+	unsigned int globalRows; // number of worlds on top of each other
+	unsigned int globalX; // my position among worlds
+	unsigned int globalY; // my position among worlds
+
+	unsigned int localWidth; // real width of this world part
+	unsigned int localHeight; // real height of this world part
+
 	unsigned int xStart; // first interior cell
 	unsigned int xEnd; // last interior cell
 	unsigned int yStart; // first interior cell
 	unsigned int yEnd; // last interior cell
-	Stats stats; // detailed statistics
-	Stats lastStats;
+
 #ifdef _OPENMP
 omp_lock_t * locks;
+#endif
+#ifdef USE_MPI
+MPI_Comm * comm;
 #endif
 } World;
 
@@ -79,7 +93,7 @@ typedef World * WorldPtr;
 	|| (x) > (worldPtr)->xEnd || (y) > (worldPtr)->yEnd)
 
 /**
- * Creates a new world of specified dimensions.
+ * Creates a new world of specified dimensions as it is the only one.
  */
 WorldPtr newWorld(unsigned int width, unsigned int height);
 
@@ -108,11 +122,6 @@ void unlockColumn(WorldPtr world, int x);
  * Returns NULL if none is free.
  */
 CellPtr getFreeAdjacent(WorldPtr input, WorldPtr output, int x, int y);
-
-/**
- * Copies stats from earlier steps to this world
- */
-void copyStats(WorldPtr world, Stats stats);
 
 #endif // WORLD_H_
 

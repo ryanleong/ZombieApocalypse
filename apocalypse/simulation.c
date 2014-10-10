@@ -8,7 +8,7 @@
 #include "common.h"
 #include "random.h"
 #include "constants.h"
-#include "debug.h"
+#include "log.h"
 #include "direction.h"
 
 static int countNeighbouringZombies(WorldPtr world, int row, int column);
@@ -33,20 +33,80 @@ static void mergeStats(WorldPtr dest, Stats src);
 	(CAN_MOVE_TO((x), (y), (dir)) ? &GET_CELL_DIR((output), (dir), (x), (y)) : NULL)
 
 /**
- * Note that this function is called by every thread.
- *
- * Order of actions:
+ * Order of actions (divided into two loops)
  * a) death of human or infected
  * b) decomposition of zombie
  * c) transition of infected to zombie
  * d) transition of human into infected
- * e) giving birth to children - changes input
- * f) making love - changes input
- * g) movement
+ *
+ * a) giving birth to children - changes input
+ * b) making love - changes input
+ * c) movement
  */
 void simulateStep(WorldPtr input, WorldPtr output) {
 	simClock clock = output->clock = input->clock + 1;
-	output->stats.clock = clock;
+
+	// we want to force static scheduling because we suppose that the load
+	// is distributed evenly over the map and we need to have predictable locking
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(getNumThreads(input->localWidth)) schedule(static)
+#endif
+	for (int x = input->xStart; x < input->xEnd; x++) {
+		Stats stats = NO_STATS;
+		for (int y = input->yStart; y <= input->yEnd; y++) {
+			EntityPtr entity = GET_CELL_PTR(input, x, y);
+			if (entity->type == NONE) {
+				continue;
+			}
+
+			// Death of living entity
+			if (entity->type == HUMAN || entity->type == INFECTED) {
+				if (randomDouble() < getDeathRate(entity, clock)) {
+					if (entity->type == HUMAN) {
+						if (entity->gender == FEMALE) {
+							stats.humanFemalesDied++;
+						} else {
+							stats.humanMalesDied++;
+						}
+					} else {
+						if (entity->gender == FEMALE) {
+							stats.infectedFemalesDied++;
+						} else {
+							stats.infectedMalesDied++;
+						}
+					}
+					LOG_EVENT("A %s died\n",
+							entity->type == HUMAN ? "Human" : "Infected");
+					// just forget this entity
+					entity->type = NONE;
+				}
+			}
+
+			// Decompose Zombie
+			if (entity->type == ZOMBIE) {
+				if (randomDouble() < getDecompositionRate(entity, clock)) {
+					stats.zombiesDecomposed++;
+					LOG_EVENT("A Zombie decomposed\n");
+					// just forgot this entity
+					entity->type = NONE;
+				}
+			}
+
+			// Convert Infected to Zombie
+			if (entity->type == INFECTED) {
+				if (randomDouble() < PROBABILITY_BECOME_ZOMBIE) {
+					if (entity->gender == FEMALE) {
+						stats.infectedFemalesBecameZombies++;
+					} else {
+						stats.infectedMalesBecameZombies++;
+					}
+					toZombie(entity, clock);
+					LOG_EVENT("An Infected became Zombie\n");
+				}
+			}
+		}
+		mergeStats(output, stats);
+	}
 
 	// notice that we iterate over xx and yy
 	// and the real x and y are randomly switched between two directions
@@ -56,7 +116,7 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 	// we want to force static scheduling because we suppose that the load
 	// is distributed evenly over the map and we need to have predictable locking
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(getNumThreads(input->width)) schedule(static)
+#pragma omp parallel for num_threads(getNumThreads(input->localWidth)) schedule(static)
 #endif
 	for (int xx = input->xStart; xx <= input->xEnd; xx++) {
 		int x = (xxDir < 0.5) ? xx : (input->xEnd + input->xStart - xx);
@@ -68,50 +128,6 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 			Entity entity = GET_CELL(input, x, y);
 			if (entity.type == NONE) {
 				continue;
-			}
-
-			// Death of living entity
-			if (entity.type == HUMAN || entity.type == INFECTED) {
-				if (randomDouble() < getDeathRate(&entity, clock)) {
-					if (entity.type == HUMAN) {
-						if (entity.gender == FEMALE) {
-							stats.humanFemalesDied++;
-						} else {
-							stats.humanMalesDied++;
-						}
-					} else {
-						if (entity.gender == FEMALE) {
-							stats.infectedFemalesDied++;
-						} else {
-							stats.infectedMalesDied++;
-						}
-					}
-					debug_printf("A %s died\n",
-							entity.type == HUMAN ? "Human" : "Infected");
-					continue; // just forget this entity
-				}
-			}
-
-			// Decompose Zombie
-			if (entity.type == ZOMBIE) {
-				if (randomDouble() < getDecompositionRate(&entity, clock)) {
-					stats.zombiesDecomposed++;
-					debug_printf("A Zombie decomposed\n");
-					continue; // just forgot this entity
-				}
-			}
-
-			// Convert Infected to Zombie
-			if (entity.type == INFECTED) {
-				if (randomDouble() < PROBABILITY_BECOME_ZOMBIE) {
-					if (entity.gender == FEMALE) {
-						stats.infectedFemalesBecameZombies++;
-					} else {
-						stats.infectedMalesBecameZombies++;
-					}
-					toZombie(&entity, clock);
-					debug_printf("An Infected became Zombie\n");
-				}
 			}
 
 			// Convert Human to Infected
@@ -126,12 +142,9 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 						stats.humanMalesBecameInfected++;
 					}
 					toInfected(&entity, clock);
-					debug_printf("A Human became infected\n");
+					LOG_EVENT("A Human became infected\n");
 				}
 			}
-
-			// Here the entity variable contains either copy or a new entity after transition.
-			// This is important. From now on, we may freely change it.
 
 			// Here are performed natural processed of humans and infected
 			if (entity.type == HUMAN || entity.type == INFECTED) {
@@ -162,7 +175,7 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 								}
 							}
 							*freePtr = child;
-							debug_printf("A %s child was born\n",
+							LOG_EVENT("A %s child was born\n",
 									child.type == HUMAN ? "Human" : "Infected");
 						}
 					} else {
@@ -182,11 +195,10 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 							y, clock);
 					if (adjacentMale != NULL) {
 						stats.couplesMakingLove++;
-						makeLove(&entity, adjacentMale, clock,
-								input->lastStats);
+						makeLove(&entity, adjacentMale, clock, input->stats);
 
 						stats.childrenConceived += entity.children;
-						debug_printf("A couple made love\n");
+						LOG_EVENT("A couple made love\n");
 					}
 				}
 			}
@@ -290,7 +302,7 @@ void finishStep(WorldPtr world) {
 	{
 #ifdef _OPENMP
 		int threads = omp_get_max_threads();
-		int numThreads = MIN(MAX(world->width / 10, 1), threads);
+		int numThreads = MIN(MAX(world->localWidth / 10, 1), threads);
 #pragma omp parallel for schedule(guided, 10) num_threads(numThreads)
 #endif
 		for (int x = world->xStart; x <= world->xEnd; x++) {
@@ -302,7 +314,7 @@ void finishStep(WorldPtr world) {
 	{
 #ifdef _OPENMP
 		int threads = omp_get_max_threads();
-		int numThreads = MIN(MAX(world->height / 10, 1), threads);
+		int numThreads = MIN(MAX(world->localHeight / 10, 1), threads);
 #pragma omp parallel for schedule(guided, 10) num_threads(numThreads)
 #endif
 		for (int y = world->yStart; y <= world->yEnd; y++) {

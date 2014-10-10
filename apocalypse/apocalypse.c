@@ -13,6 +13,8 @@
 #include "common.h"
 #include "constants.h"
 #include "common.h"
+#include "log.h"
+#include "mpistuff.h"
 
 #ifndef OUTPUT_EVERY
 #define OUTPUT_EVERY 1
@@ -39,9 +41,9 @@
  * The people are of different age; zombies are "brand new".
  */
 void randomDistribution(WorldPtr world, int people, int zombies, simClock clock) {
-	world->lastStats.clock = clock;
-	world->lastStats.infectedFemales = 0;
-	world->lastStats.infectedMales = 0;
+	world->stats.clock = clock;
+	world->stats.infectedFemales = 0;
+	world->stats.infectedMales = 0;
 
 	for (int i = 0; i < people;) {
 		int x = randomInt(world->xStart, world->xEnd);
@@ -53,9 +55,9 @@ void randomDistribution(WorldPtr world, int people, int zombies, simClock clock)
 
 		newHuman(cellPtr, clock);
 		if (cellPtr->gender == FEMALE) {
-			world->lastStats.humanFemales++;
+			world->stats.humanFemales++;
 		} else {
-			world->lastStats.humanMales++;
+			world->stats.humanMales++;
 		}
 
 		i++;
@@ -70,7 +72,7 @@ void randomDistribution(WorldPtr world, int people, int zombies, simClock clock)
 		}
 
 		newZombie(cellPtr, clock);
-		world->lastStats.zombies++;
+		world->stats.zombies++;
 
 		i++;
 	}
@@ -80,6 +82,7 @@ void randomDistribution(WorldPtr world, int people, int zombies, simClock clock)
  * Generates a dump for the world describing each entity.
  */
 void printWorld(WorldPtr world) {
+	// FIXME use global world
 	char gender[5] = { 'M', 'F', 'f', 'f', 'f' };
 
 	char filename[255];
@@ -94,11 +97,11 @@ void printWorld(WorldPtr world) {
 	int entities = world->stats.humanFemales + world->stats.humanMales
 			+ world->stats.infectedFemales + world->stats.infectedMales
 			+ world->stats.zombies;
-	fprintf(out, "Width %d; Height %d; Time %lld; Entities %d\n", world->width,
-			world->height, world->clock, entities);
+	fprintf(out, "Width %d; Height %d; Time %lld; Entities %d\n",
+			world->localWidth, world->localHeight, world->clock, entities);
 
-	for (int y = 0; y <= world->height; y++) {
-		for (int x = 0; x <= world->width; x++) {
+	for (int y = 0; y <= world->localHeight; y++) {
+		for (int x = 0; x <= world->localWidth; x++) {
 			CellPtr ptr = &GET_CELL(world, x + world->xStart,
 					y + world->yStart);
 			int age = world->clock - ptr->origin;
@@ -171,29 +174,101 @@ void printStatistics(WorldPtr world) {
 #endif
 }
 
+int divideArea(int width, int height, int parts) {
+	int bestScore = 1 << 30;
+	int bestColumns = 1;
+
+	for (int i = 1; i < parts; i++) {
+		int j = parts / i;
+		if (i * j != parts) {
+			continue;
+		}
+
+		int score = width / i + height / j;
+		if (score < bestScore) {
+			bestScore = score;
+			bestColumns = i;
+		}
+	}
+	return bestColumns;
+}
+
+int sizeOfPart(int size, int parts, int part) {
+	return (part + 1) * size / parts - part * size / parts;
+}
+
+double divideWorld(int * width, int * height, WorldPtr * input,
+		WorldPtr * output) {
+	int columns, rows, x, y;
+#ifdef USE_MPI
+	int rank, size;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	columns = divideArea(*width, *height, size);
+	rows = size / columns;
+	x = rank % columns;
+	y = rank / columns;
+#else
+	columns = 1;
+	rows = 1;
+	x = 0;
+	y = 0;
+#endif
+	int newWidth = sizeOfPart(*width, columns, x);
+	int newHeight = sizeOfPart(*height, rows, y);
+
+	WorldPtr worlds[2] = { newWorld(newWidth, newHeight), newWorld(newWidth,
+			newHeight) };
+
+	LOG_DEBUG("World size is %d x %d at position [%d, %d] of %d x %d ",
+			newWidth, newHeight, x, y, columns, rows);
+
+	for (int i = 0; i < 2; i++) {
+		WorldPtr w = worlds[i];
+		w->globalColumns = columns;
+		w->globalRows = rows;
+		w->globalWidth = *width;
+		w->globalHeight = *height;
+		w->globalX = x;
+		w->globalY = y;
+	}
+
+	*input = worlds[0];
+	*output = worlds[1];
+
+	double ratio = newWidth * newHeight / (double) (*width * *height);
+
+	*width = newWidth;
+	*height = newHeight;
+	return ratio;
+}
+
 int main(int argc, char **argv) {
 	if (argc != 5) {
-		printf("I want width, height, zombies, iterations.\n");
+		LOG_ERROR("I want width, height, zombies, iterations.\n");
 		exit(1);
 	}
 
-	unsigned int width = atoi(argv[1]);
-	unsigned int height = atoi(argv[2]);
+#ifdef USE_MPI
+	MPI_Init(&argc, &argv);
+#endif
 
-	unsigned int people = (int) (width * height * INITIAL_DENSITY);
-	unsigned int zombies = atoi(argv[3]);
+	int width = atoi(argv[1]);
+	int height = atoi(argv[2]);
 
-	unsigned int iters = atoi(argv[4]);
+	int people = (int) (width * height * INITIAL_DENSITY);
+	int zombies = atoi(argv[3]);
+
+	int iters = atoi(argv[4]);
 
 	initRandom(0);
 
-	WorldPtr input = newWorld(width, height);
-	WorldPtr output = newWorld(width, height);
+	WorldPtr input, output;
+	double ratio = divideWorld(&width, &height, &input, &output);
 
-	randomDistribution(input, people, zombies, 0);
+	randomDistribution(input, people * ratio, zombies, 0);
 
 #ifndef NIMAGES
-	input->stats = input->lastStats;
 	printWorld(input);
 #endif
 
@@ -203,6 +278,7 @@ int main(int argc, char **argv) {
 	gettimeofday(&t1, NULL);
 #endif
 
+	// FIXME cumulative stats
 	for (int i = 0; i < iters; i++) {
 		simulateStep(input, output);
 		finishStep(output);
@@ -212,9 +288,8 @@ int main(int argc, char **argv) {
 		WorldPtr temp = input;
 		input = output;
 		output = temp;
-		input->lastStats = stats;
+		input->stats = stats;
 		resetWorld(output);
-		copyStats(output, stats);
 	}
 
 #ifdef TIME
@@ -227,7 +302,7 @@ int main(int argc, char **argv) {
 #else
 	int numThreads = 1;
 #endif
-	fprintf(stderr, "Simulation took %f milliseconds with %d threads\n", elapsedTime, numThreads);
+	LOG_TIME("Simulation took %f milliseconds with %d threads\n", elapsedTime, numThreads);
 #endif
 
 	// this is a clean up
@@ -236,4 +311,8 @@ int main(int argc, char **argv) {
 	destroyWorld(output);
 
 	destroyRandom();
+
+#ifdef USE_MPI
+	MPI_Finalize();
+#endif
 }

@@ -4,32 +4,34 @@
 #include "random.h"
 
 WorldPtr newWorld(unsigned int width, unsigned int height) {
-	WorldPtr world = (WorldPtr) checked_malloc(sizeof(World));
+	WorldPtr world = (WorldPtr) malloc(sizeof(World));
 
 	world->clock = 0;
-	world->width = width;
-	world->height = height;
+	world->stats = NO_STATS;
+	world->stats.clock = world->clock;
+	world->stats.width = width;
+	world->stats.height = height;
+
+	world->globalColumns = 1;
+	world->globalRows = 1;
+	world->globalWidth = width;
+	world->globalHeight = height;
+
+	world->localWidth = world->globalWidth;
+	world->localHeight = world->globalHeight;
 
 	world->xStart = 2;
 	world->xEnd = width + 1;
 	world->yStart = 2;
 	world->yEnd = height + 1;
 
-	world->stats = NO_STATS;
-	world->stats.clock = 0;
-	world->stats.width = width;
-	world->stats.height = height;
-	world->lastStats = NO_STATS;
-	world->lastStats.clock = 0;
-	world->lastStats.width = width;
-	world->lastStats.height = height;
-
 #ifdef _OPENMP
-	world->locks = (omp_lock_t *) checked_malloc(sizeof(omp_lock_t) * (width + 4));
+	world->locks = (omp_lock_t *) malloc(sizeof(omp_lock_t) * (width + 4));
 #endif
-	world->map = (Cell **) checked_malloc(sizeof(Cell *) * (width + 4));
+	world->map1d = (Cell *) malloc(sizeof(Cell) * (width + 4) * (height + 4));
+	world->map = (Cell **) malloc(sizeof(Cell *) * (width + 4));
 	for (unsigned int x = 0; x < width + 4; x++) {
-		world->map[x] = (Cell *) checked_malloc(sizeof(Cell) * (height + 4));
+		world->map[x] = world->map1d + x * (height + 4);
 		for (unsigned int y = 0; y < height + 4; y++) {
 			GET_CELL(world, x, y).type = NONE;
 		}
@@ -45,30 +47,24 @@ void resetWorld(WorldPtr world) {
 #ifdef _OPENMP
 #pragma omp parallel for schedule(guided, 10) collapse(2)
 #endif
-	for (int x = 0; x < world->width + 4; x++) {
-		for (int y = 0; y < world->height + 4; y++) {
+	for (int x = 0; x < world->localWidth + 4; x++) {
+		for (int y = 0; y < world->localHeight + 4; y++) {
 			GET_CELL(world, x, y).type = NONE;
 		}
 	}
 
 	world->stats = NO_STATS;
-	world->stats.width = world->width;
-	world->stats.height = world->height;
-	world->lastStats = NO_STATS;
-	world->lastStats.width = world->width;
-	world->lastStats.height = world->height;
+	world->stats.width = world->localWidth;
+	world->stats.height = world->localHeight;
 }
 
 void destroyWorld(WorldPtr world) {
-	for (unsigned int x = 0; x < world->width + 4; x++) {
-		for (unsigned int y = 0; y < world->height + 4; y++) {
-			GET_CELL(world, x, y).type = NONE;
-		}
-		free(world->map[x]);
 #ifdef _OPENMP
+	for (unsigned int x = 0; x < world->localWidth + 4; x++) {
 		omp_destroy_lock(world->locks + x);
-#endif
 	}
+#endif
+	free(world->map1d);
 	free(world->map);
 #ifdef _OPENMP
 	free(world->locks);
@@ -103,24 +99,4 @@ CellPtr getFreeAdjacent(WorldPtr input, WorldPtr output, int x, int y) {
 		}
 	}
 	return NULL;
-}
-
-void copyStats(WorldPtr world, Stats stats) {
-#ifndef NCUMULATIVE_STATS
-	world->stats = stats;
-	// these are the global stats which we need to reset
-	// we want to keep just the event-driven
-	world->stats.clock = 0;
-	world->stats.humanFemales = 0;
-	world->stats.humanMales = 0;
-	world->stats.infectedFemales = 0;
-	world->stats.infectedMales = 0;
-	world->stats.zombies = 0;
-	world->stats.humanFemalesPregnant = 0;
-	world->stats.infectedFemalesPregnant = 0;
-#else
-	world->stats = NO_STATS;
-#endif
-	world->stats.width = world->width;
-	world->stats.height = world->height;
 }

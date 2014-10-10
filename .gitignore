@@ -41,6 +41,7 @@ dependencies
 /images_*
 /out
 /out_*
+/backups*
 
 # ignore intermediate files for tr building.
 /report/tr.aux
