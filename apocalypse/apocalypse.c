@@ -205,7 +205,7 @@ double divideWorld(int * width, int * height, WorldPtr * input,
 	int columns = divideArea(*width, *height, size);
 
 	coords worldSize = {columns, size / columns};
-	coords periods = {0, 0};
+	coords periods = {1, 1};
 	int reorder = 1;
 	MPI_Comm commCart;
 	MPI_Cart_create(MPI_COMM_WORLD, DIMENSIONS, worldSize, periods, reorder,
@@ -215,13 +215,26 @@ double divideWorld(int * width, int * height, WorldPtr * input,
 	coords position;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Cart_coords(commCart, rank, DIMENSIONS, position);
-
 #else
 	coords worldSize = { 1, 1 };
 	coords position = { 0, 0 };
 #endif
 	int newWidth = sizeOfPart(*width, worldSize[0], position[0]);
 	int newHeight = sizeOfPart(*height, worldSize[1], position[1]);
+
+#ifdef USE_MPI
+	MPI_Datatype cellType;
+	MPI_Type_contiguous(sizeof(Cell), MPI_BYTE, &cellType);
+	MPI_Type_commit(&cellType);
+
+	MPI_Datatype rowType;
+	MPI_Type_vector(newWidth, 1, newHeight + 4, cellType, &rowType);
+	MPI_Type_commit(&rowType);
+
+	MPI_Datatype columnType;
+	MPI_Type_vector(1, newHeight, -1, cellType, &columnType);
+	MPI_Type_commit(&columnType);
+#endif
 
 	WorldPtr worlds[2] = { newWorld(newWidth, newHeight), newWorld(newWidth,
 			newHeight) };
@@ -240,6 +253,10 @@ double divideWorld(int * width, int * height, WorldPtr * input,
 		w->globalPosition[1] = position[1];
 #ifdef USE_MPI
 		w->comm = commCart;
+		// w->requests is uninitialized; works as stack
+		w->requestCount = 0;
+		w->rowType = rowType;
+		w->columnType = columnType;
 #endif
 	}
 
@@ -291,7 +308,6 @@ int main(int argc, char **argv) {
 	// FIXME cumulative stats
 	for (int i = 0; i < iters; i++) {
 		simulateStep(input, output);
-		finishStep(output);
 		printStatistics(output);
 
 		Stats stats = output->stats;
@@ -299,7 +315,6 @@ int main(int argc, char **argv) {
 		input = output;
 		output = temp;
 		input->stats = stats;
-		resetWorld(output);
 	}
 
 #ifdef TIME

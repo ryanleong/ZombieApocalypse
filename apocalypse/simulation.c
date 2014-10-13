@@ -10,6 +10,8 @@
 #include "constants.h"
 #include "log.h"
 #include "direction.h"
+#include "mpistuff.h"
+#include "communication.h"
 
 static int countNeighbouringZombies(WorldPtr world, int row, int column);
 static EntityPtr findAdjacentFertileMale(WorldPtr world, int x, int y,
@@ -33,23 +35,21 @@ static void mergeStats(WorldPtr dest, Stats src);
 	(CAN_MOVE_TO((x), (y), (dir)) ? &GET_CELL_DIR((output), (dir), (x), (y)) : NULL)
 
 /**
- * Order of actions (divided into two loops)
+ * Order of actions:
  * a) death of human or infected
  * b) decomposition of zombie
  * c) transition of infected to zombie
  * d) transition of human into infected
- *
- * a) giving birth to children - changes input
- * b) making love - changes input
- * c) movement
  */
-void simulateStep(WorldPtr input, WorldPtr output) {
-	simClock clock = output->clock = input->clock + 1;
-
-	// we want to force static scheduling because we suppose that the load
-	// is distributed evenly over the map and we need to have predictable locking
+static void simulateStep1(WorldPtr input, WorldPtr output) {
+	simClock clock = output->clock;
+// we want to force static scheduling because we suppose that the load
+// is distributed evenly over the map and we need to have predictable locking
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(getNumThreads(input->localWidth)) schedule(static)
+	// at least three columns per thread
+	int threads = omp_get_max_threads();
+	int numThreads = MIN(MAX(input->localWidth / 3, 1), threads);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
 #endif
 	for (int x = input->xStart; x < input->xEnd; x++) {
 		Stats stats = NO_STATS;
@@ -107,7 +107,17 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 		}
 		mergeStats(output, stats);
 	}
+}
 
+/**
+ * Order of actions:
+ * a) transition of human into infected
+ * b) giving birth to children - changes input
+ * c) making love - changes input
+ * d) movement
+ */
+static void simulateStep2(WorldPtr input, WorldPtr output) {
+	simClock clock = output->clock;
 	// notice that we iterate over xx and yy
 	// and the real x and y are randomly switched between two directions
 	double xxDir = randomDouble();
@@ -116,7 +126,10 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 	// we want to force static scheduling because we suppose that the load
 	// is distributed evenly over the map and we need to have predictable locking
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(getNumThreads(input->localWidth)) schedule(static)
+	// at least three columns per thread
+	int threads = omp_get_max_threads();
+	int numThreads = MIN(MAX(input->localWidth / 3, 1), threads);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
 #endif
 	for (int xx = input->xStart; xx <= input->xEnd; xx++) {
 		int x = (xxDir < 0.5) ? xx : (input->xEnd + input->xStart - xx);
@@ -285,43 +298,16 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 	}
 }
 
-/**
- * Moves back an entity which is on the ghost cell.
- */
-void moveBack(WorldPtr world, int srcX, int srcY, int destX, int destY) {
-	EntityPtr in = GET_CELL_PTR(world, srcX, srcY);
-	if (in->type != NONE) {
-		if (GET_CELL(world, destX, destY).type == NONE) {
-			GET_CELL(world, destX, destY) = *in;
-		}
-		in->type = NONE;
-	}
-}
+void simulateStep(WorldPtr input, WorldPtr output) {
+	output->clock = input->clock + 1;
 
-void finishStep(WorldPtr world) {
-	{
-#ifdef _OPENMP
-		int threads = omp_get_max_threads();
-		int numThreads = MIN(MAX(world->localWidth / 10, 1), threads);
-#pragma omp parallel for schedule(guided, 10) num_threads(numThreads)
-#endif
-		for (int x = world->xStart; x <= world->xEnd; x++) {
-			moveBack(world, x, world->yStart - 1, x, world->yStart);
-			moveBack(world, x, world->yEnd + 1, x, world->yEnd);
-		}
-	}
-
-	{
-#ifdef _OPENMP
-		int threads = omp_get_max_threads();
-		int numThreads = MIN(MAX(world->localHeight / 10, 1), threads);
-#pragma omp parallel for schedule(guided, 10) num_threads(numThreads)
-#endif
-		for (int y = world->yStart; y <= world->yEnd; y++) {
-			moveBack(world, world->xStart - 1, y, world->xStart, y);
-			moveBack(world, world->xEnd + 1, y, world->xEnd, y);
-		}
-	}
+	sendRecieveBorder(input);
+	simulateStep1(input, output);
+	sendRecieveBorderFinish(input);
+	simulateStep2(input, output);
+	sendReceiveGhosts(output);
+	resetWorld(input);
+	sendReceiveGhostsFinish(output);
 }
 
 /**
@@ -476,15 +462,4 @@ static void mergeStats(WorldPtr dest, Stats src) {
 		dest->stats.infectedMalesBecameZombies +=
 				src.infectedMalesBecameZombies;
 	}
-}
-
-int getNumThreads(int width) {
-#ifdef _OPENMP
-// at least three columns per thread
-	int threads = omp_get_max_threads();
-	int numThreads = MIN(MAX(width / 3, 1), threads);
-#else
-	int numThreads = 1;
-#endif
-	return numThreads;
 }

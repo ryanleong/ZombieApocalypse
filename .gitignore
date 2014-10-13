@@ -26,6 +26,7 @@
 *.swp
 
 # Eclipse project
+.settings/
 .project
 .cproject
 .pydevproject
@@ -52,3 +53,4 @@ dependencies
 /report/tr.blg
 
 /report/movement-eps-converted-to.pdf
+/Debug/

@@ -9,18 +9,4 @@
  */
 void simulateStep(WorldPtr input, WorldPtr output);
 
-/**
- * Does the cleaning after each step of simulation.
- * This means:
- * 1) moving entities on BORDER back to REGULAR tiles.
- * 2) resetting the world.
- */
-void finishStep(WorldPtr world);
-
-/**
- * Returns optimal number of threads which to use for step simulating.
- * This number is also necessary for allocators.
- */
-int getNumThreads(int width);
-
 #endif /* SIMULATION_H_ */

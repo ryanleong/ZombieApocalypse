@@ -58,6 +58,10 @@ omp_lock_t * locks;
 #endif
 #ifdef USE_MPI
 MPI_Comm comm;
+MPI_Request requests[MAX_REQUESTS];
+int requestCount;
+MPI_Datatype rowType;
+MPI_Datatype columnType;
 #endif
 } World;
 

@@ -1,4 +1,4 @@
-SRC = apocalypse.c entity.c direction.c random.c simulation.c world.c
+SRC = apocalypse.c communication.c entity.c direction.c random.c simulation.c world.c
 OBJS = $(SRC:%.c=%.o)
 
 CFLAGS = --std=gnu99 -O2 -g -Wall -fopenmp
