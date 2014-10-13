@@ -36,6 +36,7 @@ dependencies
 /apocalypse/apocalypse
 /visualise/visualise
 /visualise/demographics
+/visualise/globalise
 
 # ignore outputs and backups
 /images/

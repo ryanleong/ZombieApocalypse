@@ -23,20 +23,30 @@ clobber: localclean localclobber
 	$(MAKE) -C visualise clobber
 	$(MAKE) -C report clobber
 	
-backup: images out
+backup: images output
 	mv images images_$(DATE)
 	mv output output_$(DATE)
 
-png: images
-	for f in images/*.img; do echo $$f; visualise/visualise $$f; done
+globalise: globalise-images globalise-output
+	
+globalise-images: images
+	for f in images/step-??????-0-0.img; do echo $$f; visualise/globalise $$f; done
 
-dem: images
-	for f in images/*.img; do echo $$f; visualise/demographics $$f; done
+globalise-output: output
+	visualise/globalise output/apocalypse-0-0.out
 
-hist: images
-	for f in images/*.dem; do echo $$f; visualise/histogram.py $${f%.dem}-hist.png < $$f; done
+png: images images/step-000000.img
+	for f in images/step-??????.img; do echo $$f; visualise/visualise $$f; done
 
-plot: out
-	visualise/plot.py <out
+dem: images images/step-000000.img
+	for f in images/step-??????.img; do echo $$f; visualise/demographics $$f; done
 
-.PHONY: all clean localclean clobber backup png plot
+hist: images images/step-000000.dem
+	for f in images/step-??????.dem; do echo $$f; visualise/histogram.py $${f%.dem}-hist.png < $$f; done
+
+plot: output images/apocalypse.out
+	visualise/plot.py <output/apocalypse.out
+
+.PHONY: all clean localclean localclobber clobber 
+.PHONY: backup globalise globalise-images globalise-output
+.PHONY: png dem hist plot
