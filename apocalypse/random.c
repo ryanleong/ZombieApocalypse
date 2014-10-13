@@ -1,7 +1,10 @@
 #include <stdlib.h>
-#include <time.h>
 #include <math.h>
 #include <omp.h>
+
+// for seeding
+#include <time.h>
+#include <unistd.h>
 
 #include "random.h"
 
@@ -11,7 +14,7 @@ static PRNGState *states;
 
 void initRandom(unsigned int seed) {
 	if (seed == 0) {
-		seed = time(NULL);
+		seed = (time(NULL) & 0xFFFF) | (getpid() << 16);
 	}
 	srand48(seed);
 

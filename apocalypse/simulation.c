@@ -370,10 +370,7 @@ static bearing getBearing(WorldPtr world, int x, int y) {
 		bearing delta = BEARING_FROM_DIRECTION(dir);
 
 		if (entity.type == ZOMBIE) {
-			if (IS_OUTSIDE(world, x + direction_delta_x[dir],
-					y + direction_delta_y[dir])) {
-				bearing_ += delta * BEARING_RATE_ZOMBIE_WALL_ONE;
-			} else if (cellPtr->type == NONE) {
+			if (cellPtr->type == NONE) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_EMPTY_ONE;
 			} else if (cellPtr->type == ZOMBIE) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_ZOMBIE_ONE;
@@ -381,10 +378,7 @@ static bearing getBearing(WorldPtr world, int x, int y) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_LIVING_ONE;
 			}
 		} else {
-			if (IS_OUTSIDE(world, x + direction_delta_x[dir],
-					y + direction_delta_y[dir])) {
-				bearing_ += delta * BEARING_RATE_LIVING_WALL_ONE;
-			} else if (cellPtr->type == NONE) {
+			if (cellPtr->type == NONE) {
 				bearing_ += delta * BEARING_RATE_LIVING_EMPTY_ONE;
 			} else if (cellPtr->type == ZOMBIE) {
 				bearing_ += delta * BEARING_RATE_LIVING_ZOMBIE_ONE;
@@ -401,10 +395,7 @@ static bearing getBearing(WorldPtr world, int x, int y) {
 		delta /= cabsf(delta);
 
 		if (entity.type == ZOMBIE) {
-			if (IS_OUTSIDE(world, x + direction_delta_x[dir],
-					y + direction_delta_y[dir])) {
-				bearing_ += delta * BEARING_RATE_ZOMBIE_WALL_TWO;
-			} else if (cellPtr->type == NONE) {
+			if (cellPtr->type == NONE) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_EMPTY_TWO;
 			} else if (cellPtr->type == ZOMBIE) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_ZOMBIE_TWO;
@@ -412,10 +403,7 @@ static bearing getBearing(WorldPtr world, int x, int y) {
 				bearing_ += delta * BEARING_RATE_ZOMBIE_LIVING_TWO;
 			}
 		} else {
-			if (IS_OUTSIDE(world, x + direction_delta_x[dir],
-					y + direction_delta_y[dir])) {
-				bearing_ += delta * BEARING_RATE_LIVING_WALL_TWO;
-			} else if (cellPtr->type == NONE) {
+			if (cellPtr->type == NONE) {
 				bearing_ += delta * BEARING_RATE_LIVING_EMPTY_TWO;
 			} else if (cellPtr->type == ZOMBIE) {
 				bearing_ += delta * BEARING_RATE_LIVING_ZOMBIE_TWO;

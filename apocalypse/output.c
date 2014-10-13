@@ -26,9 +26,9 @@ void printWorld(WorldPtr world) {
 	fprintf(out, "Width %d; Height %d; Time %lld; Entities %d\n",
 			world->localWidth, world->localHeight, world->clock, entities);
 
-	for (int y = 0; y <= world->localHeight; y++) {
-		for (int x = 0; x <= world->localWidth; x++) {
-			CellPtr ptr = &GET_CELL(world, x + world->xStart,
+	for (int y = 0; y < world->localHeight; y++) {
+		for (int x = 0; x < world->localWidth; x++) {
+			CellPtr ptr = GET_CELL_PTR(world, x + world->xStart,
 					y + world->yStart);
 			int age = world->clock - ptr->origin;
 			switch (ptr->type) {

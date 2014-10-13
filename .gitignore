@@ -40,8 +40,8 @@ dependencies
 # ignore outputs and backups
 /images/
 /images_*
-/out
-/out_*
+/output
+/output_*
 /backups*
 
 # ignore intermediate files for tr building.
