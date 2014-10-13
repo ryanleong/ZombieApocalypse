@@ -281,8 +281,8 @@ void sendReceiveGhostsFinish(WorldPtr world) {
 			int y1 = world->yStart - 2;
 			int y2 = world->yEnd + 2;
 #else
-			int y1 = world->yEnd - 1;
-			int y2 = world->yStart + 1;
+			int y1 = world->yEnd + 1;
+			int y2 = world->yStart - 1;
 #endif
 			mergeInto(world, x, y1, x, world->yStart);
 			mergeInto(world, x, y2, x, world->yEnd);
@@ -300,11 +300,109 @@ void sendReceiveGhostsFinish(WorldPtr world) {
 			int x1 = world->xStart - 2;
 			int x2 = world->xEnd + 2;
 #else
-			int x1 = world->xEnd - 1;
-			int x2 = world->xStart + 1;
+			int x1 = world->xEnd + 1;
+			int x2 = world->xStart - 1;
 #endif
 			mergeInto(world, x1, y, world->xStart, y);
 			mergeInto(world, x2, y, world->xEnd, y);
 		}
 	}
+}
+
+__attribute__ ((unused)) // used when compiled for MPI
+static int divideArea(int width, int height, int parts) {
+	int bestScore = 1 << 30;
+	int bestColumns = 1;
+
+	for (int i = 1; i < parts; i++) {
+		int j = parts / i;
+		if (i * j != parts) {
+			continue;
+		}
+
+		int score = width / i + height / j;
+		if (score < bestScore) {
+			bestScore = score;
+			bestColumns = i;
+		}
+	}
+	return bestColumns;
+}
+
+static int sizeOfPart(int size, int parts, int part) {
+	return (part + 1) * size / parts - part * size / parts;
+}
+
+double divideWorld(int * width, int * height, WorldPtr * input,
+		WorldPtr * output) {
+#ifdef USE_MPI
+	int size;
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	int globalColumns = divideArea(*width, *height, size);
+	int globalRows = size / globalColumns;
+
+	int worldSize[2] = {globalColumns, globalRows};
+	int periods[2] = {1, 1};
+	int reorder = 1;
+	MPI_Comm commCart;
+	MPI_Cart_create(MPI_COMM_WORLD, 2, worldSize, periods, reorder,
+			&commCart);
+
+	int rank;
+	int position[2];
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Cart_coords(commCart, rank, 2, position);
+	int globalX = position[0];
+	int globalY = position[1];
+#else
+	int globalColumns = 1;
+	int globalRows = 1;
+	int globalX = 0;
+	int globalY = 0;
+#endif
+	int newWidth = sizeOfPart(*width, globalColumns, globalX);
+	int newHeight = sizeOfPart(*height, globalRows, globalY);
+
+#ifdef USE_MPI
+	MPI_Datatype cellType;
+	MPI_Type_contiguous(sizeof(Cell), MPI_BYTE, &cellType);
+	MPI_Type_commit(&cellType);
+
+	MPI_Datatype rowType;
+	MPI_Type_vector(newWidth, 1, newHeight + 4, cellType, &rowType);
+	MPI_Type_commit(&rowType);
+
+	MPI_Datatype columnType;
+	MPI_Type_vector(1, newHeight, -1, cellType, &columnType);
+	MPI_Type_commit(&columnType);
+#endif
+
+	WorldPtr worlds[2] = { newWorld(newWidth, newHeight), newWorld(newWidth,
+			newHeight) };
+
+	for (int i = 0; i < 2; i++) {
+		WorldPtr w = worlds[i];
+		w->globalWidth = *width;
+		w->globalHeight = *height;
+		w->globalColumns = globalColumns;
+		w->globalRows = globalRows;
+		w->globalX = globalX;
+		w->globalY = globalY;
+#ifdef USE_MPI
+		w->comm = commCart;
+		// w->requests is uninitialized; works as stack
+		w->requestCount = 0;
+		w->rowType = rowType;
+		w->columnType = columnType;
+#endif
+	}
+
+	*input = worlds[0];
+	*output = worlds[1];
+
+	double ratio = newWidth * newHeight / (double) (*width * *height);
+
+	*width = newWidth;
+	*height = newHeight;
+	return ratio;
 }

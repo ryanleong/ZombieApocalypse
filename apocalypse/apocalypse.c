@@ -7,34 +7,13 @@
 #endif
 
 #include "world.h"
-#include "entity.h"
 #include "random.h"
 #include "simulation.h"
-#include "common.h"
 #include "constants.h"
-#include "common.h"
 #include "log.h"
 #include "mpistuff.h"
-
-#ifndef OUTPUT_EVERY
-#define OUTPUT_EVERY 1
-#endif
-
-#ifndef IMAGES_EVERY
-#define IMAGES_EVERY OUTPUT_EVERY
-#endif
-
-#if IMAGES_EVERY <= 0 && ! defined(NIMAGES)
-#define NIMAGES
-#endif
-
-#ifndef POPULATION_EVERY
-#define POPULATION_EVERY OUTPUT_EVERY
-#endif
-
-#if POPULATION_EVERY <= 0 && ! defined(NPOPULATION)
-#define NIMAGES
-#endif
+#include "communication.h"
+#include "output.h"
 
 /**
  * Fills the world with specified number of people and zombies.
@@ -78,207 +57,18 @@ void randomDistribution(WorldPtr world, int people, int zombies, simClock clock)
 	}
 }
 
-/**
- * Generates a dump for the world describing each entity.
- */
-void printWorld(WorldPtr world) {
-	// FIXME use global world
-	char gender[5] = { 'M', 'F', 'f', 'f', 'f' };
-
-	char filename[255];
-	sprintf(filename, "images/step-%06lld.img", world->clock);
-
-	FILE * out = fopen(filename, "w");
-	if (out == NULL) {
-		fprintf(stderr, "Could not open file %s for writing\n", filename);
-		return;
-	}
-
-	int entities = world->stats.humanFemales + world->stats.humanMales
-			+ world->stats.infectedFemales + world->stats.infectedMales
-			+ world->stats.zombies;
-	fprintf(out, "Width %d; Height %d; Time %lld; Entities %d\n",
-			world->localWidth, world->localHeight, world->clock, entities);
-
-	for (int y = 0; y <= world->localHeight; y++) {
-		for (int x = 0; x <= world->localWidth; x++) {
-			CellPtr ptr = &GET_CELL(world, x + world->xStart,
-					y + world->yStart);
-			int age = world->clock - ptr->origin;
-			switch (ptr->type) {
-			case NONE:
-				// nothing
-				break;
-			case HUMAN:
-				fprintf(out, "[%d %d] H %c %d\n", x, y,
-						gender[ptr->gender + ptr->children], age);
-				break;
-			case INFECTED:
-				fprintf(out, "[%d %d] I %c %d\n", x, y,
-						gender[ptr->gender + ptr->children], age);
-				break;
-			case ZOMBIE:
-				fprintf(out, "[%d %d] Z _ %d\n", x, y, age);
-			}
-		}
-	}
-
-	fclose(out);
-}
-
-/**
- *  Print the number of humans, infected people (who carry the disease, but
- *  haven't yet become zombies), and zombies, for debugging.
- */
-void printPopulations(WorldPtr world) {
-	Stats stats = world->stats;
-	// make sure there are always blanks around numbers
-	// that way we can easily split the line
-	printf("Time: %6lld \tHumans: %6d \tInfected: %6d \tZombies: %6d\n",
-			world->clock, stats.humanFemales + stats.humanMales,
-			stats.infectedFemales + stats.infectedMales, stats.zombies);
-
-#ifndef NDETAILED_STATS
-	printf("LHF: %6d \tLHM: %6d \tLIF: %6d \tLIM: %6d \tLZ:  %6d\n",
-			stats.humanFemales, stats.humanMales, stats.infectedFemales,
-			stats.infectedMales, stats.zombies);
-	printf("DHF: %6d \tDHM: %6d \tDIF: %6d \tDIM: %6d \tDZ:  %6d\n",
-			stats.humanFemalesDied, stats.humanMalesDied,
-			stats.infectedFemalesDied, stats.infectedMalesDied,
-			stats.zombiesDecomposed);
-	printf("BHF: %6d \tBHM: %6d \tBIF: %6d \tBIM: %6d\n",
-			stats.humanFemalesBorn, stats.humanMalesBorn,
-			stats.infectedFemalesBorn, stats.infectedMalesBorn);
-	printf("PH:  %6d \tPI:  %6d \tGBH: %6d \tGBI: %6d \tCML: %6d \tCC:  %6d\n",
-			stats.humanFemalesPregnant, stats.infectedFemalesPregnant,
-			stats.humanFemalesBecameInfected, stats.infectedFemalesGivingBirth,
-			stats.couplesMakingLove, stats.childrenConceived);
-	printf("IHF: %6d \tIHM: %6d \tIFZ: %6d \tIMZ: %6d\n",
-			stats.humanFemalesBecameInfected, stats.humanMalesBecameInfected,
-			stats.infectedFemalesBecameZombies,
-			stats.infectedMalesBecameZombies);
-#endif
-}
-
-void printStatistics(WorldPtr world) {
-#ifndef NIMAGES
-	if (world->clock % IMAGES_EVERY == 0) {
-		printWorld(world);
-	}
-#endif
-
-#ifndef NPOPULATION
-	if (world->clock % POPULATION_EVERY == 0) {
-		printPopulations(world);
-	}
-#endif
-}
-
-int divideArea(int width, int height, int parts) {
-	int bestScore = 1 << 30;
-	int bestColumns = 1;
-
-	for (int i = 1; i < parts; i++) {
-		int j = parts / i;
-		if (i * j != parts) {
-			continue;
-		}
-
-		int score = width / i + height / j;
-		if (score < bestScore) {
-			bestScore = score;
-			bestColumns = i;
-		}
-	}
-	return bestColumns;
-}
-
-int sizeOfPart(int size, int parts, int part) {
-	return (part + 1) * size / parts - part * size / parts;
-}
-
-double divideWorld(int * width, int * height, WorldPtr * input,
-		WorldPtr * output) {
-#ifdef USE_MPI
-	int size;
-	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	int columns = divideArea(*width, *height, size);
-
-	coords worldSize = {columns, size / columns};
-	coords periods = {1, 1};
-	int reorder = 1;
-	MPI_Comm commCart;
-	MPI_Cart_create(MPI_COMM_WORLD, DIMENSIONS, worldSize, periods, reorder,
-			&commCart);
-
-	int rank;
-	coords position;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Cart_coords(commCart, rank, DIMENSIONS, position);
-#else
-	coords worldSize = { 1, 1 };
-	coords position = { 0, 0 };
-#endif
-	int newWidth = sizeOfPart(*width, worldSize[0], position[0]);
-	int newHeight = sizeOfPart(*height, worldSize[1], position[1]);
-
-#ifdef USE_MPI
-	MPI_Datatype cellType;
-	MPI_Type_contiguous(sizeof(Cell), MPI_BYTE, &cellType);
-	MPI_Type_commit(&cellType);
-
-	MPI_Datatype rowType;
-	MPI_Type_vector(newWidth, 1, newHeight + 4, cellType, &rowType);
-	MPI_Type_commit(&rowType);
-
-	MPI_Datatype columnType;
-	MPI_Type_vector(1, newHeight, -1, cellType, &columnType);
-	MPI_Type_commit(&columnType);
-#endif
-
-	WorldPtr worlds[2] = { newWorld(newWidth, newHeight), newWorld(newWidth,
-			newHeight) };
-
-	LOG_DEBUG("World size is %d x %d at position [%d, %d] of %d x %d\n",
-			newWidth, newHeight, position[0], position[1], worldSize[0],
-			worldSize[1]);
-
-	for (int i = 0; i < 2; i++) {
-		WorldPtr w = worlds[i];
-		w->globalWidth = *width;
-		w->globalHeight = *height;
-		w->globalSize[0] = worldSize[0];
-		w->globalSize[1] = worldSize[1];
-		w->globalPosition[0] = position[0];
-		w->globalPosition[1] = position[1];
-#ifdef USE_MPI
-		w->comm = commCart;
-		// w->requests is uninitialized; works as stack
-		w->requestCount = 0;
-		w->rowType = rowType;
-		w->columnType = columnType;
-#endif
-	}
-
-	*input = worlds[0];
-	*output = worlds[1];
-
-	double ratio = newWidth * newHeight / (double) (*width * *height);
-
-	*width = newWidth;
-	*height = newHeight;
-	return ratio;
-}
-
 int main(int argc, char **argv) {
-	if (argc != 5) {
-		LOG_ERROR("I want width, height, zombies, iterations.\n");
-		exit(1);
-	}
-
 #ifdef USE_MPI
 	MPI_Init(&argc, &argv);
 #endif
+
+	if (argc != 5) {
+		LOG_ERROR("I want width, height, zombies, iterations.\n");
+#ifdef USE_MPI
+		MPI_Finalize();
+#endif
+		exit(1);
+	}
 
 	int width = atoi(argv[1]);
 	int height = atoi(argv[2]);
@@ -292,6 +82,15 @@ int main(int argc, char **argv) {
 
 	WorldPtr input, output;
 	double ratio = divideWorld(&width, &height, &input, &output);
+
+	// there should not be any output prior to this point
+#ifdef REDIRECT
+	initRedirectToFiles(input);
+#endif
+
+	LOG_DEBUG("World size is %d x %d at position [%d, %d] of %d x %d\n",
+			input->localWidth, input->localHeight, input->globalX,
+			input->globalY, input->globalColumns, input->globalRows);
 
 	randomDistribution(input, people * ratio, zombies, 0);
 
@@ -336,6 +135,10 @@ int main(int argc, char **argv) {
 	destroyWorld(output);
 
 	destroyRandom();
+
+#ifdef REDIRECT
+	finishRedirectToFiles();
+#endif
 
 #ifdef USE_MPI
 	MPI_Finalize();

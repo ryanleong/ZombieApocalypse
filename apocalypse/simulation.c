@@ -302,11 +302,13 @@ void simulateStep(WorldPtr input, WorldPtr output) {
 	output->clock = input->clock + 1;
 
 	sendRecieveBorder(input);
-	simulateStep1(input, output);
+	simulateStep1(input, output); // while waiting for input border
 	sendRecieveBorderFinish(input);
-	simulateStep2(input, output);
+
+	simulateStep2(input, output); // this needs input with border
+
 	sendReceiveGhosts(output);
-	resetWorld(input);
+	resetWorld(input); // while waiting for ghost cell movement
 	sendReceiveGhostsFinish(output);
 }
 

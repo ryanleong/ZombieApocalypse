@@ -11,4 +11,7 @@ void sendReceiveGhosts(WorldPtr world);
 
 void sendReceiveGhostsFinish(WorldPtr World);
 
+double divideWorld(int * width, int * height, WorldPtr * input,
+		WorldPtr * output);
+
 #endif /* COMMUNICATION_H_ */

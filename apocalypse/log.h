@@ -29,4 +29,8 @@
 #define LOG_POPULATION(...) \
 	LOG_UNIVERSAL(LOG_POPULATION_OUTPUT, "" __VA_ARGS__)
 
+void initRedirectToFiles();
+
+void finishRedirectToFiles();
+
 #endif

@@ -1,6 +1,4 @@
 #include "world.h"
-#include "common.h"
-#include "utils.h"
 #include "random.h"
 
 WorldPtr newWorld(unsigned int width, unsigned int height) {
@@ -12,10 +10,10 @@ WorldPtr newWorld(unsigned int width, unsigned int height) {
 	world->stats.width = width;
 	world->stats.height = height;
 
-	world->globalSize[0] = 1;
-	world->globalSize[1] = 1;
-	world->globalPosition[0] = 0;
-	world->globalPosition[1] = 0;
+	world->globalColumns = 1;
+	world->globalRows = 1;
+	world->globalX = 0;
+	world->globalY = 0;
 	world->globalWidth = width;
 	world->globalHeight = height;
 
@@ -47,7 +45,7 @@ WorldPtr newWorld(unsigned int width, unsigned int height) {
 
 void resetWorld(WorldPtr world) {
 #ifdef _OPENMP
-#pragma omp parallel for schedule(guided, 10) collapse(2)
+#pragma omp parallel for schedule(static) collapse(2)
 #endif
 	for (int x = 0; x < world->localWidth + 4; x++) {
 		for (int y = 0; y < world->localHeight + 4; y++) {

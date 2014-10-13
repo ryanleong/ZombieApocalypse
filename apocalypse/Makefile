@@ -1,4 +1,5 @@
-SRC = apocalypse.c communication.c entity.c direction.c random.c simulation.c world.c
+SRC = apocalypse.c communication.c entity.c direction.c \
+	log.c output.c random.c simulation.c world.c
 OBJS = $(SRC:%.c=%.o)
 
 CFLAGS = --std=gnu99 -O2 -g -Wall -fopenmp
@@ -41,12 +42,18 @@ endif
 
 ifeq ($(HOSTNAME), avoca)
 CC = mpicc
+REDIRECT = 1
 else
 CC = gcc
 endif
 
 ifdef USE_MPI
 CC = mpicc
+REDIRECT = 1
+endif
+
+ifdef REDIRECT
+CFLAGS += -DREDIRECT
 endif
 
 LIBS = -lm -lgomp

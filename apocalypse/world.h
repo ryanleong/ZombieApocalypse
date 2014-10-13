@@ -42,8 +42,10 @@ typedef struct World {
 
 	unsigned int globalWidth; // real width
 	unsigned int globalHeight; // real height
-	coords globalSize;
-	coords globalPosition;
+	unsigned int globalColumns;
+	unsigned int globalRows;
+	unsigned int globalX;
+	unsigned int globalY;
 
 	unsigned int localWidth; // real width of this world part
 	unsigned int localHeight; // real height of this world part
