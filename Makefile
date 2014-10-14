@@ -44,7 +44,7 @@ dem: images images/step-000000.img
 hist: images images/step-000000.dem
 	for f in images/step-??????.dem; do echo $$f; visualise/histogram.py $${f%.dem}-hist.png < $$f; done
 
-plot: output images/apocalypse.out
+plot: output/apocalypse.out
 	visualise/plot.py <output/apocalypse.out
 
 .PHONY: all clean localclean localclobber clobber 

@@ -14,6 +14,7 @@
 #include "mpistuff.h"
 #include "communication.h"
 #include "output.h"
+#include "stats.h"
 
 /**
  * Fills the world with specified number of people and zombies.
@@ -92,10 +93,15 @@ int main(int argc, char **argv) {
 			input->localWidth, input->localHeight, input->globalX,
 			input->globalY, input->globalColumns, input->globalRows);
 
-	randomDistribution(input, people * ratio, zombies, 0);
+	if (input->globalX == 0 && input->globalY == 0) {
+		randomDistribution(input, people * ratio, zombies, 0);
+	} else {
+		// no zombies elsewhere
+		randomDistribution(input, people * ratio, 0, 0);
+	}
 
 #ifndef NIMAGES
-	printWorld(input);
+	printWorld(input, false);
 #endif
 
 #ifdef TIME
@@ -104,12 +110,15 @@ int main(int argc, char **argv) {
 	gettimeofday(&t1, NULL);
 #endif
 
-	// FIXME cumulative stats
+	Stats cumulative = NO_STATS;
 	for (int i = 0; i < iters; i++) {
 		simulateStep(input, output);
-		printStatistics(output);
 
+		output->stats.clock = cumulative.clock = output->clock;
 		Stats stats = output->stats;
+		mergeStats(&cumulative, stats, false);
+		printStatistics(output, cumulative);
+
 		WorldPtr temp = input;
 		input = output;
 		output = temp;

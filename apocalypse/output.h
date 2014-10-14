@@ -9,6 +9,7 @@
 #define OUTPUT_H_
 
 #include "world.h"
+#include "stats.h"
 
 #ifndef OUTPUT_EVERY
 #define OUTPUT_EVERY 1
@@ -33,14 +34,14 @@
 /**
  * Generates a dump for the world describing each entity.
  */
-void printWorld(WorldPtr world);
+void printWorld(WorldPtr world, bool borders);
 
 /**
  *  Print the number of humans, infected people (who carry the disease, but
  *  haven't yet become zombies), and zombies, for debugging.
  */
-void printPopulations(WorldPtr world);
+void printPopulations(Stats stats);
 
-void printStatistics(WorldPtr world);
+void printStatistics(WorldPtr world, Stats cumulative);
 
 #endif /* OUTPUT_H_ */

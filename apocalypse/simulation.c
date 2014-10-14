@@ -12,12 +12,12 @@
 #include "direction.h"
 #include "mpistuff.h"
 #include "communication.h"
+#include "stats.h"
 
 static int countNeighbouringZombies(WorldPtr world, int row, int column);
 static EntityPtr findAdjacentFertileMale(WorldPtr world, int x, int y,
 		simClock clock);
 static bearing getBearing(WorldPtr world, int x, int y);
-static void mergeStats(WorldPtr dest, Stats src);
 
 /**
  * These macros require the worlds to be named input and output.
@@ -32,7 +32,7 @@ static void mergeStats(WorldPtr dest, Stats src);
  * and if it is, it returns the cell, otherwise it returns NULL
  */
 #define IF_CAN_MOVE_TO(x, y, dir) \
-	(CAN_MOVE_TO((x), (y), (dir)) ? &GET_CELL_DIR((output), (dir), (x), (y)) : NULL)
+	(CAN_MOVE_TO((x), (y), (dir)) ? GET_CELL_PTR_DIR((output), (dir), (x), (y)) : NULL)
 
 /**
  * Order of actions:
@@ -105,7 +105,12 @@ static void simulateStep1(WorldPtr input, WorldPtr output) {
 				}
 			}
 		}
-		mergeStats(output, stats);
+#ifdef _OPENMP
+#pragma omp critical (StatsCriticalRegion2)
+#endif
+		{
+			mergeStats(&output->stats, stats, true);
+		}
 	}
 }
 
@@ -279,11 +284,13 @@ static void simulateStep2(WorldPtr input, WorldPtr output) {
 			CellPtr destPtr = NULL;
 			if (dir != STAY) {
 				destPtr = IF_CAN_MOVE_TO(x, y, dir);
-				if (destPtr == NULL) {
-					destPtr = IF_CAN_MOVE_TO(x, y, DIRECTION_CCW(dir));
-				}
-				if (destPtr == NULL) {
-					destPtr = IF_CAN_MOVE_TO(x, y, DIRECTION_CW(dir));
+				if (randomDouble() < MOVEMENT_TRY_ALTERNATIVE) {
+					if (destPtr == NULL) {
+						destPtr = IF_CAN_MOVE_TO(x, y, DIRECTION_CCW(dir));
+					}
+					if (destPtr == NULL) {
+						destPtr = IF_CAN_MOVE_TO(x, y, DIRECTION_CW(dir));
+					}
 				}
 			}
 			if (destPtr == NULL) {
@@ -294,7 +301,12 @@ static void simulateStep2(WorldPtr input, WorldPtr output) {
 			*destPtr = entity;
 		}
 		unlockColumn(output, x);
-		mergeStats(output, stats);
+#ifdef _OPENMP
+#pragma omp critical (StatsCriticalRegion2)
+#endif
+		{
+			mergeStats(&output->stats, stats, true);
+		}
 	}
 }
 
@@ -416,40 +428,4 @@ static bearing getBearing(WorldPtr world, int x, int y) {
 	}
 
 	return bearing_;
-}
-
-static void mergeStats(WorldPtr dest, Stats src) {
-#ifdef _OPENMP
-#pragma omp critical (StatsCriticalRegion)
-#endif
-	{
-		dest->stats.humanFemales += src.humanFemales;
-		dest->stats.humanMales += src.humanMales;
-		dest->stats.infectedFemales += src.infectedFemales;
-		dest->stats.infectedMales += src.infectedMales;
-		dest->stats.zombies += src.zombies;
-		dest->stats.humanFemalesDied += src.humanFemalesDied;
-		dest->stats.humanMalesDied += src.humanMalesDied;
-		dest->stats.infectedFemalesDied += src.infectedFemalesDied;
-		dest->stats.infectedMalesDied += src.infectedMalesDied;
-		dest->stats.zombiesDecomposed += src.zombiesDecomposed;
-		dest->stats.humanFemalesBorn += src.humanFemalesBorn;
-		dest->stats.humanMalesBorn += src.humanMalesBorn;
-		dest->stats.humanFemalesGivingBirth += src.humanFemalesGivingBirth;
-		dest->stats.humanFemalesPregnant += src.humanFemalesPregnant;
-		dest->stats.infectedFemalesBorn += src.infectedFemalesBorn;
-		dest->stats.infectedMalesBorn += src.infectedMalesBorn;
-		dest->stats.infectedFemalesGivingBirth +=
-				src.infectedFemalesGivingBirth;
-		dest->stats.infectedFemalesPregnant += src.infectedFemalesPregnant;
-		dest->stats.couplesMakingLove += src.couplesMakingLove;
-		dest->stats.childrenConceived += src.childrenConceived;
-		dest->stats.humanFemalesBecameInfected +=
-				src.humanFemalesBecameInfected;
-		dest->stats.humanMalesBecameInfected += src.humanMalesBecameInfected;
-		dest->stats.infectedFemalesBecameZombies +=
-				src.infectedFemalesBecameZombies;
-		dest->stats.infectedMalesBecameZombies +=
-				src.infectedMalesBecameZombies;
-	}
 }

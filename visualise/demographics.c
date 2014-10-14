@@ -22,20 +22,22 @@ void printDemographics(FILE * in, FILE * out) {
 	int width;
 	int height;
 	int time;
-	int entities;
 
 	int demographics[MAX_AGE_YEARS + 1][ENTITY_TYPES_COUNT] = { { 0 } };
 
-	fscanf(in, "Width %d; Height %d; Time %d; Entities %d\n", &width, &height,
-			&time, &entities);
+	fscanf(in, "Width %d; Height %d; Time %d\n", &width, &height, &time);
 
-	for (int i = 0; i < entities; i++) {
+	do {
 		int x;
 		int y;
 		char type;
 		char gender;
 		int age;
-		fscanf(in, "[%d %d] %c %c %d\n", &x, &y, &type, &gender, &age);
+		int whatsGoingOn = fscanf(in, "[%d %d] %c %c %d\n", &x, &y, &type,
+				&gender, &age);
+		if (whatsGoingOn == EOF) {
+			break;
+		}
 
 		int years = MIN(age / (type=='z' ? IN_MONTHS : IN_YEARS),
 				MAX_AGE_YEARS);
@@ -70,7 +72,7 @@ void printDemographics(FILE * in, FILE * out) {
 		case 'Z':
 			demographics[years][ZOMBIE]++;
 		}
-	}
+	} while (1);
 
 	for (int i = 0; i <= MAX_AGE_YEARS; i++) {
 		fprintf(out, "Age: %d "

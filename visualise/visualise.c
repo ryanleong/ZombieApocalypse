@@ -58,10 +58,8 @@ int printWorld(FILE * in, FILE * out) {
 	int width;
 	int height;
 	int time;
-	int entities;
 
-	fscanf(in, "Width %d; Height %d; Time %d; Entities %d\n", &width, &height,
-			&time, &entities);
+	fscanf(in, "Width %d; Height %d; Time %d\n", &width, &height, &time);
 
 	int code = 0;
 	png_structp png_ptr;
@@ -110,15 +108,19 @@ int printWorld(FILE * in, FILE * out) {
 	}
 
 	// Prepare image data; this can be done in parallel
-	for (int i = 0; i < entities; i++) {
+	do {
 		int x;
 		int y;
 		char type;
 		char gender;
 		int age;
-		fscanf(in, "[%d %d] %c %c %d\n", &x, &y, &type, &gender, &age);
+		int whatsGoingOn = fscanf(in, "[%d %d] %c %c %d\n", &x, &y, &type,
+				&gender, &age);
+		if (whatsGoingOn == EOF) {
+			break;
+		}
 		setRGB(image[y] + x * 3, type, gender, age);
-	}
+	} while (1);
 	png_write_image(png_ptr, image);
 
 	// End write

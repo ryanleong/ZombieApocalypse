@@ -12,7 +12,7 @@
 // 1 output stats: 1 gather all
 #define MAX_REQUESTS (4*4)
 
-#define SHIFT_LEFT_RIGHT 1
+#define SHIFT_LEFT_RIGHT 0
 #define SHIFT_UP_DOWN 1
 
 // tags containing numeral 1 are the more distant ones

@@ -34,9 +34,12 @@ FILE *** intoMatrix(glob_t * globbuf, type type, int * width, int * height) {
 		}
 	}
 
-	FILE *** matrix = (FILE ***) malloc(sizeof(FILE **) * (maxX + 1));
-	for (int i = 0; i < maxY; i++) {
-		matrix[i] = (FILE **) malloc(sizeof(FILE *) * (maxY + 1));
+	*width = maxX + 1;
+	*height = maxY + 1;
+
+	FILE *** matrix = (FILE ***) malloc(sizeof(FILE **) * (*width));
+	for (int i = 0; i < *width; i++) {
+		matrix[i] = (FILE **) malloc(sizeof(FILE *) * (*height));
 	}
 
 	for (int i = 0; i < globbuf->gl_pathc; i++) {
@@ -56,17 +59,15 @@ FILE *** intoMatrix(glob_t * globbuf, type type, int * width, int * height) {
 		matrix[x][y] = file;
 	}
 
-	*width = maxX + 1;
-	*height = maxY + 1;
 	return matrix;
 }
 
 void closeMatrix(FILE *** matrix, int width, int height) {
-	for (int i = 0; i < width; i++) {
-		for (int j = 0; j < height; j++) {
-			fclose(matrix[i][j]);
+	for (int x = 0; x < width; x++) {
+		for (int y = 0; y < height; y++) {
+			fclose(matrix[x][y]);
 		}
-		free(matrix[i]);
+		free(matrix[x]);
 	}
 	free(matrix);
 }
@@ -74,17 +75,14 @@ void closeMatrix(FILE *** matrix, int width, int height) {
 void globaliseImage(FILE * out, FILE *** matrix, int width, int height) {
 	int globalWidth = 0;
 	int globalHeight = 0;
-	int globalEntities = 0;
 	long long int globalTime = 0;
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
 			int w;
 			int h;
 			long long int time;
-			int entities;
-			fscanf(matrix[x][y],
-					"Width %d; Height %d; Time %lld; Entities %d\n", &w, &h,
-					&time, &entities);
+			fscanf(matrix[x][y], "Width %d; Height %d; Time %lld\n", &w, &h,
+					&time);
 
 			globalTime = time;
 			if (x == 0) {
@@ -93,44 +91,42 @@ void globaliseImage(FILE * out, FILE *** matrix, int width, int height) {
 			if (y == 0) {
 				globalWidth += w;
 			}
-			globalEntities += entities;
 			fseek(matrix[x][y], 0, SEEK_SET);
 		}
 	}
 
-	fprintf(out, "Width %d; Height %d; Time %lld; Entities %d\n", globalWidth,
-			globalHeight, globalTime, globalEntities);
+	fprintf(out, "Width %d; Height %d; Time %lld\n", globalWidth, globalHeight,
+			globalTime);
 
 	int offsetX = 0;
 	for (int x = 0; x < width; x++) {
 		int offsetY = 0;
+		int w;
 
 		for (int y = 0; y < height; y++) {
-			int w;
 			int h;
 			long long int time;
-			int entities;
-			fscanf(matrix[x][y],
-					"Width %d; Height %d; Time %lld; Entities %d\n", &w, &h,
-					&time, &entities);
-			for (int k = 0; k < entities; k++) {
+			fscanf(matrix[x][y], "Width %d; Height %d; Time %lld\n", &w, &h,
+					&time);
+			do {
 				int xx;
 				int yy;
 				char type;
 				char gender;
 				int age;
-				fscanf(matrix[x][y], "[%d %d] %c %c %d\n", &xx, &yy, &type,
-						&gender, &age);
+				int whatsGoingOn = fscanf(matrix[x][y], "[%d %d] %c %c %d\n",
+						&xx, &yy, &type, &gender, &age);
+				if (whatsGoingOn == EOF) {
+					break;
+				}
 				fprintf(out, "[%d %d] %c %c %d\n", xx + offsetX, yy + offsetY,
 						type, gender, age);
 
-			}
+			} while (1);
 
 			offsetY += h;
-			if (y == width + 1) {
-				offsetX += w;
-			}
 		}
+		offsetX += w;
 	}
 }
 

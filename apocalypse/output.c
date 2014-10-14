@@ -1,9 +1,10 @@
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "output.h"
 #include "log.h"
 
-void printWorld(WorldPtr world) {
+void printWorld(WorldPtr world, bool borders) {
 	char gender[5] = { 'M', 'F', 'f', 'f', 'f' };
 
 	char filename[255];
@@ -20,16 +21,14 @@ void printWorld(WorldPtr world) {
 		return;
 	}
 
-	int entities = world->stats.humanFemales + world->stats.humanMales
-			+ world->stats.infectedFemales + world->stats.infectedMales
-			+ world->stats.zombies;
-	fprintf(out, "Width %d; Height %d; Time %lld; Entities %d\n",
-			world->localWidth, world->localHeight, world->clock, entities);
+	fprintf(out, "Width %d; Height %d; Time %lld\n",
+			world->localWidth + (borders ? 4 : 0),
+			world->localHeight + (borders ? 4 : 0), world->clock);
 
-	for (int y = 0; y < world->localHeight; y++) {
-		for (int x = 0; x < world->localWidth; x++) {
-			CellPtr ptr = GET_CELL_PTR(world, x + world->xStart,
-					y + world->yStart);
+	for (int y = 0; y < world->localHeight + (borders ? 4 : 0); y++) {
+		for (int x = 0; x < world->localWidth + (borders ? 4 : 0); x++) {
+			CellPtr ptr = GET_CELL_PTR(world, x + (borders ? 0 : world->xStart),
+					y + (borders ? 0 : world->yStart));
 			int age = world->clock - ptr->origin;
 			switch (ptr->type) {
 			case NONE:
@@ -52,12 +51,11 @@ void printWorld(WorldPtr world) {
 	fclose(out);
 }
 
-void printPopulations(WorldPtr world) {
-	Stats stats = world->stats;
+void printPopulations(Stats stats) {
 	// make sure there are always blanks around numbers
 	// that way we can easily split the line
 	printf("Time: %6lld \tHumans: %6d \tInfected: %6d \tZombies: %6d\n",
-			world->clock, stats.humanFemales + stats.humanMales,
+			stats.clock, stats.humanFemales + stats.humanMales,
 			stats.infectedFemales + stats.infectedMales, stats.zombies);
 
 #ifndef NDETAILED_STATS
@@ -82,16 +80,20 @@ void printPopulations(WorldPtr world) {
 #endif
 }
 
-void printStatistics(WorldPtr world) {
+void printStatistics(WorldPtr world, Stats cumulative) {
 #ifndef NIMAGES
 	if (world->clock % IMAGES_EVERY == 0) {
-		printWorld(world);
+		printWorld(world, false);
 	}
 #endif
 
 #ifndef NPOPULATION
 	if (world->clock % POPULATION_EVERY == 0) {
-		printPopulations(world);
+#ifndef NCUMULATIVE_STATS
+		printPopulations(cumulative);
+#else
+		printPopulations(world->stats);
+#endif
 	}
 #endif
 }

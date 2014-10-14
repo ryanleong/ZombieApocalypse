@@ -90,13 +90,6 @@ typedef World * WorldPtr;
 		(&GET_CELL_DIR((worldPtr), (dir), (x), (y)))
 
 /**
- * Tests if the specified field is outside the world.
- */
-#define IS_OUTSIDE(worldPtr, x, y) \
-	((x) < (worldPtr)->xStart || (y) < (worldPtr)->yStart \
-	|| (x) > (worldPtr)->xEnd || (y) > (worldPtr)->yEnd)
-
-/**
  * Creates a new world of specified dimensions as it is the only one.
  */
 WorldPtr newWorld(unsigned int width, unsigned int height);

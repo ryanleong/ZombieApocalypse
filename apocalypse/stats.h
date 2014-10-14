@@ -1,6 +1,8 @@
 #ifndef STATS_H_
 #define STATS_H_
 
+#include <stdbool.h>
+
 #include "clock.h"
 
 typedef struct Stats {
@@ -37,6 +39,8 @@ typedef struct Stats {
 } Stats;
 
 #define NO_STATS ((const struct Stats) {0})
+
+void mergeStats(Stats * dest, Stats src, bool absolute);
 
 #endif /* STATS_H_ */
 

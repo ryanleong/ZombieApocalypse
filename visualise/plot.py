@@ -15,6 +15,8 @@ infectedList = []
 zombiesList = []
 
 for line in fileinput.input('-'):
+	if not line.startswith('Time:'):
+		continue;
 	(x, time, x, humans, x, infected, x, zombies) = line.split()
 	timeList.append(int(time))
 	humansList.append(int(humans))

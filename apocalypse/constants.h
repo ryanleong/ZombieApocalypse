@@ -161,6 +161,10 @@
 #define DIRECTION_FOLLOW 0.65
 #define DIRECTION_MISSED 0.1
 
+// probability that an entity will try alternative
+// if the first choice is not possible
+#define MOVEMENT_TRY_ALTERNATIVE 0.3
+
 // #### OTHER PROBABILITIES ####
 
 // probability of becoming infected when a zombie as at the adjacent cell
