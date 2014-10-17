@@ -2,10 +2,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#ifdef TIME
-#include <sys/time.h>
-#endif
-
 #include "world.h"
 #include "random.h"
 #include "simulation.h"
@@ -105,9 +101,7 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef TIME
-	struct timeval t1, t2;
-	double elapsedTime;
-	gettimeofday(&t1, NULL);
+	Timer timer = startTimer();
 #endif
 
 	Stats cumulative = NO_STATS;
@@ -126,9 +120,7 @@ int main(int argc, char **argv) {
 	}
 
 #ifdef TIME
-	gettimeofday(&t2, NULL);
-	elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; // sec to ms
-	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;// us to ms
+	double elapsedTime = getElapsedTime(timer);
 
 #ifdef _OPENMP
 	int numThreads = omp_get_max_threads();

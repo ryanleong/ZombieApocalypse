@@ -158,8 +158,12 @@ void sendRecieveBorder(WorldPtr world) {
 
 void sendRecieveBorderFinish(WorldPtr world) {
 #ifdef USE_MPI
+	Timer timer = startTimer();
 	MPI_Waitall(world->requestCount, world->requests, MPI_STATUSES_IGNORE);
 	world->requestCount = 0;
+
+	double elapsedTime = getElapsedTime(timer);
+	LOG_DEBUG("Waited for borders for %d milliseconds\n", elapsedTime);
 #endif
 }
 
@@ -253,6 +257,7 @@ static void mergeInto(WorldPtr world, int srcX, int srcY, int destX, int destY) 
 
 void sendReceiveGhostsFinish(WorldPtr world) {
 #ifdef USE_MPI
+	Timer timer = startTimer();
 	if (world->requestCount % 2 == 0) {
 		MPI_Waitall(world->requestCount, world->requests, MPI_STATUSES_IGNORE);
 		world->requestCount = 0;
@@ -262,6 +267,9 @@ void sendReceiveGhostsFinish(WorldPtr world) {
 		world->requests[0] = world->requests[world->requestCount - 1];
 		world->requestCount = 1;
 	}
+
+	double elapsedTime = getElapsedTime(timer);
+	LOG_DEBUG("Waited for ghosts for %d milliseconds\n", elapsedTime);
 #endif
 
 	// now, we will merge ghost into the last cell

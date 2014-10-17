@@ -33,3 +33,21 @@ void finishRedirectToFiles() {
 	fclose(stdout);
 	fclose(stderr);
 }
+
+Timer startTimer() {
+	Timer timer;
+	gettimeofday(&timer, NULL);
+	return timer;
+}
+
+double getElapsedTime(Timer start) {
+	Timer end;
+	gettimeofday(&end, NULL);
+
+	double elapsedTime;
+	elapsedTime = (end.tv_sec - start.tv_sec) * 1000.0; // sec to ms
+	elapsedTime += (end.tv_usec - start.tv_usec) / 1000.0; // us to ms
+
+	return elapsedTime;
+
+}

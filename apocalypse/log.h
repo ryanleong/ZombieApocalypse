@@ -2,6 +2,7 @@
 #define DEBUG_H_
 
 #include <stdio.h>
+#include <sys/time.h>
 
 // change to NULL to suppress the logging
 #define LOG_DEBUG_OUTPUT stderr
@@ -32,5 +33,11 @@
 void initRedirectToFiles();
 
 void finishRedirectToFiles();
+
+typedef struct timeval Timer;
+
+Timer startTimer();
+
+double getCurrentTimeDiff(Timer start);
 
 #endif
