@@ -3,7 +3,7 @@
 import os, sys
 import subprocess
 
-threads = [1,2,4,8,16,32,64]
+threads = [1, 2, 4, 8, 16, 32, 64]
 size = [128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 steps = 1000
 
