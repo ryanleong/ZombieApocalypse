@@ -38,6 +38,6 @@ typedef struct timeval Timer;
 
 Timer startTimer();
 
-double getCurrentTimeDiff(Timer start);
+double getElapsedTime(Timer start);
 
 #endif

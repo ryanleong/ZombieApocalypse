@@ -5,6 +5,7 @@
 #include "communication.h"
 #include "mpistuff.h"
 #include "common.h"
+#include "log.h"
 
 void sendRecieveBorder(WorldPtr world) {
 #ifdef USE_MPI
@@ -163,7 +164,7 @@ void sendRecieveBorderFinish(WorldPtr world) {
 	world->requestCount = 0;
 
 	double elapsedTime = getElapsedTime(timer);
-	LOG_DEBUG("Waited for borders for %d milliseconds\n", elapsedTime);
+	LOG_DEBUG("Waited for borders for %f milliseconds\n", elapsedTime);
 #endif
 }
 
@@ -269,7 +270,7 @@ void sendReceiveGhostsFinish(WorldPtr world) {
 	}
 
 	double elapsedTime = getElapsedTime(timer);
-	LOG_DEBUG("Waited for ghosts for %d milliseconds\n", elapsedTime);
+	LOG_DEBUG("Waited for ghosts for %f milliseconds\n", elapsedTime);
 #endif
 
 	// now, we will merge ghost into the last cell

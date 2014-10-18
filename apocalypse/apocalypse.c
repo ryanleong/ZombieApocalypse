@@ -100,9 +100,7 @@ int main(int argc, char **argv) {
 	printWorld(input, false);
 #endif
 
-#ifndef NTIME
 	Timer timer = startTimer();
-#endif
 
 	Stats cumulative = NO_STATS;
 	for (int i = 0; i < iters; i++) {
@@ -119,7 +117,6 @@ int main(int argc, char **argv) {
 		input->stats = stats;
 	}
 
-#ifndef NTIME
 	double elapsedTime = getElapsedTime(timer);
 
 #ifdef _OPENMP
@@ -129,7 +126,6 @@ int main(int argc, char **argv) {
 #endif
 	LOG_TIME("Simulation took %f milliseconds with %d threads\n", elapsedTime,
 			numThreads);
-#endif
 
 	// this is a clean up
 	// we destroy both worlds
