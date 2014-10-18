@@ -37,6 +37,7 @@ dependencies
 /visualise/visualise
 /visualise/demographics
 /visualise/globalise
+/torus/torus
 
 # ignore outputs and backups
 /images/

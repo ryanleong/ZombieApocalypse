@@ -3,14 +3,20 @@ DATE=$(shell date +"%F_%T")
 all:
 	$(MAKE) -C apocalypse all
 	$(MAKE) -C visualise all
+ifneq ($(HOSTNAME), avoca)
+	$(MAKE) -C torus all
 	$(MAKE) -C report all
+endif
 	mkdir -p images
 	mkdir -p output
 
 clean:
 	$(MAKE) -C apocalypse clean
 	$(MAKE) -C visualise clean
+ifneq ($(HOSTNAME), avoca)
+	$(MAKE) -C torus clean
 	$(MAKE) -C report clean
+endif
 
 localclean:
 
@@ -21,11 +27,16 @@ localclobber:
 clobber: localclean localclobber
 	$(MAKE) -C apocalypse clobber
 	$(MAKE) -C visualise clobber
+ifneq ($(HOSTNAME), avoca)
+	$(MAKE) -C torus clobber
 	$(MAKE) -C report clobber
+endif
 	
 backup: images output
 	mv images images_$(DATE)
+	mkdir images
 	mv output output_$(DATE)
+	mkdir output
 
 globalise: globalise-images globalise-output
 	

@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
 	printWorld(input, false);
 #endif
 
-#ifdef TIME
+#ifndef NTIME
 	Timer timer = startTimer();
 #endif
 
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 		input->stats = stats;
 	}
 
-#ifdef TIME
+#ifndef NTIME
 	double elapsedTime = getElapsedTime(timer);
 
 #ifdef _OPENMP
@@ -127,7 +127,8 @@ int main(int argc, char **argv) {
 #else
 	int numThreads = 1;
 #endif
-	LOG_TIME("Simulation took %f milliseconds with %d threads\n", elapsedTime, numThreads);
+	LOG_TIME("Simulation took %f milliseconds with %d threads\n", elapsedTime,
+			numThreads);
 #endif
 
 	// this is a clean up
