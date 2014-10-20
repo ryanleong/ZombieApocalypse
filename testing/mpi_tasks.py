@@ -4,7 +4,7 @@ import os, sys
 import subprocess
 
 nodes = [1, 4, 16, 64, 256]
-size = [2048, 4096, 8192, 16384]
+sizes = [2048, 4096, 8192, 16384]
 threads = [32, 64]
 steps = 1000
 

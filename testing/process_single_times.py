@@ -9,7 +9,7 @@ def toSeconds(time):
     return int(h) * 3600 + int(m) * 60 + math.floor(float(s))
 
 for line in fileinput.input('-'):
-    (nodes, size, threads, end, start) = line.split()
+    (nodes, size, threads, end, start, part, *_) = line.split() + [1]
     print("{nodes}\t{size}\t{threads}\t{time}"
           .format(nodes=nodes, size=size, threads=threads,
-                  time=toSeconds(end) - toSeconds(start)))
+                  time=math.ceil((toSeconds(end) - toSeconds(start))/float(part))))

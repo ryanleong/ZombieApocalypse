@@ -4,7 +4,7 @@ import os, sys
 import subprocess
 
 threads = [1, 2, 4, 8, 16, 32, 64]
-size = [128, 256, 512, 1024, 2048, 4096, 8192, 16384]
+sizes = [128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 steps = 1000
 
 sbatch = """#!/bin/bash
@@ -15,7 +15,7 @@ export OMP_NUM_THREADS={threads}
 srun --ntasks-per-node=1 ../../apocalypse/apocalypse {size} {size} 2 {steps}
 """
 
-for s in size:
+for s in sizes:
     dir = '1-' + str(s) + '-' + str(s)
     os.mkdir(dir)
     os.chdir(dir)
