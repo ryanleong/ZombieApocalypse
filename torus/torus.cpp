@@ -15,10 +15,11 @@ GLFWwindow* window;
 using namespace glm;
 
 #include "shader.hpp"
-//#include "texture.hpp"
 #include "png_texture.hpp"
 #include "controls.hpp"
 #include "save_image.hpp"
+
+int imageCounter = 0;
 
 int initWindow(int width, int height) {
 	// Initialise GLFW
@@ -128,8 +129,8 @@ void setCoords(double r, double c, int rSeg, int cSeg, int i, int j,
 	v->y = 2 * y;
 	v->z = 2 * z;
 
-	v->u = i / (double) rSeg;
-	v->v = j / (double) cSeg;
+	v->u = j / (double) cSeg;
+	v->v = i / (double) rSeg;
 }
 
 int createObject(double r, double c, int rSeg, int cSeg,
@@ -205,7 +206,7 @@ int main(int argc, char ** argv) {
 	// Load the texture using any two methods
 	//GLuint Texture = loadBMP_custom("uvtemplate3.bmp");
 	//GLuint Texture = loadDDS("uvtemplate.DDS");
-	GLuint Texture = png_texture_load("../images/step-000100.png", NULL, NULL);
+	GLuint Texture = png_texture_load("/home/adam/UNIMELB/pmc/ZombieApocalypse/testing/mpi-40tasks/n-256/s-8192-8192/t-32/images/step-001000.png", NULL, NULL);
 
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
@@ -248,7 +249,9 @@ int main(int argc, char ** argv) {
 		glUseProgram(programID);
 
 		// Compute the MVP matrix from keyboard and mouse input
+
 		computeMatricesFromInputs();
+
 		glm::mat4 ProjectionMatrix = getProjectionMatrix();
 		glm::mat4 ViewMatrix = getViewMatrix();
 		glm::mat4 ModelMatrix = glm::mat4(1.0);
@@ -311,10 +314,25 @@ int main(int argc, char ** argv) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		if (argc >= 9) {
-			char * filename = argv[8];
-			save_image(filename, width, height);
-			break;
+		if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS || argc >= 10) {
+			char * filename = NULL;
+			char defaultName[] = "torus";
+			if (argc >= 9) {
+				filename = argv[8];
+			} else {
+
+				filename = defaultName;
+			}
+			char imageFilename[256];
+			sprintf(imageFilename, "%s-%d.png", filename, imageCounter);
+			save_image(imageFilename, width, height);
+
+			printf("Image %s has been saved.\n", imageFilename);
+			imageCounter++;
+
+			if (argc >= 10) {
+				break;
+			}
 		}
 	} // Check if the ESC key was pressed or the window was closed
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS
