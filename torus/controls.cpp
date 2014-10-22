@@ -33,20 +33,22 @@ float verticalAngle = 0.0f;
 float initialFoV = 45.0f;
 
 float speed = 3.0f; // 3 units / second
-float mouseSpeed = 0.001f;
+float mouseSpeed = 0.0005f;
 
 int computationStep = 0;
 
-int width = 500;
-int height = 500;
+extern double iniX;
+extern double iniY;
+extern double iniZ;
+extern double iniHoriz;
+extern double iniVert;
+extern int width;
+extern int height;
 
-void setPosition(double x, double y, double z, double horiz, double vert, int w,
-		int h) {
-	position = glm::vec3(x, y, z);
-	horizontalAngle = horiz;
-	verticalAngle = vert;
-	width = w;
-	height = h;
+void setPosition() {
+	position = glm::vec3(iniX, iniY, iniZ);
+	horizontalAngle = iniHoriz;
+	verticalAngle = iniVert;
 }
 
 void computeMatricesFromInputs() {

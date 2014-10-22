@@ -9,10 +9,9 @@ import re
 
 for dirpath, dirs, files in os.walk('.'):
     if dirpath.endswith('output'):
-        m = re.search('n-(\d+)/s-(\d+)-\d+/t-(\d+)', dirpath)
+        m = re.search('n-(\d+)/t-(\d+)', dirpath)
         nodes = m.group(1);
-        size = m.group(2);
-        threads = m.group(3);
+        threads = m.group(2);
         
         borders = []
         ghosts = []
@@ -33,4 +32,4 @@ for dirpath, dirs, files in os.walk('.'):
         ghost = sum(ghosts) / len(ghosts)
         time = sum(times) / len(times)/1000
         print("{nodes}\t{size}\t{threads}\t{time:.3f}\t{border:.3f}\t{ghost:.3f}\t{waiting:.3f}"
-              .format(nodes=nodes, size=size, threads=threads, border=border, ghost=ghost, time=time, waiting=(border+ghost)*100/time))
+              .format(nodes=nodes, size="8192x4096", threads=threads, border=border, ghost=ghost, time=time, waiting=(border+ghost)*100/time))

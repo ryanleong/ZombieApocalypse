@@ -9,7 +9,7 @@
 
 #include "png_texture.hpp"
 
-GLuint png_texture_load(const char * file_name, int * width, int * height) {
+int png_texture_load(const char * file_name, int * width, int * height, GLuint texture) {
 // This function was originally written by David Grayson for
 // https://github.com/DavidEGrayson/ahrs-visualizer
 	png_byte header[8];
@@ -127,8 +127,6 @@ GLuint png_texture_load(const char * file_name, int * width, int * height) {
 // read the png into image_data through row_pointers
 	png_read_image(png_ptr, row_pointers);
 // Generate the OpenGL texture object
-	GLuint texture;
-	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, format, temp_width, temp_height, 0, format,
 			GL_UNSIGNED_BYTE, image_data);
