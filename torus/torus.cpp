@@ -1,6 +1,8 @@
 // Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
+#include <glob.h>
+#include <unistd.h>
 
 // Include GLEW
 #include <GL/glew.h>
@@ -18,11 +20,66 @@ using namespace glm;
 #include "png_texture.hpp"
 #include "controls.hpp"
 #include "save_image.hpp"
+#include "object.hpp"
 
+int width = 800;
+int height = 600;
+
+double iniX = 0;
+double iniY = 0;
+double iniZ = 15;
+double iniHoriz = 0;
+double iniVert = 3.14;
+
+char * inputTemplate = NULL;
+int inputCounter = 0;
+glob_t inputGlob;
+
+char * outputTemplate;
+char defaultOutputTemplate[256] = "torus";
 int imageCounter = 0;
 
-int initWindow(int width, int height) {
-	// Initialise GLFW
+int justPhoto = 0;
+
+void parseArgs(int argc, char ** argv) {
+	int command;
+	while ((command = getopt(argc, argv, "spioj")) != -1) {
+		switch (command) {
+		case 's':
+			width = atoi(argv[optind++]);
+			height = atoi(argv[optind++]);
+			break;
+		case 'p':
+			iniX = atof(argv[optind++]);
+			iniY = atof(argv[optind++]);
+			iniZ = atof(argv[optind++]);
+			iniHoriz = atof(argv[optind++]);
+			iniVert = atof(argv[optind++]);
+			break;
+		case 'i':
+			inputTemplate = argv[optind++];
+			glob(inputTemplate, 0, NULL, &inputGlob);
+			break;
+		case 'o':
+			outputTemplate = argv[optind++];
+			break;
+		case 'j':
+			justPhoto = !justPhoto;
+			break;
+		}
+	}
+
+	if (outputTemplate == NULL) {
+		outputTemplate = defaultOutputTemplate;
+	}
+
+	if (inputTemplate == NULL) {
+		exit(1);
+	}
+}
+
+int initWindow() {
+// Initialise GLFW
 	if (!glfwInit()) {
 		fprintf( stderr, "Failed to initialize GLFW\n");
 		return -1;
@@ -33,9 +90,10 @@ int initWindow(int width, int height) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// Open a window and create its OpenGL context
+// Open a window and create its OpenGL context
 	window = glfwCreateWindow(width, height,
-			"Torus with semi-transparent texture", NULL,
+			"Torus with semi-transparent texture",
+			NULL,
 			NULL);
 	if (window == NULL) {
 		fprintf( stderr, "Failed to open GLFW window."
@@ -46,169 +104,47 @@ int initWindow(int width, int height) {
 	}
 	glfwMakeContextCurrent(window);
 
-	// Initialize GLEW
+// Initialize GLEW
 	glewExperimental = true; // Needed for core profile
 	if (glewInit() != GLEW_OK) {
 		fprintf(stderr, "Failed to initialize GLEW\n");
 		return -1;
 	}
 
-	// Ensure we can capture the escape key being pressed below
+// Ensure we can capture the escape key being pressed below
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
 	return 0;
 }
 
-typedef struct Vertex {
-	GLfloat x;
-	GLfloat y;
-	GLfloat z;
-	GLfloat u;
-	GLfloat v;
-} Vertex;
+void loadTexture(GLint Texture) {
+	png_texture_load(inputGlob.gl_pathv[inputCounter], NULL, NULL, Texture);
 
-typedef struct Triangle {
-	Vertex v1;
-	Vertex v2;
-	Vertex v3;
-	float dist;
-} Triangle;
-
-int compareTriangles(const void * a, const void * b) {
-	if (((Triangle *) a)->dist == ((Triangle *) b)->dist) {
-		return 0;
-	} else if (((Triangle *) a)->dist < ((Triangle *) b)->dist) {
-		return 1;
-	} else {
-		return -1;
-	}
-}
-
-void sortTriangles(Triangle * triangles, int count, glm::mat4 matrix) {
-	for (int i = 0; i < count; i++) {
-		Triangle * t = triangles + i;
-		glm::vec4 center = glm::vec4((t->v1.x + t->v2.x + t->v3.x) / 3,
-				(t->v1.y + t->v2.y + t->v3.y) / 3,
-				(t->v1.z + t->v2.z + t->v3.z) / 3, 1.0);
-		glm::vec4 transformed = matrix * center;
-		t->dist = transformed[2];
-	}
-
-	qsort(triangles, count, sizeof(Triangle), compareTriangles);
-}
-
-void setVertex(Vertex v, GLfloat * vertices, GLfloat * uv) {
-	vertices[0] = v.x;
-	vertices[1] = v.y;
-	vertices[2] = v.z;
-	uv[0] = v.u;
-	uv[1] = v.v;
-}
-
-void prepareBuffers(Triangle * triangles, int count, glm::mat4 matrix,
-		GLfloat * vertices, GLfloat * uv) {
-	sortTriangles(triangles, count, matrix);
-	for (int i = 0; i < count; i++) {
-		Triangle * t = triangles + i;
-		setVertex(t->v1, vertices + 9 * i + 0, uv + 6 * i + 0);
-		setVertex(t->v2, vertices + 9 * i + 3, uv + 6 * i + 2);
-		setVertex(t->v3, vertices + 9 * i + 6, uv + 6 * i + 4);
-	}
-}
-
-void setCoords(double r, double c, int rSeg, int cSeg, int i, int j,
-		Vertex * v) {
-	const double PI = 3.1415926535897932384626433832795;
-	const double TAU = 2 * PI;
-
-	double x = (c + r * cos(i * TAU / rSeg)) * cos(j * TAU / cSeg);
-	double y = (c + r * cos(i * TAU / rSeg)) * sin(j * TAU / cSeg);
-	double z = r * sin(i * TAU / rSeg);
-
-	v->x = 2 * x;
-	v->y = 2 * y;
-	v->z = 2 * z;
-
-	v->u = j / (double) cSeg;
-	v->v = i / (double) rSeg;
-}
-
-int createObject(double r, double c, int rSeg, int cSeg,
-		Triangle ** triangles) {
-	int count = rSeg * cSeg * 2;
-	*triangles = (Triangle *) malloc(count * sizeof(Triangle));
-
-	for (int x = 0; x < rSeg; x++) { // through stripes
-		for (int y = 0; y < cSeg; y++) { // through squares on stripe
-			Triangle * tPtr = *triangles + ((x * cSeg) + y) * 2;
-			setCoords(r, c, rSeg, cSeg, x, y, &(tPtr + 0)->v1);
-			setCoords(r, c, rSeg, cSeg, x + 1, y, &(tPtr + 0)->v2);
-			setCoords(r, c, rSeg, cSeg, x, y + 1, &(tPtr + 0)->v3);
-
-			setCoords(r, c, rSeg, cSeg, x, y + 1, &(tPtr + 1)->v1);
-			setCoords(r, c, rSeg, cSeg, x + 1, y, &(tPtr + 1)->v2);
-			setCoords(r, c, rSeg, cSeg, x + 1, y + 1, &(tPtr + 1)->v3);
-		}
-	}
-
-	return count;
 }
 
 int main(int argc, char ** argv) {
-	if (argc < 3) {
-		fprintf(stderr,
-				"./torus screen-width screen-height [x y z horiz-angle vert-angle [file-name]]\n");
-		exit(1);
-	}
+	parseArgs(argc, argv);
 
-	int width = atoi(argv[1]);
-	int height = atoi(argv[2]);
-
-	double iniX = 0;
-	double iniY = 0;
-	double iniZ = 15;
-	double iniH = 3.14;
-	double iniV = 0;
-	if (argc >= 8) {
-		iniX = atof(argv[3]);
-		iniY = atof(argv[4]);
-		iniZ = atof(argv[5]);
-		iniH = atof(argv[6]);
-		iniV = atof(argv[7]);
-	}
-	setPosition(iniX, iniY, iniZ, iniH, iniV, width, height);
-
-	if (initWindow(width, height) != 0) {
+	if (initWindow() != 0) {
 		return -1;
 	}
 
-	// Dark blue background
-	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+	setPosition();
 
-	glDisable(GL_CULL_FACE);
-
-	// Enable depth test
-	glEnable(GL_DEPTH_TEST);
-	// Accept fragment if it closer to the camera than the former one
-	glDepthFunc(GL_LESS);
+	// OBJECT STARTS
 
 	GLuint VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-	// Create and compile our GLSL program from the shaders
+// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders("TransformVertexShader.vertexshader",
 			"TextureFragmentShader.fragmentshader");
 
-	// Get a handle for our "MVP" uniform
+// Get a handle for our "MVP" uniform
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 
-	// Load the texture using any two methods
-	//GLuint Texture = loadBMP_custom("uvtemplate3.bmp");
-	//GLuint Texture = loadDDS("uvtemplate.DDS");
-	GLuint Texture = png_texture_load("/home/adam/UNIMELB/pmc/ZombieApocalypse/testing/mpi-40tasks/n-256/s-8192-8192/t-32/images/step-001000.png", NULL, NULL);
-
-	// Get a handle for our "myTextureSampler" uniform
+// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
 
 	Triangle * triangles;
@@ -226,7 +162,15 @@ int main(int argc, char ** argv) {
 	GLuint uvbuffer;
 	glGenBuffers(1, &uvbuffer);
 
+	// OBJECT ENDS
+
+	GLuint Texture;
+	glGenTextures(1, &Texture);
+	loadTexture(Texture);
+
 	do {
+
+		glDisable(GL_CULL_FACE);
 
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -293,11 +237,11 @@ int main(int argc, char ** argv) {
 		glEnableVertexAttribArray(1);
 		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 		glVertexAttribPointer(1,// attribute. No particular reason for 1, but must match the layout in the shader.
-				2,				// size : U+V => 2
-				GL_FLOAT,				// type
-				GL_FALSE,				// normalized?
-				0,				// stride
-				(void*) 0				// array buffer offset
+				2,		// size : U+V => 2
+				GL_FLOAT,		// type
+				GL_FALSE,		// normalized?
+				0,		// stride
+				(void*) 0		// array buffer offset
 				);
 
 		glFrontFace(GL_CW);
@@ -314,38 +258,48 @@ int main(int argc, char ** argv) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS || argc >= 10) {
-			char * filename = NULL;
-			char defaultName[] = "torus";
-			if (argc >= 9) {
-				filename = argv[8];
-			} else {
+		if (glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS) {
+			inputCounter = (inputCounter + 1) % inputGlob.gl_pathc;
+			loadTexture(Texture);
+		}
+		if (glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS) {
+			inputCounter = (inputCounter - 1 + inputGlob.gl_pathc)
+					% inputGlob.gl_pathc;
+			loadTexture(Texture);
+		}
+		if (glfwGetKey(window, GLFW_KEY_HOME) == GLFW_PRESS) {
+			inputCounter = 0;
+			loadTexture(Texture);
+		}
+		if (glfwGetKey(window, GLFW_KEY_END) == GLFW_PRESS) {
+			inputCounter = inputGlob.gl_pathc - 1;
+			loadTexture(Texture);
+		}
 
-				filename = defaultName;
-			}
-			char imageFilename[256];
-			sprintf(imageFilename, "%s-%d.png", filename, imageCounter);
-			save_image(imageFilename, width, height);
+		if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
+			char outputFilename[256];
+			sprintf(outputFilename, "%s-%d.png", outputTemplate, imageCounter);
+			save_image(outputFilename, width, height);
 
-			printf("Image %s has been saved.\n", imageFilename);
+			printf("Image %s has been saved.\n", outputFilename);
 			imageCounter++;
+		}
 
-			if (argc >= 10) {
-				break;
-			}
+		if (justPhoto) {
+			break;
 		}
 	} // Check if the ESC key was pressed or the window was closed
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS
 			&& glfwWindowShouldClose(window) == 0);
 
-	// Cleanup VBO and shader
+// Cleanup VBO and shader
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &uvbuffer);
 	glDeleteProgram(programID);
 	glDeleteTextures(1, &TextureID);
 	glDeleteVertexArrays(1, &VertexArrayID);
 
-	// Close OpenGL window and terminate GLFW
+// Close OpenGL window and terminate GLFW
 	glfwTerminate();
 
 	return 0;

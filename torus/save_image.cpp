@@ -55,6 +55,9 @@ bool save_image(const char *filename, int w, int h) {
 	// copy pixels from screen
 
 	GLuint screenTex; // ID of screen Texture
+
+	glGenTextures(1, &screenTex);
+
 	glBindTexture(GL_TEXTURE_2D, screenTex);
 	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, w, h);
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -62,4 +65,6 @@ bool save_image(const char *filename, int w, int h) {
 
 	// save the image
 	return save_png_libpng(filename, pixels, w, h);
+
+	glDeleteTextures(1, &screenTex);
 }

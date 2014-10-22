@@ -10,6 +10,7 @@
 
 #include <GLES/gl.h>
 
-GLuint png_texture_load(const char * file_name, int * width, int * height);
+int png_texture_load(const char * file_name, int * width, int * height,
+		GLuint texture);
 
 #endif /* TORUS_PNG_TEXTURE_HPP_ */
