@@ -1,5 +1,7 @@
 #!/usr/bin/python2
 
+# to be run in root directory of the project 
+
 import os, sys
 import subprocess
 
