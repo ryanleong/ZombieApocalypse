@@ -109,7 +109,7 @@ void keyFunc(GLFWwindow * window, int key, int scanCode, int action, int mods) {
 	switch (key) {
 	case GLFW_KEY_PAGE_DOWN:
 		inputCounter = inputCounter + (skip == 0 ? 1 : skip);
-		if (inputCounter >= inputGlob.gl_pathc) {
+		if (inputCounter >= (int) inputGlob.gl_pathc) {
 			inputCounter = inputGlob.gl_pathc - 1;
 		}
 		skip = 0;
