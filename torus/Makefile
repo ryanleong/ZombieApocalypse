@@ -1,7 +1,7 @@
 all: torus
 
 CC=g++
-CFLAGS=-Wall -g --std=gnu++11
+CPPFLAGS=-Wall -g --std=gnu++11
 LDFLAGS=-lglfw -lGL -lGLEW -lpng
 
 

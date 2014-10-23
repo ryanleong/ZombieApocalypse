@@ -1,8 +1,10 @@
 // Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <glob.h>
 #include <unistd.h>
+#include <libgen.h>
 
 // Include GLEW
 #include <GL/glew.h>
@@ -41,6 +43,12 @@ int imageCounter = 0;
 
 int justPhoto = 0;
 
+GLuint Texture;
+
+int skip = 0;
+float alpha = 0.6;
+GLint alphaLocation;
+
 void parseArgs(int argc, char ** argv) {
 	int command;
 	while ((command = getopt(argc, argv, "spioj")) != -1) {
@@ -58,7 +66,7 @@ void parseArgs(int argc, char ** argv) {
 			break;
 		case 'i':
 			inputTemplate = argv[optind++];
-			glob(inputTemplate, 0, NULL, &inputGlob);
+			glob(inputTemplate, GLOB_TILDE, NULL, &inputGlob);
 			break;
 		case 'o':
 			outputTemplate = argv[optind++];
@@ -73,8 +81,87 @@ void parseArgs(int argc, char ** argv) {
 		outputTemplate = defaultOutputTemplate;
 	}
 
-	if (inputTemplate == NULL) {
+	if (inputTemplate == NULL || inputGlob.gl_pathc == 0) {
+		printf("Specify the input images glob rule by -i\n");
 		exit(1);
+	}
+}
+
+void saveImage() {
+	char outputFilename[256];
+	sprintf(outputFilename, "%s-%d.png", outputTemplate, imageCounter);
+	save_image(outputFilename, width, height);
+
+	printf("Image %s has been saved.\n", outputFilename);
+	imageCounter++;
+}
+
+void loadTexture() {
+	png_texture_load(inputGlob.gl_pathv[inputCounter], NULL, NULL, Texture);
+	printf("Texture %s has been loaded.\n", inputGlob.gl_pathv[inputCounter]);
+}
+
+void keyFunc(GLFWwindow * window, int key, int scanCode, int action, int mods) {
+	if (action != GLFW_PRESS) {
+		return;
+	}
+
+	switch (key) {
+	case GLFW_KEY_PAGE_DOWN:
+		inputCounter = inputCounter + (skip == 0 ? 1 : skip);
+		if (inputCounter >= inputGlob.gl_pathc) {
+			inputCounter = inputGlob.gl_pathc - 1;
+		}
+		skip = 0;
+		loadTexture();
+		break;
+
+	case GLFW_KEY_PAGE_UP:
+		inputCounter = inputCounter - (skip == 0 ? 1 : skip);
+		if (inputCounter < 0) {
+			inputCounter = 0;
+		}
+		skip = 0;
+		loadTexture();
+		break;
+
+	case GLFW_KEY_HOME:
+		inputCounter = 0;
+		loadTexture();
+		break;
+
+	case GLFW_KEY_END:
+		inputCounter = inputGlob.gl_pathc - 1;
+		loadTexture();
+		break;
+
+	case GLFW_KEY_ENTER:
+		saveImage();
+		break;
+
+	case GLFW_KEY_0 ... GLFW_KEY_9:
+		skip = skip * 10 + (key - GLFW_KEY_0);
+		break;
+
+	case GLFW_KEY_LEFT_BRACKET:
+		alpha -= 0.01 * (skip == 0 ? 1 : skip);
+		if (alpha < 0) {
+			alpha = 0;
+		}
+		skip = 0;
+		break;
+
+	case GLFW_KEY_RIGHT_BRACKET:
+		alpha += 0.01 * (skip == 0 ? 1 : skip);
+		if (alpha > 1) {
+			alpha = 1;
+		}
+		skip = 0;
+		break;
+
+	default:
+		skip = 0;
+		break;
 	}
 }
 
@@ -114,12 +201,9 @@ int initWindow() {
 // Ensure we can capture the escape key being pressed below
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
+	glfwSetKeyCallback(window, keyFunc);
+
 	return 0;
-}
-
-void loadTexture(GLint Texture) {
-	png_texture_load(inputGlob.gl_pathv[inputCounter], NULL, NULL, Texture);
-
 }
 
 int main(int argc, char ** argv) {
@@ -131,15 +215,21 @@ int main(int argc, char ** argv) {
 
 	setPosition();
 
-	// OBJECT STARTS
+// OBJECT STARTS
 
 	GLuint VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
+	char vertexShaderPath[256];
+	char fragmentShaderPath[256];
+
+	char * dir = dirname(argv[0]);
+	sprintf(vertexShaderPath, "%s/TransformVertexShader.vertexshader", dir);
+	sprintf(fragmentShaderPath, "%s/TextureFragmentShader.fragmentshader", dir);
+
 // Create and compile our GLSL program from the shaders
-	GLuint programID = LoadShaders("TransformVertexShader.vertexshader",
-			"TextureFragmentShader.fragmentshader");
+	GLuint programID = LoadShaders(vertexShaderPath, fragmentShaderPath);
 
 // Get a handle for our "MVP" uniform
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
@@ -162,11 +252,12 @@ int main(int argc, char ** argv) {
 	GLuint uvbuffer;
 	glGenBuffers(1, &uvbuffer);
 
-	// OBJECT ENDS
+// OBJECT ENDS
 
-	GLuint Texture;
+	alphaLocation = glGetUniformLocation(programID, "alpha");
+
 	glGenTextures(1, &Texture);
-	loadTexture(Texture);
+	loadTexture();
 
 	do {
 
@@ -222,6 +313,8 @@ int main(int argc, char ** argv) {
 		// Set our "myTextureSampler" sampler to user Texture Unit 0
 		glUniform1i(TextureID, 0);
 
+		glUniform1f(alphaLocation, alpha);
+
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -258,38 +351,13 @@ int main(int argc, char ** argv) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		if (glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS) {
-			inputCounter = (inputCounter + 1) % inputGlob.gl_pathc;
-			loadTexture(Texture);
-		}
-		if (glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS) {
-			inputCounter = (inputCounter - 1 + inputGlob.gl_pathc)
-					% inputGlob.gl_pathc;
-			loadTexture(Texture);
-		}
-		if (glfwGetKey(window, GLFW_KEY_HOME) == GLFW_PRESS) {
-			inputCounter = 0;
-			loadTexture(Texture);
-		}
-		if (glfwGetKey(window, GLFW_KEY_END) == GLFW_PRESS) {
-			inputCounter = inputGlob.gl_pathc - 1;
-			loadTexture(Texture);
-		}
-
-		if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
-			char outputFilename[256];
-			sprintf(outputFilename, "%s-%d.png", outputTemplate, imageCounter);
-			save_image(outputFilename, width, height);
-
-			printf("Image %s has been saved.\n", outputFilename);
-			imageCounter++;
-		}
-
 		if (justPhoto) {
+			saveImage();
 			break;
 		}
 	} // Check if the ESC key was pressed or the window was closed
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS
+			&& glfwGetKey(window, GLFW_KEY_Q) != GLFW_PRESS
 			&& glfwWindowShouldClose(window) == 0);
 
 // Cleanup VBO and shader
