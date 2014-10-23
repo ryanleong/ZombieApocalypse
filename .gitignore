@@ -24,12 +24,15 @@
 
 # ignore Vim's swap files.
 *.swp
+*~
 
 # Eclipse project
 .settings/
 .project
 .cproject
 .pydevproject
+.texlipse
+/Debug/
 
 # ignore the built executable.
 dependencies
@@ -58,4 +61,20 @@ dependencies
 /report/movement-eps-converted-to.pdf
 /report/border1-eps-converted-to.pdf
 /report/border2-eps-converted-to.pdf
-/Debug/
+
+/report/density_birth.pdf
+/report/equal_birth.pdf
+/report/fertilisation_probability.pdf
+/report/stable.pdf
+/report/stable_1000000.pdf
+/report/step-000000.pdf
+/report/step-000000.png
+/report/step-003650.pdf
+/report/step-003650.png
+/report/step-018250.pdf
+/report/step-018250.png
+/report/step-053100.pdf
+/report/step-053100.png
+/report/step-100000.pdf
+/report/step-100000.png
+/report/uncontrolled_birth.pdf

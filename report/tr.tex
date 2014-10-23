@@ -44,7 +44,7 @@
 Infectious diseases have been prevalent since the start of time.
 Modelling the spread of these diseases can serve to find possible ways to stop or limit the spreading.
 With the advancement of technology, computing power has increased tremendously, allowing these simulation models to be done on a greater scale.
-In this project, we will implement a Zombie Infection simulation, modeling the spread of the infection on a human population.
+In this project, we will implement a Zombie Infection simulation, modelling the spread of the infection on a human population.
 
 \subsection{Zombie description}
 
@@ -59,7 +59,7 @@ The infection is latent and secretly spreads inside the body until it dominates.
 The incubation period is 14 days on average, which is significantly longer than we are accustomed, however it has a medical support. \cite{mogk2011everything}
 Later, during a weak moment (usually while sleeping) it causes death of the person and starts act on its own.
 
-Zombies are strongly atracted to humans in order to infect them and humans flee from zombies.
+Zombies are strongly attracted to humans in order to infect them and humans flee from zombies.
 For zombies, control of the body is poor and therefore zombie motor skills are slower and more inaccurate.
 Reanimated dead bodies have only a limited durability, which we assume to be about 3 years on average\cite{zombiepedia}, and the corpse will ultimately decompose.
 After this point, the zombie is no longer active or contagious.
@@ -87,18 +87,18 @@ This is followed by a steep decrease of both populations, typically resulting in
 An interesting aspect of this dynamic is that zombies cannot possibly survive without humans: Zombies are not able to reproduce on their own; they depend completely on infecting humans to produce more zombies, and to replace zombies lost to decomposition. 
 If the human population dies out, so too will the zombies.
 
-\subsubsection{Environmental requirments}
+\subsubsection{Environmental requirements}
 
 The targeted runtime environment was Avoca\cite{avoca}, the IBM Blue Gene/Q\cite{bluegeneq} supercomputer.
 The computer contains homogeneous 4096 nodes, each of them having 16 cores and being capable to run up to 64 threads in parallel.
 A single core has rather poor performance compared to an ordinary laptop; its strength is in number of cores which can be used at the same time.
 
-To utilise the power we had to use OpenMP\cite{openmp} -- parallelizing framework built-in in common C compilers.
+To utilise the power we had to use OpenMP\cite{openmp} -- parallelising framework built-in in common C compilers.
 The first part of the project should have used a single node.
 In the second part we had to add support for MPI\cite{mpi} to divide the computation into several pieces, each one of them running on one node, which is communicating with its neighbours.
 The simulated world consists of a mesh of size $1000 \times 1500$, 
-The goal was to run a simulaton on a grid of size 1024 by 1536, corresponding to the geographical dimensions of the Northern Territory, a region in the north of Australia\cite{northernterritory}.
-The simulation had to use origanally 6 nodes, later it was decreased to 2 nodes.
+The goal was to run a simulation on a grid of size 1024 by 1536, corresponding to the geographical dimensions of the Northern Territory, a region in the north of Australia\cite{northernterritory}.
+The simulation had to use originally 6 nodes, later it was decreased to 2 nodes.
 
 We instead ran a simulation of infection on a small planet of size 8192 by 4096 on 128 nodes.
 
@@ -118,12 +118,12 @@ These assumptions allow us to use a simpler form of the SIR model of disease pro
 In terms of the SIR model (or in this case SEIR), our model consists of four states: Humans (the susceptible group), infected humans (the exposed group), zombies (the infected group) and lastly the dead state, as there is no way for a person to recover from the infection.
 An entity begins in state Human which represents a normal human being who was born, has a biological gender (either male or female), and eventually dies.
 Humans become infected only by being in close proximity to a zombie.
-The probability of infection is unknown but for the purpose of our model it was set to $0.75\%$ for a human within 1 kilometer of a zombie.
-However small the probablility seems to be, it is quite acceptable concerning the smallest time and space units being 1 day and 1 kilometer.
+The probability of infection is unknown but for the purpose of our model it was set to $0.75\%$ for a human within 1 kilometre of a zombie.
+However small the probability seems to be, it is quite acceptable concerning the smallest time and space units being 1 day and 1 kilometre.
 
 Humans with a latent infection, who have not developed full zombie symptoms, are in every respect normal people as far as our model is concerned, and hence can reproduce and die of a natural death.
 Infected people are not contagious to the surrounding humans until they become a zombie.
-Zombies are considered dead -- they are just virus-driven moving bodies; therefore we say that zombies eventually decompose insead of die.
+Zombies are considered dead -- they are just virus-driven moving bodies; therefore we say that zombies eventually decompose instead of die.
 Our model does not need to represent zombies as having a gender as they cannot reproduce nor do their properties depend on the gender of the human host.
 
 When a human becomes infected, the length of the infection depends on the strength of the body fighting the zombie virus.
@@ -167,7 +167,7 @@ Most of the properties of the entities are dependent on their gender and on age 
 The properties are:
 \begin{itemize}
 \item daily death rate -- the probability of a natural death per each day,
-\item speed -- the probability of the entity to leave its current cell if it was its original intension.
+\item speed -- the probability of the entity to leave its current cell if it was its original intention.
 \end{itemize}
 
 Since the moving speed is a probability and the cell size is enormous, it only makes sense to compare the probabilities.
@@ -183,14 +183,14 @@ Each mesh is processed independently on different nodes needing only synchronisa
 Each square of this mesh is referred to as a cell, and a cell can contain at most one entity of any type; otherwise the cell is considered empty.
 Two entities are said to be adjacent if they are in cells that share a border.
 
-In the first part of the project, the world had fixed boundaries, no entity could pass through them; this is often refered as to no-flux boundary condition.
+In the first part of the project, the world had fixed boundaries, no entity could pass through them; this is often referred as to no-flux boundary condition.
 The actual size of both the logical and physical mesh was $500 \times 500$ cells.
 
 For the second part we changed the topology from a rectangular world to a torus.
 The only difference is the boundary condition, which is periodic meaning that any attempt passing through the border will be successful resulting into the entity appearing at the opposite side.
 Many different sizes of logical meshes ranging from $128 \time 128$ to $16382 \times 16382$ were used for the scaling part of the report.
 
-In order ot maintain all information during the whole simulation of a time step, two worlds are used.
+In order to maintain all information during the whole simulation of a time step, two worlds are used.
 Input world contains all information and is never changed.
 Output world is empty in the beginning and is filled by processed entities. 
 
@@ -201,19 +201,19 @@ Otherwise, when more nodes are used, the best division of the logical mesh is fo
 The optimal division has these properties:
 \begin{itemize}
 \item the layout of physical meshes creates a grid,
-\item pysical meshes have the same width and height,
+\item physical meshes have the same width and height,
 \item the number of meshes next to each other times the number of meshes on top of each other is equal to the total number of nodes,
 \item perimeter of all meshes is the least possible.
 \end{itemize}
 
-These criteria allows an easy communication between neighours, utilisation of all nodes and also transmitting the least possible amount of data.
-As the number of nodes is small (256 or less), all possibilites can be tried; intuitively we know that square physical meshes are the optimal ones.
+These criteria allows an easy communication between neighbours, utilisation of all nodes and also transmitting the least possible amount of data.
+As the number of nodes is small (256 or less), all possibilities can be tried; intuitively we know that square physical meshes are the optimal ones.
 
 In order to communicate with a different node, we need to know its rank.
-MPI provides a convenient way how to address the neighour in particular direction -- the Cartesian communitators.
-Each node is assigned a rank, which Cartesian communicator translates into 2 coordinates which we interpret as possition of the physical mesh inside the logical mesh among other physical meshes.
-The Cartesian communicator can shift a rank in any direction; values $-1$ and 1 refer to the neighours.
-It can also model a periodic situation, for example left neighour of the leftmost node is the rightmost one and vice versa.
+MPI provides a convenient way how to address the neighbour in particular direction -- the Cartesian communicators.
+Each node is assigned a rank, which Cartesian communicator translates into 2 coordinates which we interpret as position of the physical mesh inside the logical mesh among other physical meshes.
+The Cartesian communicator can shift a rank in any direction; values $-1$ and 1 refer to the neighbours.
+It can also model a periodic situation, for example left neighbour of the leftmost node is the rightmost one and vice versa.
 
 When the program is compiled with MPI support, the Cartesian communicator is always used, even if the world runs on a single node, in which case all neighbours are the node itself.
 
@@ -255,17 +255,17 @@ When considering directions, the adjacent cells always have higher priority.
 
 Each entity rates each of these cells based on their content.
 The preference for direction is then calculated as a weighted sum of complex numbers corresponding to particular directions.
-The values of preference were chosen to mimic expected bahaviour.
+The values of preference were chosen to mimic expected behaviour.
 Better results could be achieved by a more sophisticated (genetic) algorithm or by a more thorough analysis.
 The current estimates can be seen in the table below.
-To the current preffered direction the potential direction of the last move is added, that simulates inertia of movement and as a result it makes the movement targeted.
+To the current preferred direction the potential direction of the last move is added, that simulates inertia of movement and as a result it makes the movement targeted.
 
 % this adds footnote for the Wall which is in the table. Make sure it is on the same page!
 \footnotetext{Wall was used only the first part of the project with no-flux boundary condition.}
 
 After the optimal weighted direction is calculated, it is translated to a particular direction, or stay instruction if the absolute value is not sufficient.
-The direction may randomly change clock-wise or counter-clock-wise simulating evading obstacles, which are not modeled in the world.
-Then the cell in the resulting direction is tested whether it is free; if it is not, the clock-wise or cunter-clock-wise one is chosen.
+The direction may randomly change clock-wise or counter-clock-wise simulating evading obstacles, which are not modelled in the world.
+Then the cell in the resulting direction is tested whether it is free; if it is not, the clock-wise or counter-clock-wise one is chosen.
 In the worst case, the entity stays at its current tile.
 The entity moves only if its speed (expressed as probability) is sufficient.
 
@@ -274,7 +274,7 @@ The entity moves only if its speed (expressed as probability) is sufficient.
 Each physical mesh has a border 2 cells wide; this border has multiple purposes and is used differently in certain parts of the application.
 
 If the movement of an entity at the end of the world is being processed, it would be necessary to make sure all the time that the nearby cell is still in the world.
-Extending the world by the border simlifies the processing, no tests are necessary.
+Extending the world by the border simplifies the processing, no tests are necessary.
 
 \begin{figure*}[ht]
     \begin{subfigure}[b]{.5\linewidth}
@@ -291,7 +291,7 @@ Extending the world by the border simlifies the processing, no tests are necessa
 
 Another issue which the border solves is with movement planning.
 With periodic boundary condition, an entity needs to see what entities are in the last rows/column of an adjacent cell.
-We cannot afferd to ask the adjacent world all the time.
+We cannot afford to ask the adjacent world all the time.
 That is the reason why all the data are copied prior to each simulation step.
 For example the two rightmost columns are copied to the left border of the world part which is logically to the right.
 There are no conflicts; the data which were in the border are insignificant.
@@ -363,7 +363,7 @@ We can run that in parallel with world cleaning.
     \caption{Mortality rates for US in 2003}
 \end{figure*}
 
-According to the Australian age structure\cite{agestructure} and median of age 37.3 years \cite{demographicsaustralia}, initialized humans are divided into four age clasess.
+According to the Australian age structure\cite{agestructure} and median of age 37.3 years \cite{demographicsaustralia}, initialised humans are divided into four age classes.
 Based on mortality rates graph for US in 2003 (shown in the figure) and Gompertz–Makeham law \cite{mortalitylaw} the average probabilities of a human dying in these four age stages are approximately related as 
 $$ \mean{P(\text{Elder Death})} = 10\: \mean{P(\text{Middle Age Death})} $$
 $$ = 80\: \mean{P(\text{Young Death})} = 160\: \mean{P(\text{Child Death})} $$
@@ -399,7 +399,7 @@ The death rates for each age class can be calculated and expresses as shown in t
 \end{figure*}
 
 It is well known fact that females live longer than males.
-We incorporeted it as a difference of death probabilities, which is equal to
+We incorporated it as a difference of death probabilities, which is equal to
 $$ \text{ratio} = \frac{\text{Female lifespan}}{\text{Male lifespan}} = \frac{\text{Probability of Male Death}}{\text{Probability of Female Death}} = \frac{82.4}{78.5} = 1.05 $$
 Males' probabilities are multiplied by square root of this ratio and females' are divided.
 
@@ -413,7 +413,7 @@ $$ P(\text{Pregnant Female in Fertility Period}) $$
 $$ = \frac{\text{average number of children per female life} \times \text{pregnancy duration}}{\text{average length of fertility period}} $$
 $$ = \frac{1.77 \times 9 (\text{months})}{30 (\text{years})} = 4.36\% $$
 
-Although we had access to birth rates, we did not try to untilise them during the simulation because of the excessive difficulty of calculations.
+Although we had access to birth rates, we did not try to utilise them during the simulation because of the excessive difficulty of calculations.
 Simple approach of counting probabilities of a male-female couples on a mesh do not work when the movement is targeted (as discussed earlier).
 We also model fertilisation and pregnancy periods which naturally limit the baby procreation.
 
@@ -424,7 +424,7 @@ This is just a small price for much more realistic model of child birth.
 \subsubsection{Sex ratio}
 
 The birth ratio between males and females is 1.06. \cite{cia}
-Hence the ratio of male to female children is initialized as
+Hence the ratio of male to female children is initialised as
 $$ \text{Male Child} : \text{Female Child} = 0.5146 : 0.4854 $$
 
 However, the ratio is different when the simulation starts.
@@ -438,7 +438,7 @@ When the viral infection starts, the authorities estimate that approximately hal
 Since the simulated mesh was $500 \times 500$, the initial number of simulated humans was
 $$ 500 \cdot 500 \cdot \frac{0.17}{2} = 21250 $$
 
-In the second part, even though we abandoned the Northern Territory, we did not change the density bacause it is one of the parameters which the stability of the model is highly dependent on.
+In the second part, even though we abandoned the Northern Territory, we did not change the density because it is one of the parameters which the stability of the model is highly dependent on.
 
 \section{Population stability}
 
@@ -467,7 +467,7 @@ After about only 74 years, zombies died out and human population dropped to 940 
     \caption{Equal birth}
 \end{figure*}
 
-Then we tried to compensate the deaths (both natural and humans becomming zombies) by producing the same number of children.
+Then we tried to compensate the deaths (both natural and humans becoming zombies) by producing the same number of children.
 This should have kept the population stable at any population size.
 We hoped that after the initial drop, the population would become stable at a lower number of humans and zombies.
 Unfortunately, it did not work as expected; it was even worse than the uncontrolled one.
@@ -476,7 +476,7 @@ The zombies died out after 72 years with 578 humans left alive (not for long).
 \begin{figure*}[pht]
     \centering
     \includegraphics[width=\textwidth]{density_birth}
-    \caption{Desnity dependent birth}
+    \caption{Density dependent birth}
 \end{figure*}
 
 The next attempt used the initial birth rate multiplied by a quotient which was defined as a ratio of initial and current population.
@@ -516,7 +516,7 @@ The population sizes for the full initial human population of 21,250 is shown in
 
 We have also run the simulation for a longer period to discover its other properties.
 As another figure of ten times longer simulation shows, the sizes of populations of human, infected and zombie make 60 years long cycles.
-When the simulation starts, the swings of population sizes are becomming smaller and they eventually become constant, nonzero with occasional deflections.
+When the simulation starts, the swings of population sizes are becoming smaller and they eventually become constant, nonzero with occasional deflections.
 To this quite stable stage the model gets after two cycles.
 
 \subsection{Demographics}
@@ -527,10 +527,10 @@ To this quite stable stage the model gets after two cycles.
 \item After 10 years, there demographic situation remains the same, only shifted to the right.
     Zombies start to appear and their age distribution starts to spread.
 \item After 50 years, after the first zombie peak, which is noticeable by the low number of young zombies and few infected, the demographic distribution has changed.
-    According to model, more femals are born, however being slower (and having lower daily death probability), their number becomes less than number of males.
-\item After 150 years, the populations have stabilized, there are many infected and the population distributions got their final shape.
+    According to model, more females are born, however being slower (and having lower daily death probability), their number becomes less than number of males.
+\item After 150 years, the populations have stabilised, there are many infected and the population distributions got their final shape.
     This figure is also an example of pregnant infected female.
-\item The situation at the end of the simulation after 100,000 days (appoximately 274 years) is no different from the previous situation.
+\item The situation at the end of the simulation after 100,000 days (approximately 274 years) is no different from the previous situation.
 \end{itemize}
 
 \begin{figure*}[pht]
@@ -575,7 +575,7 @@ To this quite stable stage the model gets after two cycles.
 
 \section{Scaling result}
 
-\todo{To by replaces hopefuly by someone else than me.}
+\todo{To by replaces hopefully by someone else than me.}
 
 \subsection{Scaling}
 
@@ -616,7 +616,7 @@ We run the model three times for 1000 iterations in order to ensure the influenc
 The results are in the table above, running times are in milliseconds.
 We expected a perfect scaling up to 16 threads -- each of them will be assigned to a dedicated core.
 Running with 32 cores still provides an improvement, but not a significant one.
-The drop of performace when running with 64 threads is probably caused by the hardware architecture of the CPU.
+The drop of performance when running with 64 threads is probably caused by the hardware architecture of the CPU.
 In our opinion it is not caused by locking parts of the world as there are still at least 7 columns for each thread (we lock only three of them).
 
 \section{Issues}
@@ -627,15 +627,15 @@ During the implementation we had to deal with many issues, here we mention some 
 
 When implementing the simulation of entities movement on a 2D mesh, we chose to use two nested for loops (the outer went through columns, the inner through rows) copying entities from the input mesh to the outer one.
 For each entity the optimal decision where to move was calculated (as discussed earlier) and then tested whether the destination cell is free.
-Unfortunatelly the chosen directino of processing causes that the cells to the left and to the up are already processed and there exists a chance that those cells will contain an entity.
+Unfortunately the chosen direction of processing causes that the cells to the left and to the up are already processed and there exists a chance that those cells will contain an entity.
 On the other hand, the cells to the right and to the down are unprocessed and therefore the conflict is less likely.
 This slight inequality causes that the overall movement is targeted to right and down and clusters of entities appear the the world border.
 
 These clusters proved to be important for zombies.
-It is an ideal place where they can feastand keep their number high untill the rest of the world regenerate.
+It is an ideal place where they can feast and keep their number high until the rest of the world regenerate.
 They are also often places where the infection starts and spreads very quickly with creating a lot of zombies.
 
-When the flaw was repaired (by randomizing the processing directions), the zombies could not survive under the previously stable conditions.
+When the flaw was repaired (by randomising the processing directions), the zombies could not survive under the previously stable conditions.
 No matter what changes we did to the model, the infection probability had to be lowered from original value 0.01 to 0.0075.
 The new probability keeps the zombie population size of at least 100 individuals at all time.
 
@@ -646,12 +646,12 @@ Movement on the hand has to make sure that the place where the entity wants to m
 This is easy for the interior of the world, there we have information about movement in output world.
 In the interior, when a collision is detected, an alternative is tried, and eventually the entity stays at it current cell.
 
-However, tht information is not available for border cells, there we just check collisions with input world.
+However, the information is not available for border cells, there we just check collisions with input world.
 At the border, when the world is dense enough, there are conflicts and the difference is noticeable.
 
 Dealing with this issue would either require locking (one world has to be processed before the other one).
 The other option is simulation of one row/column in the border.
-This would require to extend the border to 3 cells and synchronize random generators.
+This would require to extend the border to 3 cells and synchronise random generators.
 On the other hand, the transfer of entities from one world to the other one would not be necessary.
 
 There is also an option to change the algorithm for movement for entities at the border to ignore cells which are in distance of two.
@@ -667,7 +667,7 @@ We found a function which describes the right conditions when both populations b
 We therefore recommend and appeal the human population and its government to control their population size as we propose.
 Especially in the beginning when the zombie population grows and the zombies spread over the Northern Territory, the people must be prepared for a big decline.
 Although it will be hard at that time, they must seek each other and reproduce in order to make sure their population will survive.
-Humans should not behave according to their instinct and hide until the zombies population has decreased; that would cause extincion of the zombies.
+Humans should not behave according to their instinct and hide until the zombies population has decreased; that would cause extinction of the zombies.
 
 
 
