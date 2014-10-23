@@ -36,6 +36,10 @@
 
 \begin{document}
 \maketitle
+
+\todo{Add an image of a planet here.}
+
+\newpage
 \tableofcontents
 \newpage
 
@@ -442,7 +446,9 @@ In the second part, even though we abandoned the Northern Territory, we did not 
 
 \section{Population stability}
 
-In this section we present out results for population stability for the first part of the project.
+In the first part of the project, the most crucial task was to make both populations stable.
+Here we present our attempts and the final results.
+Values in this section relate only to the first part of the project; the second part used different boundary condition which makes a big difference.
 
 \subsection{Population size}
 
@@ -503,6 +509,7 @@ The aim of the birth rate function, which depends on population density, is to a
 The initial stage is important because otherwise the population of zombies would become too high and the model would not be stable.
 We tried to use several function which has the mentioned properties and also become identity close to initial density.
 Our candidate for the quotient function was $r^{r \cdot const}$, where $r$ is the ratio of population densities.
+We also tried a simpler function $r^{const}$, which provided similar results.
 
 The optimal value for the constant in exponent, let's call it situation awareness, is 2.5.
 Higher values make the populations oscillate in time, and lower values makes the population unnaturally stable.
@@ -532,6 +539,8 @@ To this quite stable stage the model gets after two cycles.
     This figure is also an example of pregnant infected female.
 \item The situation at the end of the simulation after 100,000 days (approximately 274 years) is no different from the previous situation.
 \end{itemize}
+
+\todo{Fix location of the following figures; do it as the last thing.}
 
 \begin{figure*}[pht]
     \centering
@@ -573,10 +582,6 @@ To this quite stable stage the model gets after two cycles.
     \caption{Demographics after 274 years}
 \end{figure*}
 
-\section{Scaling result}
-
-\todo{To by replaces hopefully by someone else than me.}
-
 \subsection{Scaling}
 
 \begin{figure*}[ht]
@@ -608,16 +613,45 @@ To this quite stable stage the model gets after two cycles.
     \caption{Scaling depending on number of threads}
 \end{figure*}
 
-The model implemented in C using OpenMP, running in several threads.
-On Avoca, the IBM Blue Gene/Q supercomputer, a single node provides 16 cores with 4 threads each.
-Our model could utilise all 64 threads as most of the simulation does not need any thread synchronisation.
-
-We run the model three times for 1000 iterations in order to ensure the influence of randomness does not make the results odd.
-The results are in the table above, running times are in milliseconds.
+We also performed basic scaling tests which are briefly summarized in the table (running times are in milliseconds).
+We ran the model three times for 1000 iterations in order to ensure the influence of randomness does not make the results odd.
 We expected a perfect scaling up to 16 threads -- each of them will be assigned to a dedicated core.
 Running with 32 cores still provides an improvement, but not a significant one.
-The drop of performance when running with 64 threads is probably caused by the hardware architecture of the CPU.
-In our opinion it is not caused by locking parts of the world as there are still at least 7 columns for each thread (we lock only three of them).
+The drop of performance when running with 64 threads is caused by too small size of the world.
+We discuss this issue in the next section in more detail.
+
+\section{Scaling results}
+
+In the second part of the project, we performed more scaling tests and in the end also a final simulation of a small planet.
+
+\subsection{Scaling}
+
+\todo{To by written hopefully by someone else than me.}
+
+\subsection{Planet}
+
+After performing all tests which were described in the previous section, we run a simulation of zombie infection on a small toroidal planet.
+
+\subsubsection{Size}
+
+We originally wanted to simulate a world of size $32768 \times 16384$ which equals to the surface of planet Earth.
+However we had to leave this possibility because our implementation of 3D torus visualisation allows to load only texture of size up to $8192 \times 8192$.
+The necessary modification to combine several textures inside OpenGL shaders would be too big burden.
+Instead, we simulated a world of size $8192 \times 4096$; the disproportion of sizes is intetional as we definitely want to render cells as squares or close to squares.
+They will be distored mostly around equators: shrinken near inner equator and widened near the outside one.
+In our case the ratio between major and minor radius is $ 2 : 1$.
+
+Before we ran the simulation, we tried how well our application scale for this particular size.
+\todo{Document planet-1000\_times.}
+The best option was to run the simulation with 32 threads on 128 nodes, which makes the world parts to be of size $512 \times 512$.
+
+\subsubsection{Toolchain}
+
+\todo{Adam will continue here}
+
+\subsubsection{Visualisation in time}
+
+\todo{A few images of torus and its parts with descriptions.}
 
 \section{Issues}
 
@@ -668,8 +702,6 @@ We therefore recommend and appeal the human population and its government to con
 Especially in the beginning when the zombie population grows and the zombies spread over the Northern Territory, the people must be prepared for a big decline.
 Although it will be hard at that time, they must seek each other and reproduce in order to make sure their population will survive.
 Humans should not behave according to their instinct and hide until the zombies population has decreased; that would cause extinction of the zombies.
-
-
 
 
 
