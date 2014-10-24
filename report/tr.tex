@@ -93,7 +93,7 @@ If the human population dies out, so too will the zombies.
 
 \subsubsection{Environmental requirements}
 
-The targeted runtime environment was Avoca\cite{avoca}, the IBM Blue Gene/Q\cite{bluegeneq} supercomputer.
+The targeted run-time environment was Avoca\cite{avoca}, the IBM Blue Gene/Q\cite{bluegeneq} supercomputer.
 The computer contains homogeneous 4096 nodes, each of them having 16 cores and being capable to run up to 64 threads in parallel.
 A single core has rather poor performance compared to an ordinary laptop; its strength is in number of cores which can be used at the same time.
 
@@ -613,7 +613,7 @@ To this quite stable stage the model gets after two cycles.
     \caption{Scaling depending on number of threads}
 \end{figure*}
 
-We also performed basic scaling tests which are briefly summarized in the table (running times are in milliseconds).
+We also performed basic scaling tests which are briefly sumarized in the table (running times are in milliseconds).
 We ran the model three times for 1000 iterations in order to ensure the influence of randomness does not make the results odd.
 We expected a perfect scaling up to 16 threads -- each of them will be assigned to a dedicated core.
 Running with 32 cores still provides an improvement, but not a significant one.
@@ -637,20 +637,102 @@ After performing all tests which were described in the previous section, we run 
 We originally wanted to simulate a world of size $32768 \times 16384$ which equals to the surface of planet Earth.
 However we had to leave this possibility because our implementation of 3D torus visualisation allows to load only texture of size up to $8192 \times 8192$.
 The necessary modification to combine several textures inside OpenGL shaders would be too big burden.
-Instead, we simulated a world of size $8192 \times 4096$; the disproportion of sizes is intetional as we definitely want to render cells as squares or close to squares.
-They will be distored mostly around equators: shrinken near inner equator and widened near the outside one.
+Instead, we simulated a world of size $8192 \times 4096$; the disproportion of sizes is intentional as we definitely want to render cells as squares or close to squares.
+They will be distorted mostly around equators: shrunken near inner equator and widened near the outside one.
 In our case the ratio between major and minor radius is $ 2 : 1$.
 
+\begin{figure*}[ht]
+    \centering
+    \begin{tabu} {| X[0.8,c,p] | X[0.9,c,p] || X[1,c,p] | X[1,c,p] | X[1,c,p] | X[0.9,c,p] |}
+        \rowfont{\bfseries}
+        \hline
+        Nodes &
+        Threads &
+        Run-time (seconds) &
+        Input border waiting (ms/iter) &
+        Output border waiting (ms/iter) &
+        Total MPI waiting (\%) \\
+        \hline
+        \hline
+        64 & 32 & 30.665 & 3.531 & 2.104 & 18.376 \\
+        \hline
+        64 & 64 & 31.529 & 3.770 & 2.135 & 18.729 \\
+        \hline
+        128 & 32 & 17.793 & 2.763 & 1.757 & 25.402 \\
+        \hline
+        128 & 64 & 19.726 & 3.134 & 2.007 & 26.059 \\
+        \hline
+        256 & 32 & 13.539 & 2.437 & 1.552 & 29.467 \\
+        \hline
+        256 & 64 & 26.549 & 3.664 & 2.068 & 21.590 \\
+        \hline
+    \end{tabu}
+    \caption{Scaling depending on number of threads}
+\end{figure*}
+
 Before we ran the simulation, we tried how well our application scale for this particular size.
-\todo{Document planet-1000\_times.}
 The best option was to run the simulation with 32 threads on 128 nodes, which makes the world parts to be of size $512 \times 512$.
 
-\subsubsection{Toolchain}
+\subsubsection{Tool-chain}
 
-\todo{Adam will continue here}
+During the development of the main program (referred as apocalypse), we also created many scripts of various complexity.
+Here we would like to describe heir purpose and how they fit into the scheme of processing the results.
+Their order correspond with their age and importance in data processing.
+
+\begin{itemize}
+\item apocalypse -- C program. Takes 4 numbers as arguments: width, height, number of zombies, number of iterations.
+    It also has many features which are controllable by compile-time macros:
+    \begin{itemize}
+    \item \verb|NIMAGES| -- disables images generation
+    \item \verb|NPOPULATION| -- disables output of population statistics
+    \item \verb|NDETAILED_STATS| -- disables output of detailed population statistics
+    \item \verb|NCUMULATIVE_STATS| -- disables cumulative (summed) statistics
+    \item \verb|OUTPUT_EVERY=N| -- creates images and prints statistics every N steps
+    \item \verb|IMAGES_EVERY=N| -- the same for images only
+    \item \verb|POPULATION_EVERY=N| -- the same for population statistics only
+    \item \verb|USE_MPI| -- enables usage of MPI (necessary for running on several nodes)
+    \item \verb|REDIRECT| -- forces redirection of stdout and stderr when running on one node 
+    \end{itemize}
+\item visualise -- C program. Takes a step image produced by apocalypse and creates a png representing the current mesh situation.
+    Different entities are rendered in different colours; each one is a single pixel.
+\item plot.py -- Python script. Reads population statistics from standard input and either shows or produces an image of population sizes in time.
+\item demographics -- C program. Takes a step image and produces a file containing aggregated information about ages of all entities.
+\item histogram.py -- Python script. Reads aggregated demographics information from standard input and either shows or produces and image of histogram of ages distribution.
+\item globalise -- C program. Takes either several population statistics files or step images (all of the same time-step) and combines them into a single file.
+    The result emulates the situation as if the the simulation was running on a single node.
+\item torus -- C++ program. Takes a png image representing texture of a torus and shows a 3D visualisation of toroidal planet.
+    The program can be either interactive allowing simple movement and ad-hoc image creation or forced to produce a simgle image and exit.
+\item process\_planet.py -- Python script. Takes all error outputs from apocalypse and calculates statistics about running and waiting times.
+\item planet\_task.py -- Python script. Creates an sbatch script and runs sbatch. 
+\end{itemize}
+
+The process of running apocalypse, transferring and processing results is shown on the diagram.
+
+\subsubsection{Run-time and data amount}
+
+We ran the simulation for 2~hours of computation time on 128~nodes.
+During this period, 588,745~days (1613~years) were simulated.
+To preserve disk-space and also make the computation not I/O speed dependent, we chose to save the world images every 365~days.
+
+As the world is split into 128~parts, each of them producing independent files, we obtained 206,592~files of average size 150~KB and total size 30~GB just for world representation.
+We also obtained $128 + 128$ files capturing redirected standard output and standard error.
+Err files are of size 57~MB each and output files are 209~MB each; this is about 34~GB in total.
+Fortunately, all these files are very simple and easy to compress.
+
+The globalised world representations are of size 16~MB and resulting png images (of size $8192\times 4096$ pixels) are 2.8~MB each.
+The globalised world statistics (standard output) are in a single file of size 218~MB.
+
+The time spent by waiting for MPI sends and receives was 2.252 and 1.961~ms per iteration, which means that the program waited for MPI 34.44~percent of total time.
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{toolchain}
+    \caption{Toolchain with intermediate files}
+\end{figure*}
 
 \subsubsection{Visualisation in time}
 
+\todo{Adam will continue here}
 \todo{A few images of torus and its parts with descriptions.}
 
 \section{Issues}
@@ -673,6 +755,21 @@ When the flaw was repaired (by randomising the processing directions), the zombi
 No matter what changes we did to the model, the infection probability had to be lowered from original value 0.01 to 0.0075.
 The new probability keeps the zombie population size of at least 100 individuals at all time.
 
+\subsection{Too little iterations}
+
+For the scaling part, we first tried to run only 10 iterations to preserve resources and make the task quicker.
+This attempt lead first to a wrong conclusion that the scaling does not work due to slow CPU-memory access.
+We disproved this result by comparing the run-times with older versions of our program.
+We noticed an unreasonable slow-down.
+
+The cause was:
+\begin{itemize}
+\item either too intensive I/O -- we saved the world to files after every step,
+\item or slow initialisation of OpenMP and caches.
+\end{itemize}
+
+We solved this issue by running the simulation for 1000 steps and saving the world each 100 steps.
+
 \subsection{Collisions at the border}
 
 All processes except for movement depend only on the input world.
@@ -682,6 +779,7 @@ In the interior, when a collision is detected, an alternative is tried, and even
 
 However, the information is not available for border cells, there we just check collisions with input world.
 At the border, when the world is dense enough, there are conflicts and the difference is noticeable.
+Fortunately, the nature of our simulation guarantees that the density will lower over time to a value when we expect negligible number of collisions.
 
 Dealing with this issue would either require locking (one world has to be processed before the other one).
 The other option is simulation of one row/column in the border.

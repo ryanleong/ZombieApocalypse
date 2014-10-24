@@ -1,0 +1,72 @@
+digraph graphname {
+	makeAvoca [label="make", shape="octagon"];
+	makeLocal [label="make", shape="octagon"];
+	apocalypse [shape="oval"];
+	globalise [shape="oval"];
+	visualise [shape="oval"];
+	demographics [shape="oval"];
+	plot [label="plot.py", shape="oval"];
+	histogram [label="histogram.py", shape="oval"];
+	torus [shape="oval"];
+	rsync [shape="oval"];
+	planetTask [label="planet_task.py", shape="oval"];
+	sbatch [shape="oval"];
+	processPlanet [label="process_planet.py", shape="oval"]
+	
+	planetSbatch [label="planet.sbatch", shape="box"];
+	errPartAvoca [label="apocalypse-x-y.err", shape="box"];
+	errPartLocal [label="apocalypse-x-y.err", shape="box"];
+	outPartAvoca [label="apocalypse-x-y.out", shape="box"];
+	outPartLocal [label="apocalypse-x-y.out", shape="box"];
+	out [label="apocalypse.out", shape="box"];
+	stepPartAvoca [label="step-n-x-y.img", shape="box"];
+	stepPartLocal [label="step-n-x-y.img", shape="box"];
+	step [label="step-n.img", shape="box"];
+	dem [label="step-n.dem", shape="box"];
+	hist [label="step-n-hist.png", shape="box"];
+	png [label="step-n.png", shape="box"];
+	png3d [label="torus-n.png", shape="box"];
+	population [label="population-n.png", shape="box"];
+	planetTimes [label="planet_times", shape="box"];
+	
+	subgraph cluster_Avoca {
+		label="Avoca";
+		
+		makeAvoca -> apocalypse [style="dotted"];
+		
+		planetTask -> planetSbatch;
+		planetSbatch -> sbatch;
+		apocalypse -> sbatch;
+		planetTask -> sbatch  [style="dashed"];
+		
+		sbatch -> errPartAvoca;
+		sbatch -> outPartAvoca;
+		sbatch -> stepPartAvoca;
+	}
+	
+	subgraph cluster_Local {
+		label="Local";
+		
+		makeLocal -> globalise [style="dotted"];
+		makeLocal -> visualise [style="dotted"];
+		makeLocal -> demographics [style="dotted"];
+		makeLocal -> torus [style="dotted"];
+		
+		outPartLocal -> globalise -> out;
+		out -> plot -> population;
+		
+		stepPartLocal -> globalise -> step;
+		
+		step -> visualise -> png;
+		png -> torus -> png3d;
+		
+		step -> demographics -> dem;
+		dem -> histogram -> hist;
+		
+		errPartLocal -> processPlanet -> planetTimes;
+	}
+	
+	errPartAvoca -> rsync -> errPartLocal;
+	outPartAvoca -> rsync -> outPartLocal;
+	stepPartAvoca -> rsync -> stepPartLocal;
+}
