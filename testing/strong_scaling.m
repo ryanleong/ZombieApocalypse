@@ -14,16 +14,17 @@ for world_size = [128, 256, 512, 1024, 2048, 4096, 8192, 16384]
     % line. Divergence from a straight line indicates non ideal scaling.
     %
     % Comment this line out to plot the plain running time.
-    data (coords, 4) = 1 ./ data (coords, 4);
+%    data (coords, 4) = 1 ./ data (coords, 4);
 
     figure;
-    plot (data (coords, 3), data (coords, 4), '.b');
+%    plot (data (coords, 3), data (coords, 4), '.b');
+    bar ([(data (coords, 4)), (data (coords, 3) .* data (coords, 4))]);
     title (['World size ', (num2str (world_size))]);
     xlabel ('number of cores');
 
     % Select one of these ylabels.
-%    ylabel ('running time (seconds)');
-    ylabel ('1 / running time in seconds');
+    ylabel ('running time (seconds)');
+ %   ylabel ('1 / running time in seconds');
 
     grid on;
     print (['scaling-', (num2str (world_size)), '.png']);
