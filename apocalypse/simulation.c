@@ -39,7 +39,6 @@ static bearing getBearing(WorldPtr world, int x, int y);
  * a) death of human or infected
  * b) decomposition of zombie
  * c) transition of infected to zombie
- * d) transition of human into infected
  */
 static void simulateStep1(WorldPtr input, WorldPtr output) {
 	simClock clock = output->clock;
