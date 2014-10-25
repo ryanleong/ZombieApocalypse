@@ -2,7 +2,7 @@ all: tr.pdf
 
 DIAGRAMS = model.pdf movement.eps border1.eps border2.eps
 GRAPHS = USGompertzCurve.pdf fertilisation_probability.pdf
-POPULATIONS = equal_birth.pdf stable_1000000.pdf stable.pdf uncontrolled_birth.pdf density_birth.pdf
+POPULATIONS = equal_birth.pdf stable_1000000.pdf stable.pdf uncontrolled_birth.pdf density_birth.pdf torus/planet.pdf
 
 SIZE_500 = step-000000.png step-003650.png step-018250.png step-053100.png step-100000.png step-000000.pdf step-003650.pdf step-018250.pdf step-053100.pdf step-100000.pdf
 
@@ -51,7 +51,7 @@ clean:
 	rm -f *.aux *.out *.log *.bbl  *.blg  *.dvi *.toc
 
 clobber: clean
-	rm -f *.pdf *.png
+	rm -f *.pdf *.png *-converted-to.pdf
 
 .PHONY: all clean clobber
 

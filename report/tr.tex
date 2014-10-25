@@ -2,6 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{url}
 \usepackage[english]{babel}
 \usepackage[super]{nth}
 \usepackage{fancyhdr}
@@ -629,7 +630,7 @@ Running with 32 cores still provides an improvement, but not a significant one.
 The drop of performance when running with 64 threads is caused by too small size of the world.
 We discuss this issue in the next section in more detail.
 
-\section{Scaling results}
+\section{Larger results}
 
 In the second part of the project, we performed more scaling tests and in the end also a final simulation of a small planet.
 
@@ -717,6 +718,12 @@ Their order correspond with their age and importance in data processing.
 
 The process of running apocalypse, transferring and processing results is shown on the diagram.
 
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{toolchain}
+    \caption{Toolchain with intermediate files}
+\end{figure*}
+
 \subsubsection{Run-time and data amount}
 
 We ran the simulation for 2~hours of computation time on 128~nodes.
@@ -733,16 +740,21 @@ The globalised world statistics (standard output) are in a single file of size 2
 
 The time spent by waiting for MPI sends and receives was 2.252 and 1.961~ms per iteration, which means that the program waited for MPI 34.44~percent of total time.
 
-\begin{figure*}[pht]
-    \centering
-    \includegraphics[width=\textwidth]{toolchain}
-    \caption{Toolchain with intermediate files}
-\end{figure*}
-
 \subsubsection{Visualisation in time}
 
-In the figures of the toroidal planet, there is clearly visible a consequence of the bug discussed later in the issues section.
-The visualisation started with two zombies near to each other at time 0.
+Populations during the simulation of a whole planet are more stable than in the case of world of size 500 by 500; this can be seen on the populations figure.
+The number of people decreases linearly as increases the number of zombies.
+As soon as the zombies fill whole planet, the population sizes no longer change.
+The cause is that the borders are no longer significant for zombie infection spreading.
+If we increased the probability of infection, we suppose that the populations would still be stable, though we haven't tried that.
+
+In the figures of the toroidal planet, there is clearly visible a consequence of the bug discussed later in the issues section (borders of world parts have less population density).
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/planet.pdf}
+    \caption{Populations sizes on the planet withing 1613 years}
+\end{figure*}
 
 \begin{figure*}[pht]
     \centering
@@ -895,7 +907,7 @@ Humans should not behave according to their instinct and hide until the zombies 
 \begingroup
 \raggedright
 
-\bibliographystyle{unsrt}
+\bibliographystyle{IEEEtran}
 \bibliography{references}
 \endgroup
 
