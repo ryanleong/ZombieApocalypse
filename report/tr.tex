@@ -11,10 +11,13 @@
 \usepackage{amsmath}
 \usepackage{color}
 \usepackage{subcaption}
+\usepackage{titlesec}
 
 
 \widowpenalties 1 10000
 \raggedbottom
+
+\newcommand{\sectionbreak}{\clearpage}
 
 \DeclareGraphicsExtensions{.pdf,.png,.jpg,.eps}
 
@@ -37,7 +40,7 @@
 \begin{document}
 \maketitle
 
-\todo{Add an image of a planet here.}
+\includegraphics[width=\textwidth]{title}
 
 \newpage
 \tableofcontents
@@ -219,7 +222,13 @@ Each node is assigned a rank, which Cartesian communicator translates into 2 coo
 The Cartesian communicator can shift a rank in any direction; values $-1$ and 1 refer to the neighbours.
 It can also model a periodic situation, for example left neighbour of the leftmost node is the rightmost one and vice versa.
 
-When the program is compiled with MPI support, the Cartesian communicator is always used, even if the world runs on a single node, in which case all neighbours are the node itself.
+If the program is compiled with MPI support, the Cartesian communicator is always used, even if the world runs on a single node, in which case all neighbours are the node itself.
+
+When the simulation starts, people and zombies are randomly distributed in the world.
+Having several world parts requires extra caution.
+The total number of people is divided among the parts based on area fraction.
+The world also starts with two zombies near to each other \cite{project}.
+We simply place all (both) zombies into the same world part.
 
 \subsubsection{Movement}
 
@@ -732,8 +741,88 @@ The time spent by waiting for MPI sends and receives was 2.252 and 1.961~ms per 
 
 \subsubsection{Visualisation in time}
 
-\todo{Adam will continue here}
-\todo{A few images of torus and its parts with descriptions.}
+In the figures of the toroidal planet, there is clearly visible a consequence of the bug discussed later in the issues section.
+The visualisation started with two zombies near to each other at time 0.
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-002190-torus.png}
+    \caption{Planet after 6 years; one of two initial zombie clusters}
+    \includegraphics[width=\textwidth]{step-002190.pdf}
+    \caption{Demographics after 6 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-006935-torus.png}
+    \caption{Planet after 19 years; clusters are starting to merge}
+    \includegraphics[width=\textwidth]{step-006935.pdf}
+    \caption{Demographics after 19 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-016790-torus.png}
+    \caption{Planet after 46 years; one side is occupied by zombies}
+    \includegraphics[width=\textwidth]{step-016790.pdf}
+    \caption{Demographics after 46 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-042340-torus.png}
+    \caption{Planet after 116 years; connecting around the toroidal body}
+    \includegraphics[width=\textwidth]{step-042340.pdf}
+    \caption{Demographics after 116 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-059130-torus.png}
+    \caption{Planet after 162 years; zombies control most of the planet; a second wave of humans and zombies is forming}
+    \includegraphics[width=\textwidth]{step-059130.pdf}
+    \caption{Demographics after 162 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-084315-torus.png}
+    \caption{Planet after 231 years; a small strip of people is left; the second and the third wave is noticeable}
+    \includegraphics[width=\textwidth]{step-084315.pdf}
+    \caption{Demographics after 231 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-091615-torus.png}
+    \caption{Planet after 251 years; the last people who were unaffected by zombies}
+    \includegraphics[width=\textwidth]{step-091615.pdf}
+    \caption{Demographics after 251 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-129575-torus.png}
+    \caption{Planet after 355 years; stable situation has been reached}
+    \includegraphics[width=\textwidth]{step-129575.pdf}
+    \caption{Demographics after 355 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-462820-torus.png}
+    \caption{Planet after 1268 yearsl; still stable}
+    \includegraphics[width=\textwidth]{step-462820.pdf}
+    \caption{Demographics after 1268 years}
+\end{figure*}
+
+\begin{figure*}[pht]
+    \centering
+    \includegraphics[width=\textwidth]{torus/step-588745-torus.png}
+    \caption{Planet after 1613 years; the last year of the simulation}
+    \includegraphics[width=\textwidth]{step-588745.pdf}
+    \caption{Demographics after 1613 years}
+\end{figure*}
 
 \section{Issues}
 

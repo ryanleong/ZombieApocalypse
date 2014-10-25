@@ -11,12 +11,19 @@ uniform sampler2D myTextureSampler;
 
 uniform float alpha;
 
+uniform int reverse;
+
 void main(){
 
 	// Output color = color of the texture at the specified UV
 	color.rgb = texture2D( myTextureSampler, UV ).rgb;
 	if (color.r == 1 && color.g == 1 && color.b == 1) {
 		color.a = alpha;
+		if (reverse != 0) {
+			color.r = 0.9;
+			color.g = 0.9;
+			color.b = 0.9;
+		}
 	} else {
 		color.a = 1;
 	}

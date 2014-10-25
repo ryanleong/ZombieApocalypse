@@ -48,10 +48,12 @@ GLuint Texture;
 int skip = 0;
 float alpha = 0.6;
 GLint alphaLocation;
+int reverse = false;
+GLint reverseLocation;
 
 void parseArgs(int argc, char ** argv) {
 	int command;
-	while ((command = getopt(argc, argv, "spioj")) != -1) {
+	while ((command = getopt(argc, argv, "spiojar")) != -1) {
 		switch (command) {
 		case 's':
 			width = atoi(argv[optind++]);
@@ -73,6 +75,12 @@ void parseArgs(int argc, char ** argv) {
 			break;
 		case 'j':
 			justPhoto = !justPhoto;
+			break;
+		case 'a':
+			alpha = atof(argv[optind++]);
+			break;
+		case 'r':
+			reverse = true;
 			break;
 		}
 	}
@@ -141,6 +149,11 @@ void keyFunc(GLFWwindow * window, int key, int scanCode, int action, int mods) {
 
 	case GLFW_KEY_0 ... GLFW_KEY_9:
 		skip = skip * 10 + (key - GLFW_KEY_0);
+		break;
+
+	case GLFW_KEY_R:
+		reverse = !reverse;
+		skip = 0;
 		break;
 
 	case GLFW_KEY_LEFT_BRACKET:
@@ -255,6 +268,7 @@ int main(int argc, char ** argv) {
 // OBJECT ENDS
 
 	alphaLocation = glGetUniformLocation(programID, "alpha");
+	reverseLocation = glGetUniformLocation(programID, "reverse");
 
 	glGenTextures(1, &Texture);
 	loadTexture();
@@ -276,7 +290,11 @@ int main(int argc, char ** argv) {
 		glDepthFunc(GL_NEVER);
 		//glDepthRange(0.0f, 1.0f);
 
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		if (reverse) {
+			glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+		} else {
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		}
 		glClearDepth(1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -314,6 +332,7 @@ int main(int argc, char ** argv) {
 		glUniform1i(TextureID, 0);
 
 		glUniform1f(alphaLocation, alpha);
+		glUniform1i(reverseLocation, reverse ? 1 : 0);
 
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
