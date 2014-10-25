@@ -50,18 +50,20 @@ dependencies
 /backups*
 
 # ignore intermediate files for tr building.
-/report/tr.aux
-/report/tr.dvi
-/report/tr.log
+/report/*.aux
+/report/*.dvi
+/report/*.log
+/report/*.bbl
+/report/*.blg
+/report/*.toc
+/report/*.snm
+/report/*.nav
+/report/*-converted-to.pdf
+
 /report/tr.pdf
-/report/tr.bbl
-/report/tr.blg
-/report/tr.toc
+/report/slides.pdf
 
-/report/movement-eps-converted-to.pdf
-/report/border1-eps-converted-to.pdf
-/report/border2-eps-converted-to.pdf
-
+/report/uncontrolled_birth.pdf
 /report/density_birth.pdf
 /report/equal_birth.pdf
 /report/fertilisation_probability.pdf
@@ -88,4 +90,3 @@ dependencies
 /report/step-462820.pdf
 /report/step-588745.pdf
 
-/report/uncontrolled_birth.pdf

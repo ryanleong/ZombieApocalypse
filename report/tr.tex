@@ -41,7 +41,7 @@
 \begin{document}
 \maketitle
 
-\includegraphics[width=\textwidth]{title}
+\includegraphics[width=\textwidth]{torus/title}
 
 \newpage
 \tableofcontents
@@ -115,9 +115,9 @@ We instead ran a simulation of infection on a small planet of size 8192 by 4096 
 \subsection{Infection model}
 
 \begin{figure*}[ht]
-        \centering
-        \includegraphics[width=\textwidth]{model}
-        \caption{Infection model}
+    \centering
+    \includegraphics[width=\textwidth]{model}
+    \caption{Infection model}
 \end{figure*}
 
 Our understanding is that there is no cure for the infection, and also that there is no level of immunity in the human population.
@@ -197,6 +197,16 @@ The actual size of both the logical and physical mesh was $500 \times 500$ cells
 For the second part we changed the topology from a rectangular world to a torus.
 The only difference is the boundary condition, which is periodic meaning that any attempt passing through the border will be successful resulting into the entity appearing at the opposite side.
 Many different sizes of logical meshes ranging from $128 \time 128$ to $16382 \times 16382$ were used for the scaling part of the report.
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{mesh}
+    \caption{Memory layout of the mesh}
+\end{figure*}
+
+Instead of using classic 2D array, we rather allocated huge 1D array and then created another array, whose elements point to elements of 1D array.
+Not only does it allow us the same access via \verb|world->mesh[x][y]|, but also ensures that the whole mesh is a continous chunk of memory.
+This is very important because we can use \verb|MPI_Type_vector| and don't have to create extra buffers.
 
 In order to maintain all information during the whole simulation of a time step, two worlds are used.
 Input world contains all information and is never changed.
@@ -889,6 +899,8 @@ On the other hand, the transfer of entities from one world to the other one woul
 
 There is also an option to change the algorithm for movement for entities at the border to ignore cells which are in distance of two.
 This leads to keeping the same border size but also to a minor intervention to algorithm which should be the same everywhere.
+
+\todo{Add image}
 
 \section{Recommendations}
 
