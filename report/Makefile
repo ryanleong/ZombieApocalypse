@@ -62,7 +62,7 @@ fertilisation_probability.pdf: fertilisation_probability.py
 	./fertilisation_probability.py $@
 
 clean:
-	rm -f *.aux *.out *.log *.bbl  *.blg  *.dvi *.toc
+	rm -f *.aux *.out *.log *.bbl  *.blg  *.dvi *.toc *.nav *.snm
 
 clobber: clean
 	rm -f *.pdf *.png *-converted-to.pdf *.eps
