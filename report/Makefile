@@ -11,7 +11,9 @@ TORUS_PNG = torus/step-002190-torus.png torus/step-006935-torus.png torus/step-0
 TORUS_HIST = step-002190.pdf step-006935.pdf step-016790.pdf step-042340.pdf step-059130.pdf \
 	step-084315.pdf step-091615.pdf step-129575.pdf step-462820.pdf step-588745.pdf
 
-FIGURES = torus/title.png torus/planet.pdf $(DIAGRAMS) $(GRAPHS) $(SIZE_500_POPULATIONS) $(SIZE_500) $(TORUS_PNG) $(TORUS_HIST)
+SCALING = scaling-128.eps scaling-256.eps scaling-512.eps scaling-1024.eps scaling-2048.eps scaling-4096.eps scaling-8192.eps scaling-16384.eps
+
+FIGURES = torus/title.png torus/planet.pdf $(DIAGRAMS) $(GRAPHS) $(SIZE_500_POPULATIONS) $(SIZE_500) $(TORUS_PNG) $(TORUS_HIST) $(SCALING)
 
 SLIDES_FIGURES = $(GRAPHS) $(SIZE_500_POPULATIONS) $(DIAGRAMS) torus/planet.pdf $(TORUS_PNG) $(TORUS_HIST)
 
@@ -39,6 +41,9 @@ SLIDES_FIGURES = $(GRAPHS) $(SIZE_500_POPULATIONS) $(DIAGRAMS) torus/planet.pdf 
 
 %.png: model/%.img
 	../visualise/visualise $< $@
+
+scaling-%.eps: ../testing/single_times ../testing/strong_scaling.m
+	../testing/strong_scaling.m $< `echo $@ | grep -o [0-9]*` $@
 
 tr.pdf: tr.tex references.bib $(FIGURES)
 	pdflatex tr.tex

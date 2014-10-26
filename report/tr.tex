@@ -654,42 +654,50 @@ Strong scaling is the simpler of our two metrics, and we visualised it by simply
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{scaling-128}
+    \includegraphics[width=\textwidth]{scaling-128}
+    \caption{Scaling with world size $128 \times 128$}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{scaling-256}
+    \includegraphics[width=\textwidth]{scaling-256}
+    \caption{Scaling with world size $256 \times 256$}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{scaling-512}
+    \includegraphics[width=\textwidth]{scaling-512}
+    \caption{Scaling with world size $512 \times 512$}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{scaling-1024}
+    \includegraphics[width=\textwidth]{scaling-1024}
+    \caption{Scaling with world size $1024 \times 1024$}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{scaling-2048}
+    \includegraphics[width=\textwidth]{scaling-2048}
+    \caption{Scaling with world size $2048 \times 2048$}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{scaling-4096}
+    \includegraphics[width=\textwidth]{scaling-4096}
+    \caption{Scaling with world size $4096 \times 4096$}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{scaling-8192}
+    \includegraphics[width=\textwidth]{scaling-8192}
+    \caption{Scaling with world size $8192 \times 8192$}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{scaling-16384}
+    \includegraphics[width=\textwidth]{scaling-16384}
+    \caption{Scaling with world size $16384 \times 16384$}
 \end{figure}
 
 Weak scaling is concerned with how the run time varies with the number of threads for a constant problem size, which in this case is the number of cells to be processed. We evaluated weak scaling by taking the square of the side length of the grid used in each simulation run and then dividing by the number of threads, hence associating each run time with the number of cells per thread for that run. We then produced a plot with the cells per thread on the x axis, and the runtime on the y axis; each simulation run is represented by a single point on the plot. At first we tried using linear scales, but we found that a log-log scale best illustrates the results, shown in figure~\ref{weakscaling}. This makes sense upon considering that the world sizes that we used for the test runs were exponentially increasing, from 128, 256, 512 and so on, and a similar exponential growth in the number of threads; 1, 2, 4, 8 up to 64. It also makes sense that such exponential growth in the size of the world would also produce exponentially increasing runtimes, since in the ideal case the runtime is directly proportional to the number of threads.
