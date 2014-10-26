@@ -1,37 +1,56 @@
+#! /bin/octave -qf
 % script to plot runtimes from the zombie simulation.
 
-data = load ('./single_times');
+arg_list = argv ();
+input = arg_list{1};
+world_size = str2num(arg_list{2});
+
+% optional third argument
+if (length(arg_list) >= 3);
+    output = arg_list{3};
+else
+    output = ['scaling-', (num2str (world_size)), '.eps'];
+endif
+
+% the deafult one cannot produce the legend correctly
+graphics_toolkit gnuplot
 
 
-for world_size = [128, 256, 512, 1024, 2048, 4096, 8192, 16384]
-    % coords will tell us which rows we want to use from the data, to
-    % select only the rows for the current world size.
-    coords = find (data (:, 2) == world_size);
+data = load (input);
 
-    % We would expect that the runtime will be inversely proportional
-    % to the number of cores we throw at the problem, so taking 1 divided
-    % by the runtime should (if we have perfect scaling) produce a straight
-    % line. Divergence from a straight line indicates non ideal scaling.
-    %
-    % Comment this line out to plot the plain running time.
-%    data (coords, 4) = 1 ./ data (coords, 4);
+% coords will tell us which rows we want to use from the data, to
+% select only the rows for the current world size.
+coords = find (data (:, 2) == world_size);
 
-    figure;
-%    plot (data (coords, 3), data (coords, 4), '.b');
-    bar ([((data (coords, 4))), ((data (coords, 3) .* data (coords, 4)))]);
-    title (['World size ', (num2str (world_size))]);
-    xlabel ('number of cores');
-    set (gca, 'xticklabel', {'1', '2', '4', '8', '16', '32', '64'});
+% We would expect that the runtime will be inversely proportional
+% to the number of cores we throw at the problem, so taking 1 divided
+% by the runtime should (if we have perfect scaling) produce a straight
+% line. Divergence from a straight line indicates non ideal scaling.
+%
+% Comment this line out to plot the plain running time.
+%data (coords, 4) = 1 ./ data (coords, 4);
 
-    % Select one of these ylabels.
-    ylabel ('running time (seconds)');
- %   ylabel ('1 / running time in seconds');
+figure;
+%figure('Position',[0,0,200,100]);
+%plot (data (coords, 3), data (coords, 4), '.b');
+bar ([((data (coords, 4))), ((data (coords, 3) .* data (coords, 4)))]);
+%title (['World size ', (num2str (world_size))]);
+xlabel ('number of threads');
+set (gca, 'xticklabel', {'1', '2', '4', '8', '16', '32', '64'});
 
-    legend ('run time', 'total work', 'location', 'northwest');
+% Select one of these ylabels.
+ylabel ('running time (seconds)');
+%ylabel ('1 / running time in seconds');
 
-    grid on;
-    print (['scaling-', (num2str (world_size)), '.png']);
-    close (gcf);
-end
+legend ('run time ', 'total work ', 'location', 'northwest');
+
+% set font name to something better
+FN = findall(gcf,'-property','FontName');
+set(FN,'FontName','/usr/share/fonts/dejavu/DejaVuSerifCondensed.ttf');
+
+grid on;
+print (output, '-color', '-deps', '-S400,300');
+close (gcf);
+
 
 % vim: ft=octave ts=4 sw=4 et
