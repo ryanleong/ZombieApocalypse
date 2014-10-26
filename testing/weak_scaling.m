@@ -3,7 +3,7 @@ data = load ('./single_times');
 
 % weak scaling compares the run time for a fixed problem size per thread.
 % Therefore, work out the world size per thread.
-data (:, 1) = (data (:, 2)) ./ data (:, 3);
+data (:, 1) = (data (:, 2) .^ 2) ./ data (:, 3);
 
 world_size = [128, 256, 512, 1024, 2048, 4096, 8192, 16384];
 colors = ['.k'; '.r'; '.g'; '.b'; '.m'; '.c'; '^k'; '^r'];
@@ -21,10 +21,10 @@ for k = 1:8
 end
 
 title ('Weak Scaling');
-xlabel ('log2 (world edge length/num threads)');
+xlabel ('log2 (number of cells / number of threads)');
 ylabel ('log2 (runtime in seconds)');
-legend ('128x128', '256x256', '512x512', '1024x1024', '2048x2048',
-  '4096x4096', '8192x8192', '16384x16384', 'location', 'northwest');
+legend ('128 x 128', '256 x 256', '512 x 512', '1024 x 1024', '2048 x 2048',
+  '4096 x 4096', '8192 x 8192', '16384 x 16384', 'location', 'southeast');
 grid on;
 
 hold off;

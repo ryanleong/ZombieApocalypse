@@ -18,13 +18,16 @@ for world_size = [128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 
     figure;
 %    plot (data (coords, 3), data (coords, 4), '.b');
-    bar ([(data (coords, 4)), (data (coords, 3) .* data (coords, 4))]);
+    bar ([((data (coords, 4))), ((data (coords, 3) .* data (coords, 4)))]);
     title (['World size ', (num2str (world_size))]);
     xlabel ('number of cores');
+    set (gca, 'xticklabel', {'1', '2', '4', '8', '16', '32', '64'});
 
     % Select one of these ylabels.
     ylabel ('running time (seconds)');
  %   ylabel ('1 / running time in seconds');
+
+    legend ('run time', 'total work', 'location', 'northwest');
 
     grid on;
     print (['scaling-', (num2str (world_size)), '.png']);
