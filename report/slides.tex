@@ -15,7 +15,7 @@
 \newcommand{\todo}[1]{}
 \renewcommand{\todo}[1]{{\color{red} TODO: {#1}}}
 
-\newcommand*\mean[1]{#1}
+\newcommand*\mean[1]{#1} % no overrule in the slides
 
 \usetheme{Frankfurt}
 
@@ -54,7 +54,9 @@
         \item[Recovered] Dead
     \end{description}
 
-    \includegraphics[width=\textwidth]{model}
+    \begin{center}
+        \includegraphics[width=\textwidth]{model}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Infection}
@@ -83,7 +85,9 @@
         \item has 2 cells wide border
     \end{itemize}
 
-    \includegraphics[width=0.8\textwidth]{mesh}
+    \begin{center}
+        \includegraphics[width=0.8\textwidth]{mesh}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Borders}
@@ -189,12 +193,12 @@
 \end{frame}
 
 \begin{frame}{Human Sex Ratio}
-	\begin{block}{Initialisation}
-    	$$ \text{Male} : \text{Female} = 0.5025 : 0.4975 $$
-	\end{block}
+    \begin{block}{Initialisation}
+        $$ \text{Male} : \text{Female} = 0.5025 : 0.4975 $$
+    \end{block}
     \begin{block}{Birth}
-	    $$ \text{Male Child} : \text{Female Child} = 0.5146 : 0.4854 $$
-	\end{block}
+        $$ \text{Male Child} : \text{Female Child} = 0.5146 : 0.4854 $$
+    \end{block}
 \end{frame}
 
 \begin{frame}{Human Fertility}
@@ -312,8 +316,10 @@
 \end{frame}
 
 \begin{frame}{Density Dependent}{Results}
-	\only<1>{\includegraphics[width=0.9\textwidth]{stable}}
-	\only<2>{\includegraphics[width=0.9\textwidth]{stable_1000000}}
+    \begin{center}
+        \only<1>{\includegraphics[width=0.9\textwidth]{stable}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{stable_1000000}}
+    \end{center}
 \end{frame}
 
 \section{Results}
@@ -332,75 +338,145 @@
 
 \begin{frame}{Planet}
     \begin{columns}
-		\begin{column}{0.4\textwidth}
-		    \begin{itemize}
-		        \item Simulation of toroidal planet
-		        \item Size: $8192 \times 4096$ on 128 nodes ($512 \times 512$ each) with 32 threads
-		        \item Run-time: 2 hours
-		        \item Simulated 1613 years (588745 days)
-		        \item Produced 64 GB of data
-		    \end{itemize}
-		\end{column}
-		\begin{column}{0.6\textwidth}
-		    \includegraphics[width=\textwidth]{torus/planet.pdf}
-		\end{column}
-	\end{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{itemize}
+                \item Simulation of toroidal planet
+                \item Size: $8192 \times 4096$ on 128 nodes ($512 \times 512$ each) with 32 threads
+                \item Run-time: 2 hours
+                \item Simulated 1613 years (588745 days)
+                \item Produced 64 GB of data
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            \includegraphics[width=\textwidth]{torus/planet.pdf}
+        \end{column}
+    \end{columns}
 \end{frame}
 
 \begin{frame}{Planet after 6 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-002190-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-002190.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-002190-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-002190.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 19 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-006935-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-006935.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-006935-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-006935.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 46 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-016790-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-016790.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-016790-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-016790.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 116 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-042340-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-042340.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-042340-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-042340.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 162 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-059130-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-059130.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-059130-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-059130.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 231 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-084315-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-084315.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-084315-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-084315.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 251 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-091615-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-091615.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-091615-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-091615.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 355 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-129575-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-129575.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-129575-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-129575.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 1268 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-462820-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-462820.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-462820-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-462820.pdf}}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Planet after 1613 years}
-    \only<1>{\includegraphics[width=\textwidth]{torus/step-588745-torus.png}}
-    \only<2>{\includegraphics[width=0.9\textwidth]{step-588745.pdf}}
+    \begin{center}
+        \only<1>{\includegraphics[width=\textwidth]{torus/step-588745-torus.png}}
+        \only<2>{\includegraphics[width=0.9\textwidth]{step-588745.pdf}}
+    \end{center}
 \end{frame}
 
 \section{Issues}
 
-\begin{frame}
-	\todo{Two or three issues mentioned in the report}
+\begin{frame}{Directed movement}
+    \begin{block}{Problem}
+        \begin{itemize}
+            \item When processing the world from left to right and from top to bottom.
+            \item Entities cluster at right and bottom border.
+        \end{itemize}
+    \end{block}
+    \begin{block}{Solution}
+        \begin{itemize}
+            \item Randomisation of processing order
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Border collisions}
+    \begin{block}{Problem}
+        \begin{itemize}
+            \item When using MPI
+            \item Movement depend on input and output world.
+            \item Output world is not available for border.
+        \end{itemize}
+    \end{block}
+    \begin{block}{Possible Solution}
+        \begin{itemize}
+            \item Strict ordering and locking
+            \item Processing the border by both nodes
+            \item Requires random number generator synchronisation, processing order synchronisation
+            \item Not implemented
+        \end{itemize} 
+    \end{block}
+\end{frame}
+
+\begin{frame}{Data processing}
+    \begin{block}{Problem}
+        \begin{itemize}
+            \item There are thousands of files generated.
+            \item Total size is tens of GigaBytes.
+        \end{itemize}
+    \end{block}
+    \begin{block}{Solution}
+        \begin{itemize}
+            \item Automatisation by support programs and scripts.
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Data processing}{Schema}
+    \begin{center}
+        % left, bottom, right, top
+        \only<1>{\includegraphics[trim=0 445 0 0,clip,width=0.7\textwidth]{toolchain}}
+        \only<2>{\includegraphics[trim=0 0 0 370,clip,width=0.7\textwidth]{toolchain}}
+    \end{center}
 \end{frame}
 
 \section{Questions}
