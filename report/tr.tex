@@ -692,6 +692,17 @@ Strong scaling is the simpler of our two metrics, and we visualised it by simply
     \includegraphics[width=0.8\textwidth]{scaling-16384}
 \end{figure}
 
+Weak scaling is concerned with how the run time varies with the number of threads for a constant problem size, which in this case is the number of cells to be processed. We evaluated weak scaling by taking the square of the side length of the grid used in each simulation run and then dividing by the number of threads, hence associating each run time with the number of cells per thread for that run. We then produced a plot with the cells per thread on the x axis, and the runtime on the y axis; each simulation run is represented by a single point on the plot. At first we tried using linear scales, but we found that a log-log scale best illustrates the results, shown in figure~\ref{weakscaling}. This makes sense upon considering that the world sizes that we used for the test runs were exponentially increasing, from 128, 256, 512 and so on, and a similar exponential growth in the number of threads; 1, 2, 4, 8 up to 64. It also makes sense that such exponential growth in the size of the world would also produce exponentially increasing runtimes, since in the ideal case the runtime is directly proportional to the number of threads.
+
+From the plot, we can see that when different simulation runs had the same number of cells per thread their runtimes were also very close together. Over a range of cells per thread, we can see a strong linear relationship with the runtime provided there is at least $2^{13}$ cells to a thread.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{weak-scaling}
+    \catption{Plot showing weak scaling, with the different simulation runs shown with different 
+        markers\label{weakscaling}}
+\end{figure}
+
 \subsection{Planet}
 
 After performing all tests which were described in the previous section, we ran a simulation of zombie infection on a small toroidal planet.
