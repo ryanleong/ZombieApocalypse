@@ -650,20 +650,59 @@ There are two types of scaling which are relevant to our project. Firstly, stron
 
 To measure the scalability of our project, we ran our simulation for a range of different world sizes, from $128 \times 128$ up to $16384 \times 16384$, and also thread counts ranging from 1 thread up to 64 threads. The simulaion was run on a single node of the Avoca cluster, with OpenMP being used for multithreading, however MPI was not used for these simulation runs since they were not run accross multiple nodes. The time taken for each simulation run was recorded in a text file, along with the number of threads and the world size for each run. This text file was then loaded into GNU Octave for analysis.
 
-Strong scaling is the simpler of our two metrics, and we visualised it by simply collecting all the run times for a given world size, and plotting the number of threads versus the run time in a bar graph. We also overlayed a bar graph of the number of threads versus the runtime multiplied by the number of threads used, which is approximately the total ammount of time spent by all of the threads. In the ideal case, with perfect strong scaling, we would expect that the work would be constant regardless of whether one thread was used or 64, however our plots show that the work increases with the number of threads. This reflects the fact that our simulation does not have perfect scaling: in terms of Amdahl's law, there is a certain fraction of the program that cannot be done in parallel.
+Strong scaling is the simpler of our two metrics, and we visualised it by simply collecting all the run times for a given world size, and plotting the number of threads versus the run time in a bar graph. We also overlayed a bar graph of the number of threads versus the runtime multiplied by the number of threads used, which is approximately the total ammount of time spent by all of the threads. In the ideal case, with perfect strong scaling, we would expect that the work would be constant regardless of whether one thread was used or 64, however our plots show that the work increases with the number of threads. This reflects the fact that our simulation does not have perfect scaling: in terms of Amdahl's law, there is a certain fraction of the program that cannot be done in parallel, and this non parallelisable part is responsible for the growth in the work as the number of threads increases.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{scaling-128}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{scaling-256}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{scaling-512}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{scaling-1024}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{scaling-2048}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{scaling-4096}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{scaling-8192}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{scaling-16384}
+\end{figure}
 
 \subsection{Planet}
 
-After performing all tests which were described in the previous section, we run a simulation of zombie infection on a small toroidal planet.
+After performing all tests which were described in the previous section, we ran a simulation of zombie infection on a small toroidal planet.
 
 \subsubsection{Size}
 
-We originally wanted to simulate a world of size $32768 \times 16384$ which equals to the surface of planet Earth.
-However we had to leave this possibility because our implementation of 3D torus visualisation allows to load only texture of size up to $8192 \times 8192$.
+We originally wanted to simulate a world of size $32768 \times 16384$, equivalent to the surface of planet Earth, but unfortunately this was not possible because our implementation of 3D torus visualisation limits the texture size to no larger than $8192 \times 8192$.
 The necessary modification to combine several textures inside OpenGL shaders would be too big burden.
 Instead, we simulated a world of size $8192 \times 4096$; the disproportion of sizes is intentional as we definitely want to render cells as squares or close to squares.
 They will be distorted mostly around equators: shrunken near inner equator and widened near the outside one.
-In our case the ratio between major and minor radius is $ 2 : 1$.
+In our case the ratio between major and minor radii is $ 2 : 1$.
 
 \begin{figure*}[ht]
     \centering
@@ -695,12 +734,12 @@ In our case the ratio between major and minor radius is $ 2 : 1$.
 \end{figure*}
 
 Before we ran the simulation, we tried how well our application scale for this particular size.
-The best option was to run the simulation with 32 threads on 128 nodes, which makes the world parts to be of size $512 \times 512$.
+The best option was to run the simulation with 32 threads on 128 nodes, with the world broken into segments of size $512 \times 512$.
 
 \subsubsection{Tool-chain}
 
-During the development of the main program (referred as apocalypse), we also created many scripts of various complexity.
-Here we would like to describe heir purpose and how they fit into the scheme of processing the results.
+During the development of our simulation we created many scripts of various complexity.
+Here we will describe their purposes and how they fit into the scheme of processing the results.
 Their order correspond with their age and importance in data processing.
 
 \begin{itemize}
@@ -752,7 +791,7 @@ Fortunately, all these files are very simple and easy to compress.
 The globalised world representations are of size 16~MB and resulting png images (of size $8192\times 4096$ pixels) are 2.8~MB each.
 The globalised world statistics (standard output) are in a single file of size 218~MB.
 
-The time spent by waiting for MPI sends and receives was 2.252 and 1.961~ms per iteration, which means that the program waited for MPI 34.44~percent of total time.
+The time spent by waiting for MPI sends and receives was 2.252 and 1.961~ms per iteration, which means that the program waited for MPI for 34.44\% of total time.
 
 \subsubsection{Visualisation in time}
 
