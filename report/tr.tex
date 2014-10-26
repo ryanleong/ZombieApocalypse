@@ -646,11 +646,21 @@ In the second part of the project, we performed more scaling tests and in the en
 
 \subsection{Scaling}
 
-There are two types of scaling which are relevant to our project. Firstly, strong scaling refers to how the overall running time (the wall time) varies with the number of threads used. The second type, weak scaling, describes how the running time varies for a constant size world.
+There are two types of scaling which are relevant to our project.
+Firstly, strong scaling refers to how the overall running time (the wall time) varies with the number of threads used.
+The second type, weak scaling, describes how the running time varies for a constant size world.
 
-To measure the scalability of our project, we ran our simulation for a range of different world sizes, from $128 \times 128$ up to $16384 \times 16384$, and also thread counts ranging from 1 thread up to 64 threads. The simulaion was run on a single node of the Avoca cluster, with OpenMP being used for multithreading, however MPI was not used for these simulation runs since they were not run accross multiple nodes. The time taken for each simulation run was recorded in a text file, along with the number of threads and the world size for each run. This text file was then loaded into GNU Octave for analysis.
+To measure the scalability of our project, we ran our simulation for a range of different world sizes, from $128 \times 128$ up to $16384 \times 16384$, and also thread counts ranging from 1 thread up to 64 threads.
+The simulaion was run on a single node of the Avoca cluster, with OpenMP being used for multithreading, however MPI was not used for these simulation runs since they were not run accross multiple nodes.
+The time taken for each simulation run was recorded in a text file, along with the number of threads and the world size for each run.
+This text file was then loaded into GNU Octave for analysis.
 
-Strong scaling is the simpler of our two metrics, and we visualised it by simply collecting all the run times for a given world size, and plotting the number of threads versus the run time in a bar graph. We also overlayed a bar graph of the number of threads versus the runtime multiplied by the number of threads used, which is approximately the total ammount of time spent by all of the threads. In the ideal case, with perfect strong scaling, we would expect that the work would be constant regardless of whether one thread was used or 64, however our plots show that the work increases with the number of threads. This reflects the fact that our simulation does not have perfect scaling: in terms of Amdahl's law, there is a certain fraction of the program that cannot be done in parallel, and this non parallelisable part is responsible for the growth in the work as the number of threads increases.
+\subsubsection{Strong scaling on 1 node}
+
+Strong scaling is the simpler of our two metrics, and we visualised it by simply collecting all the run times for a given world size, and plotting the number of threads versus the run time in a bar graph.
+We also overlayed a bar graph of the number of threads versus the runtime multiplied by the number of threads used, which is approximately the total ammount of time spent by all of the threads.
+In the ideal case, with perfect strong scaling, we would expect that the work would be constant regardless of whether one thread was used or 64, however our plots show that the work increases with the number of threads.
+This reflects the fact that our simulation does not have perfect scaling: in terms of Amdahl's law, there is a certain fraction of the program that cannot be done in parallel, and this non parallelisable part is responsible for the growth in the work as the number of threads increases.
 
 \begin{figure}
     \centering
@@ -699,6 +709,24 @@ Strong scaling is the simpler of our two metrics, and we visualised it by simply
     \includegraphics[width=\textwidth]{scaling-16384}
     \caption{Scaling with world size $16384 \times 16384$}
 \end{figure}
+
+\subsubsection{Weak scaling on 1 node}
+
+\todo{On the other hand, weak scaling compares\ldots} 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{weak-scaling}
+    \caption{Weak scaling on 1 node}
+\end{figure}
+
+\subsubsection{Strong scaling using MPI}
+
+\todo{Write this part}
+
+\subsubsection{Weak scaling using MPI}
+
+\todo{Write this part}
 
 \subsection{Planet}
 

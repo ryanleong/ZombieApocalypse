@@ -31,13 +31,23 @@ for k = 1:8
     % select only the rows for the current world size.
     coords = find (data (:, 2) == world_size (k));
 
-    plot (log2 (data (coords, 1)), log2 (data (coords, 4)), colors (k, :));
+    loglog (data (coords, 1), data (coords, 4), colors (k, :));
 end
 
-xlabel ('log2 (number of cells / number of threads)');
-ylabel ('log2 (runtime in seconds)');
+xlabel ('number of cells / number of threads');
+ylabel ('runtime in seconds');
 legend ('128 x 128', '256 x 256', '512 x 512', '1024 x 1024', '2048 x 2048',
   '4096 x 4096', '8192 x 8192', '16384 x 16384', 'location', 'southeast');
+
+base = 2;
+tick_exponents = 0:2:100;
+set(gca, 'ytick', base .^ tick_exponents);
+set(gca, 'xtick', base .^ tick_exponents);
+format_string = sprintf('%d^{%%d}', base);
+tick_labels = num2str(tick_exponents(:), format_string)
+set(gca, 'yticklabel', tick_labels);
+set(gca, 'xticklabel', tick_labels);
+
 grid on;
 
 % set font name to something better
