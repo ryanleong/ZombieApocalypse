@@ -31,7 +31,6 @@ coords = find (data (:, 2) == world_size);
 %data (coords, 4) = 1 ./ data (coords, 4);
 
 figure;
-%figure('Position',[0,0,200,100]);
 %plot (data (coords, 3), data (coords, 4), '.b');
 bar ([((data (coords, 4))), ((data (coords, 3) .* data (coords, 4)))]);
 %title (['World size ', (num2str (world_size))]);
