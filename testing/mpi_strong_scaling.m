@@ -9,7 +9,7 @@ world_size = str2num(arg_list{2});
 if (length(arg_list) >= 3);
     output = arg_list{3};
 else
-    output = ['scaling-', (num2str (world_size)), '.eps'];
+    output = ['mpi-scaling-', (num2str (world_size)), '.eps'];
 endif
 
 % the deafult one cannot produce the legend correctly
@@ -32,10 +32,10 @@ coords = find (data (:, 2) == world_size);
 
 figure;
 %plot (data (coords, 3), data (coords, 4), '.b');
-bar ([((data (coords, 4))), ((data (coords, 3) .* data (coords, 4)))]);
+bar ([((data (coords, 4))), ((data (coords, 4) .* data (coords, 1)))]);
 %title (['World size ', (num2str (world_size))]);
-xlabel ('number of threads');
-set (gca, 'xticklabel', {'1', '2', '4', '8', '16', '32', '64'});
+xlabel ('number of nodes_{number of threads}');
+set (gca, 'xticklabel', {'1_{32}', '1_{64}', '4_{32}', '4_{64}', '16_{32}', '16_{64}', '64_{32}', '64_{64}', '256_{32}', '256_{64}'});
 
 % Select one of these ylabels.
 ylabel ('running time (seconds)');

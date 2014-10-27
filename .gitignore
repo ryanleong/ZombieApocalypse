@@ -72,4 +72,5 @@ dependencies
 /report/step-*.png
 /report/step-*.pdf
 /report/scaling-*.eps
-
+/report/weak-scaling.eps
+/report/mpi-scaling-*.eps
