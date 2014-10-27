@@ -74,3 +74,4 @@ dependencies
 /report/scaling-*.eps
 /report/weak-scaling.eps
 /report/mpi-scaling-*.eps
+/report/mpi-weak-scaling.eps

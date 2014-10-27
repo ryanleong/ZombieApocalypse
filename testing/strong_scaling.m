@@ -12,7 +12,7 @@ else
     output = ['scaling-', (num2str (world_size)), '.eps'];
 endif
 
-% the deafult one cannot produce the legend correctly
+% the default one cannot produce the legend correctly
 graphics_toolkit gnuplot
 
 
@@ -32,7 +32,10 @@ coords = find (data (:, 2) == world_size);
 
 figure;
 %plot (data (coords, 3), data (coords, 4), '.b');
-bar ([((data (coords, 4))), ((data (coords, 3) .* data (coords, 4)))]);
+b =bar ([((data (coords, 4))), ((data (coords, 3) .* data (coords, 4)))]);
+set (b(1), 'facecolor', 'g');
+set (b(2), 'facecolor', 'b');
+
 %title (['World size ', (num2str (world_size))]);
 xlabel ('number of threads');
 set (gca, 'xticklabel', {'1', '2', '4', '8', '16', '32', '64'});

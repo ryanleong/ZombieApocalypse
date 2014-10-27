@@ -713,14 +713,21 @@ This reflects the fact that our simulation does not have perfect scaling: in ter
 
 \subsubsection{Weak scaling on 1 node}
 
-Weak scaling is concerned with how the run time varies with the number of threads for a constant problem size, which in this case is the number of cells to be processed. We evaluated weak scaling by taking the square of the side length of the grid used in each simulation run and then dividing by the number of threads, hence associating each run time with the number of cells per thread for that run. We then produced a plot with the cells per thread on the x axis, and the runtime on the y axis; each simulation run is represented by a single point on the plot. At first we tried using linear scales, but we found that a log-log scale best illustrates the results, shown in figure~\ref{weakscaling}. This makes sense upon considering that the world sizes that we used for the test runs were exponentially increasing, from 128, 256, 512 and so on, and a similar exponential growth in the number of threads; 1, 2, 4, 8 up to 64. It also makes sense that such exponential growth in the size of the world would also produce exponentially increasing runtimes, since in the ideal case the runtime is directly proportional to the number of threads.
+Weak scaling is concerned with how the run time varies with the number of threads for a constant problem size, which in this case is the number of cells to be processed.
+We evaluated weak scaling by taking the square of the side length of the grid used in each simulation run and then dividing by the number of threads, hence associating each run time with the number of cells per thread for that run.
+We then produced a plot with the cells per thread on the x axis, and the runtime on the y axis; each simulation run is represented by a single point on the plot.
+At first we tried using linear scales, but we found that a log-log scale best illustrates the results, shown in figure~\ref{weakscaling}.
+This makes sense upon considering that the world sizes that we used for the test runs were exponentially increasing, from 128, 256, 512 and so on, and a similar exponential growth in the number of threads; 1, 2, 4, 8 up to 64.
+It also makes sense that such exponential growth in the size of the world would also produce exponentially increasing runtimes, since in the ideal case the runtime is directly proportional to the number of threads.
 
-From the plot, we can see that when different simulation runs had the same number of cells per thread their runtimes were also very close together. Over a range of cells per thread, we can see a strong linear relationship with the runtime provided there is at least $2^{13}$ cells to a thread.
+From the plot, we can see that when different simulation runs had the same number of cells per thread their runtimes were also very close together.
+Over a range of cells per thread, we can see a strong linear relationship with the runtime provided there is at least $2^{13}$ cells to a thread.
 
 \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{weak-scaling}
     \caption{Weak scaling on 1 node}
+	\label{weakscaling}
 \end{figure}
 
 \subsubsection{Strong scaling using MPI}
@@ -730,30 +737,36 @@ From the plot, we can see that when different simulation runs had the same numbe
 \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{mpi-scaling-2048}
-    \caption{Scaling usig various number of nodes with world size $2048 \times 2048$}
+    \caption{Scaling using various number of nodes with world size $2048 \times 2048$}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{mpi-scaling-4096}
-    \caption{Scaling usig various number of nodes with world size $4096 \times 4096$}
+    \caption{Scaling using various number of nodes with world size $4096 \times 4096$}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{mpi-scaling-8192}
-    \caption{Scaling usig various number of nodes with world size $8192 \times 8192$}
+    \caption{Scaling using various number of nodes with world size $8192 \times 8192$}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{mpi-scaling-16384}
-    \caption{Scaling usig various number of nodes with world size $16384 \times 16384$}
+    \caption{Scaling using various number of nodes with world size $16384 \times 16384$}
 \end{figure}
 
 \subsubsection{Weak scaling using MPI}
 
 \todo{Write this part}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{mpi-weak-scaling}
+    \caption{Weak scaling using MPI}
+\end{figure}
 
 \subsection{Planet}
 

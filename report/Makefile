@@ -12,7 +12,7 @@ TORUS_HIST = step-002190.pdf step-006935.pdf step-016790.pdf step-042340.pdf ste
 	step-084315.pdf step-091615.pdf step-129575.pdf step-462820.pdf step-588745.pdf
 
 SCALING = scaling-128.eps scaling-256.eps scaling-512.eps scaling-1024.eps scaling-2048.eps scaling-4096.eps scaling-8192.eps scaling-16384.eps weak-scaling.eps
-MPI_SCALING = mpi-scaling-2048.eps mpi-scaling-4096.eps mpi-scaling-8192.eps mpi-scaling-16384.eps
+MPI_SCALING = mpi-scaling-2048.eps mpi-scaling-4096.eps mpi-scaling-8192.eps mpi-scaling-16384.eps mpi-weak-scaling.eps
 
 FIGURES = torus/title.png torus/planet.pdf $(DIAGRAMS) $(GRAPHS) $(SIZE_500_POPULATIONS) $(SIZE_500) $(TORUS_PNG) $(TORUS_HIST) $(SCALING) $(MPI_SCALING)
 
@@ -52,6 +52,9 @@ mpi-scaling-%.eps: ../testing/mpi-40tasks_times ../testing/mpi_strong_scaling.m
 
 weak-scaling.eps: ../testing/single_times ../testing/weak_scaling.m
 	../testing/weak_scaling.m $< $@
+
+mpi-weak-scaling.eps: ../testing/mpi-40tasks_times ../testing/mpi_weak_scaling.m
+	../testing/mpi_weak_scaling.m $< $@
 
 tr.pdf: tr.tex references.bib $(FIGURES)
 	pdflatex tr.tex

@@ -12,7 +12,7 @@ else
     output = ['mpi-scaling-', (num2str (world_size)), '.eps'];
 endif
 
-% the deafult one cannot produce the legend correctly
+% the default one cannot produce the legend correctly
 graphics_toolkit gnuplot
 
 
@@ -32,7 +32,11 @@ coords = find (data (:, 2) == world_size);
 
 figure;
 %plot (data (coords, 3), data (coords, 4), '.b');
-bar ([((data (coords, 4))), ((data (coords, 4) .* data (coords, 1)))]);
+b = bar ([(data (coords, 4)), (data (coords, 4) .* data (coords, 1)), ((data (coords, 4) .* data (coords, 1)) .* data (coords, 7) / 100)]);
+set (b(1), 'facecolor', 'g');
+set (b(2), 'facecolor', 'b');
+set (b(3), 'facecolor', 'r');
+
 %title (['World size ', (num2str (world_size))]);
 xlabel ('number of nodes_{number of threads}');
 set (gca, 'xticklabel', {'1_{32}', '1_{64}', '4_{32}', '4_{64}', '16_{32}', '16_{64}', '64_{32}', '64_{64}', '256_{32}', '256_{64}'});
@@ -41,7 +45,7 @@ set (gca, 'xticklabel', {'1_{32}', '1_{64}', '4_{32}', '4_{64}', '16_{32}', '16_
 ylabel ('running time (seconds)');
 %ylabel ('1 / running time in seconds');
 
-legend ('run time ', 'total work ', 'location', 'northwest');
+legend ('run time ', 'total work ', 'idle work', 'location', 'northwest');
 
 % set font name to something better
 FN = findall(gcf,'-property','FontName');
