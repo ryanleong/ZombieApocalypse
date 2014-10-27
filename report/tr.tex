@@ -270,6 +270,9 @@ We simply place all (both) zombies into the same world part.
     \caption{Affinity to directed situations for each type}
 \end{figure*}
 
+% this adds footnote for the Wall which is in the table. Make sure it is on the same page!
+\footnotetext{Wall was used only the first part of the project with no-flux boundary condition.}
+
 All entities, including zombies, share the same movement planning model.
 They differ mainly in preference where to go.
 
@@ -283,9 +286,6 @@ The values of preference were chosen to mimic expected behaviour.
 Better results could be achieved by a more sophisticated (genetic) algorithm or by a more thorough analysis.
 The current estimates can be seen in the table below.
 To the current preferred direction the potential direction of the last move is added, that simulates inertia of movement and as a result it makes the movement targeted.
-
-% this adds footnote for the Wall which is in the table. Make sure it is on the same page!
-\footnotetext{Wall was used only the first part of the project with no-flux boundary condition.}
 
 After the optimal weighted direction is calculated, it is translated to a particular direction, or stay instruction if the absolute value is not sufficient.
 The direction may randomly change clock-wise or counter-clock-wise simulating evading obstacles, which are not modelled in the world.
@@ -638,11 +638,7 @@ Running with 32 cores still provides an improvement, but not a significant one.
 The drop of performance when running with 64 threads is caused by too small size of the world.
 We discuss this issue in the next section in more detail.
 
-\section{Larger results}
-
-In the second part of the project, we performed more scaling tests and in the end also a final simulation of a small planet.
-
-\subsection{Scaling}
+\section{Scaling tests}
 
 There are two types of scaling which are relevant to our project.
 Firstly, strong scaling refers to how the overall running time (the wall time) varies with the number of threads used.
@@ -653,7 +649,7 @@ The simulation was run on a single node of the Avoca cluster, with OpenMP being 
 The time taken for each simulation run was recorded in a text file, along with the number of threads and the world size for each run.
 This text file was then loaded into GNU Octave for analysis.
 
-\subsubsection{Strong scaling on 1 node}
+\subsection{Strong scaling on 1 node}
 
 Strong scaling is the simpler of our two metrics, and we visualised it by simply collecting all the run times for a given world size, and plotting the number of threads versus the run time in a bar graph.
 We also overlayed a bar graph of the number of threads versus the run-time multiplied by the number of threads used, which is approximately the total amount of time spent by all of the threads.
@@ -709,18 +705,14 @@ This reflects the fact that our simulation does not have perfect scaling: in ter
 \end{figure}
 
 
-\subsubsection{Weak scaling on 1 node}
+\subsection{Weak scaling on 1 node}
 
 Weak scaling is concerned with how the run time varies with the number of threads for a constant problem size, which in this case is the number of cells to be processed.
 We evaluated weak scaling by taking the square of the side length of the grid used in each simulation run and then dividing by the number of threads, hence associating each run time with the number of cells per thread for that run.
 We then produced a plot with the cells per thread on the x axis, and the run-time on the y axis; each simulation run is represented by a single point on the plot.
 At first we tried using linear scales, but we found that a log-log scale best illustrates the results, shown in figure~\ref{weakscaling}.
 This makes sense upon considering that the world sizes that we used for the test runs were exponentially increasing, from 128, 256, 512 and so on, and a similar exponential growth in the number of threads; 1, 2, 4, 8 up to 64.
-<<<<<<< HEAD
-It makes sense that such exponential growth in the size of the world would also produce exponentially increasing runtimes, since in the ideal case the runtime is directly proportional to the number of threads.
-=======
-It also makes sense that such exponential growth in the size of the world would also produce exponentially increasing run-times, since in the ideal case the run-time is directly proportional to the number of threads.
->>>>>>> be2b1ff509f00733952a47f9494cb4088a2c14b4
+It makes sense that such exponential growth in the size of the world would also produce exponentially increasing run-times, since in the ideal case the run-time is directly proportional to the number of threads.
 
 From the plot, we can see that when different simulation runs had the same number of cells per thread their run-times were also very close together.
 Over a range of cells per thread, we can see a strong linear relationship with the run-time provided there is at least $2^{13}$ cells to a thread.
@@ -732,7 +724,7 @@ Over a range of cells per thread, we can see a strong linear relationship with t
 	\label{weakscaling}
 \end{figure}
 
-\subsubsection{Scaling with MPI}
+\subsection{Scaling with MPI}
 
 We used a similar technique to measure the scaling when MPI was used for communication between multiple nodes of the Avoca cluster.
 Instead of just the number of threads on one single node, we are now interested in the growth in the run-time as we run the simulation accross more nodes.
@@ -772,11 +764,11 @@ We created a plot of the simulation's wall time as the number of cells per node 
     \caption{Weak scaling using MPI}
 \end{figure}
 
-\subsection{Planet}
+\section{Planet}
 
 After performing all tests which were described in the previous section, we ran a simulation of zombie infection on a small toroidal planet.
 
-\subsubsection{Size}
+\subsection{Size}
 
 We originally wanted to simulate a world of size $32768 \times 16384$, equivalent to the surface of planet Earth, but unfortunately this was not possible because our implementation of 3D torus visualisation limits the texture size to no larger than $8192 \times 8192$.
 The necessary modification to combine several textures inside OpenGL shaders would be too big burden.
@@ -816,7 +808,7 @@ In our case the ratio between major and minor radii is $ 2 : 1$.
 Before we ran the simulation, we tried how well our application scale for this particular size.
 The best option was to run the simulation with 32 threads on 128 nodes, with the world broken into segments of size $512 \times 512$.
 
-\subsubsection{Tool-chain}
+\subsection{Tool-chain}
 
 During the development of our simulation we created many scripts of various complexity.
 Here we will describe their purposes and how they fit into the scheme of processing the results.
@@ -854,10 +846,10 @@ The process of running apocalypse, transferring and processing results is shown 
 \begin{figure*}[pht]
     \centering
     \includegraphics[width=\textwidth]{toolchain}
-    \caption{Toolchain with intermediate files}
+    \caption{Tool-chain with intermediate files}
 \end{figure*}
 
-\subsubsection{Run-time and data amount}
+\subsection{Run-time and data amount}
 
 We ran the simulation for 2~hours of computation time on 128~nodes.
 During this period, 588,745~days (1613~years) were simulated.
@@ -873,7 +865,7 @@ The globalised world statistics (standard output) are in a single file of size 2
 
 The time spent by waiting for MPI sends and receives was 2.252 and 1.961~ms per iteration, which means that the program waited for MPI for 34.44\% of total time.
 
-\subsubsection{Visualisation in time}
+\subsection{Visualisation in time}
 
 Populations during the simulation of a whole planet are more stable than in the case of world of size 500 by 500; this can be seen on the populations figure.
 The number of people decreases linearly as increases the number of zombies.
