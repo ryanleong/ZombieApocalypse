@@ -63,7 +63,7 @@
     \begin{itemize}
         \item Probability of infection
         \item Infected are not contagious
-        \item Infection takes 14 days on average.
+        \item Infection takes 14 days on average
         \item No recovery possible
     \end{itemize}
 \end{frame} 
@@ -77,12 +77,12 @@
     \end{itemize}
 \end{frame}
 
-\section{World Representation}
+\section{World}
 
 \begin{frame}{Mesh}
     \begin{itemize}
         \item 1D array with additional index
-        \item has 2 cells wide border
+        \item Has 2 cells wide border
     \end{itemize}
 
     \begin{center}
@@ -95,6 +95,7 @@
     \begin{itemize}
         \item providing data for non-local processes
         \item transferring entities between worlds
+        \item easier implementation of non-local processes
     \end{itemize}
     \begin{columns}
         \begin{column}{.5\textwidth}
@@ -128,8 +129,8 @@
 
 \begin{frame}{Human Age Classes}
     \begin{itemize}
-        \item According to Australia age structure and median age.
-        \item Death probability and movement speed depend on age class.
+        \item According to Australia age structure and median age
+        \item Death probability and movement speed depend on age class
     \end{itemize}
 
     \begin{block}{Age classes}
@@ -183,7 +184,7 @@
 \end{frame}
 
 \begin{frame}{Human Death Rate}{Gender Difference}
-    But females usually live longer than males.
+    But females usually live longer than males
     
     $$ DIFF = 82.4 / 78.5 = 1.0497 $$
     
@@ -226,7 +227,7 @@
 \begin{frame}{Human Reproduction}
     \begin{itemize}
         \item If male and female are at adjacent cells and both are fertile and female is not pregnant, they make love.
-        \item Up to 3 children may be concieved with a certain probability.
+        \item Up to 3 children may be conceived with a certain probability.
         \item After pregnancy duration the child is born to an adjacent cell.
         \item If no cell is free, the child stays in the womb until next day. 
     \end{itemize}
@@ -257,7 +258,7 @@
                 \item Fixed probability of child birth
                 \item Stable without zombies
                 \item Unstable with zombies
-                \item After about only 74 years zombies died out.
+                \item After about only 74 years zombies died out
             \end{itemize}
         \end{column}
         \begin{column}{0.6\textwidth}
@@ -270,7 +271,7 @@
     \begin{columns}
         \begin{column}{0.4\textwidth}
             \begin{itemize}
-                \item Probability dependent on number of deaths and infected.
+                \item Probability dependent on number of deaths and infected
                 \item Unstable with zombies
             \end{itemize}
         \end{column}
@@ -284,7 +285,7 @@
     \begin{columns}
         \begin{column}{0.4\textwidth}
             \begin{itemize}
-                \item The lower population density, the higher child birth probability.
+                \item The lower population density, the higher child birth probability
                 \item $Ratio = \frac{\text{Initial density}}{\text{Current density}}$
                 \item $Prob' = Prob \cdot Ratio$
                 \item Not strong enough
@@ -324,14 +325,154 @@
 
 \section{Results}
 
-\begin{frame}
-    \todo{Demographics and scaling for 500 by 500}
+\begin{frame}{Results on $500 \times 500$ Mesh}
+    \begin{itemize}
+        \item Results from the first part of the project
+        \item No-flux boundary condition
+        \item Ran for 100000 steps (274 years)
+    \end{itemize}
 \end{frame}
 
-\section{Larger results}
+\begin{frame}{Results on $500 \times 500$ Mesh}{The Beginning}
+    \begin{center}
+        \only<1>{\includegraphics[width=0.6\textwidth]{step-000000.png}}
+        \only<2>{\includegraphics[width=0.8\textwidth]{step-000000.pdf}}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Results on $500 \times 500$ Mesh}{After 10 years}
+    \begin{center}
+        \only<1>{\includegraphics[width=0.6\textwidth]{step-003650.png}}
+        \only<2>{\includegraphics[width=0.8\textwidth]{step-003650.pdf}}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Results on $500 \times 500$ Mesh}{After 50 years}
+    \begin{center}
+        \only<1>{\includegraphics[width=0.6\textwidth]{step-018250.png}}
+        \only<2>{\includegraphics[width=0.8\textwidth]{step-018250.pdf}}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Results on $500 \times 500$ Mesh}{After 150 years}
+    \begin{center}
+        \only<1>{\includegraphics[width=0.6\textwidth]{step-053100.png}}
+        \only<2>{\includegraphics[width=0.8\textwidth]{step-053100.pdf}}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Results on $500 \times 500$ Mesh}{After 274 years}
+    \begin{center}
+        \only<1>{\includegraphics[width=0.6\textwidth]{step-100000.png}}
+        \only<2>{\includegraphics[width=0.8\textwidth]{step-100000.pdf}}
+    \end{center}
+\end{frame}
+
+\section{OpenMP Scaling}
+
+\begin{frame}{OpenMP Scaling}
+    \begin{itemize}
+        \item Extensive one-node OpenMP scaling tests
+        \item No MPI was used
+        \item Periodic boundary condition
+        \item Various sizes from $128 \times 128$ to $16384 \times 16384$
+        \item Various number of threads from $1$ to $64$
+        \item Tested both strong and weak scaling 
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Size $128 \time 128$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{scaling-128}
+    \end{center}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Size $256 \time 256$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{scaling-256}
+    \end{center}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Size $512 \time 512$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{scaling-512}
+    \end{center}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Size $1024 \time 1024$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{scaling-1024}
+    \end{center}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Size $2048 \time 2048$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{scaling-2048}
+    \end{center}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Size $4096 \time 4096$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{scaling-4096}
+    \end{center}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Size $8192 \time 8192$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{scaling-8192}
+    \end{center}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Size $16384 \time 16384$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{scaling-16384}
+    \end{center}
+\end{frame}
+
+\begin{frame}{OpenMP Scaling}{Weak Scaling}
+    \includegraphics[width=0.9\textwidth]{weak-scaling}
+\end{frame}
+
+\section{MPI Scaling}
 
 \begin{frame}
-    \todo{Scaling using OpenMP and MPI}
+    \begin{itemize}
+        \item Using MPI in all 4 directions (periodic)
+        \item Various sizes from $2048 \times 2048$ to $16384 \times 16384$
+        \item Various number of nodes from $1$ to $256$
+        \item Tried only 32 and 64 threads
+        \item Tested both strong and weak scaling
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{MPI Scaling}{Size $2048 \time 2048$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{mpi-scaling-2048}
+    \end{center}
+\end{frame}
+
+\begin{frame}{MPI Scaling}{Size $4096 \time 4096$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{mpi-scaling-4096}
+    \end{center}
+\end{frame}
+
+\begin{frame}{MPI Scaling}{Size $8192 \time 8192$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{mpi-scaling-8192}
+    \end{center}
+\end{frame}
+
+\begin{frame}{MPI Scaling}{Size $16384 \time 16384$}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{mpi-scaling-16384}
+    \end{center}
+\end{frame}
+
+\begin{frame}{MPI Scaling}{Weak Scaling}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{mpi-weak-scaling}
+    \end{center}
 \end{frame}
 
 \section{Planet}
@@ -353,70 +494,70 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Planet After 6 Years}
+\begin{frame}{Planet}{After 6 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-002190-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-002190.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 19 Years}
+\begin{frame}{Planet}{After 19 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-006935-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-006935.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 46 Years}
+\begin{frame}{Planet}{After 46 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-016790-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-016790.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 116 Years}
+\begin{frame}{Planet}{After 116 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-042340-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-042340.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 162 Years}
+\begin{frame}{Planet}{After 162 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-059130-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-059130.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 231 Years}
+\begin{frame}{Planet}{After 231 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-084315-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-084315.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 251 Years}
+\begin{frame}{Planet}{After 251 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-091615-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-091615.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 355 Years}
+\begin{frame}{Planet}{After 355 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-129575-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-129575.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 1268 Years}
+\begin{frame}{Planet}{After 1268 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-462820-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-462820.pdf}}
     \end{center}
 \end{frame}
 
-\begin{frame}{Planet After 1613 Years}
+\begin{frame}{Planet}{After 1613 Years}
     \begin{center}
         \only<1>{\includegraphics[width=\textwidth]{torus/step-588745-torus.png}}
         \only<2>{\includegraphics[width=0.9\textwidth]{step-588745.pdf}}
@@ -425,11 +566,11 @@
 
 \section{Issues}
 
-\begin{frame}{Directed movement}
+\begin{frame}{Directed Movement}
     \begin{block}{Problem}
         \begin{itemize}
-            \item When processing the world from left to right and from top to bottom.
-            \item Entities cluster at right and bottom border.
+            \item Processing the world from left to right and from top to bottom
+            \item Entities cluster at right and bottom border
         \end{itemize}
     \end{block}
     \begin{block}{Solution}
@@ -439,12 +580,12 @@
     \end{block}
 \end{frame}
 
-\begin{frame}{Border collisions}
+\begin{frame}{Border Collisions}
     \begin{block}{Problem}
         \begin{itemize}
             \item When using MPI
-            \item Movement depend on input and output world.
-            \item Output world is not available for border.
+            \item Movement depend on input and output world
+            \item Output world is not available for border
         \end{itemize}
     \end{block}
     \begin{block}{Possible solution}
@@ -460,13 +601,13 @@
 \begin{frame}{Data Processing}
     \begin{block}{Problem}
         \begin{itemize}
-            \item There are thousands of files generated.
-            \item Total size is tens of gigabytes.
+            \item Thousands of files generated
+            \item Total size of tens of gigabytes
         \end{itemize}
     \end{block}
     \begin{block}{Solution}
         \begin{itemize}
-            \item Automatisation by support programs and scripts.
+            \item Automatisation by support programs and scripts
         \end{itemize}
     \end{block}
 \end{frame}

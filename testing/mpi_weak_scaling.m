@@ -20,7 +20,7 @@ data = load (input);
 data (:, 1) = (data (:, 2) .^ 2) ./ data (:, 1);
 
 world_size = [2048, 4096, 8192, 16384];
-threads = [32, 64]
+threads = [32, 64];
 colors = ['.k'; '+g'; 'ok'; 'xg'; '.r'; '+b'; 'or'; 'xb'];
 color = 1;
 figure;
@@ -37,8 +37,8 @@ end
 
 xlabel ('number of cells / number of nodes');
 ylabel ('runtime in seconds');
-legend ('2048 x 2048 (32 threads)', '4096 x 4096 (32 threads)', '8192 x 8192 (32 threads)', '16384 x 16384 (32 threads)',
-    '2048 x 2048 (64 threads)', '4096 x 4096 (64 threads)', '8192 x 8192 (64 threads)', '16384 x 16384 (64 threads)',
+legend ('2048 x 2048 (32 threads) ', '4096 x 4096 (32 threads) ', '8192 x 8192 (32 threads) ', '16384 x 16384 (32 threads) ',
+    '2048 x 2048 (64 threads) ', '4096 x 4096 (64 threads) ', '8192 x 8192 (64 threads) ', '16384 x 16384 (64 threads) ',
     'location', 'southeast');
 
 base = 2;
@@ -46,7 +46,7 @@ tick_exponents = 0:2:100;
 set(gca, 'ytick', base .^ tick_exponents);
 set(gca, 'xtick', base .^ tick_exponents);
 format_string = sprintf('%d^{%%d}', base);
-tick_labels = num2str(tick_exponents(:), format_string)
+tick_labels = num2str(tick_exponents(:), format_string);
 set(gca, 'yticklabel', tick_labels);
 set(gca, 'xticklabel', tick_labels);
 
