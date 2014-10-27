@@ -35,15 +35,15 @@ end
 
 xlabel ('number of cells / number of threads');
 ylabel ('runtime in seconds');
-legend ('128 x 128', '256 x 256', '512 x 512', '1024 x 1024', '2048 x 2048',
-  '4096 x 4096', '8192 x 8192', '16384 x 16384', 'location', 'southeast');
+legend ('128 x 128 ', '256 x 256 ', '512 x 512 ', '1024 x 1024 ', '2048 x 2048 ',
+  '4096 x 4096 ', '8192 x 8192 ', '16384 x 16384 ', 'location', 'southeast');
 
 base = 2;
 tick_exponents = 0:2:100;
 set(gca, 'ytick', base .^ tick_exponents);
 set(gca, 'xtick', base .^ tick_exponents);
 format_string = sprintf('%d^{%%d}', base);
-tick_labels = num2str(tick_exponents(:), format_string)
+tick_labels = num2str(tick_exponents(:), format_string);
 set(gca, 'yticklabel', tick_labels);
 set(gca, 'xticklabel', tick_labels);
 

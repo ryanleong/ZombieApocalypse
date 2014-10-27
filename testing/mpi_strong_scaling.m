@@ -45,7 +45,7 @@ set (gca, 'xticklabel', {'1_{32}', '1_{64}', '4_{32}', '4_{64}', '16_{32}', '16_
 ylabel ('running time (seconds)');
 %ylabel ('1 / running time in seconds');
 
-legend ('run time ', 'total work ', 'idle work', 'location', 'northwest');
+legend ('run time ', 'total work ', 'idle work ', 'location', 'northwest');
 
 % set font name to something better
 FN = findall(gcf,'-property','FontName');

@@ -16,8 +16,6 @@ MPI_SCALING = mpi-scaling-2048.eps mpi-scaling-4096.eps mpi-scaling-8192.eps mpi
 
 FIGURES = torus/title.png torus/planet.pdf $(DIAGRAMS) $(GRAPHS) $(SIZE_500_POPULATIONS) $(SIZE_500) $(TORUS_PNG) $(TORUS_HIST) $(SCALING) $(MPI_SCALING)
 
-SLIDES_FIGURES = $(GRAPHS) $(SIZE_500_POPULATIONS) $(DIAGRAMS) torus/planet.pdf $(TORUS_PNG) $(TORUS_HIST)
-
 %.eps: %.dia
 	dia -t eps -e $@ $<
 
@@ -62,7 +60,7 @@ tr.pdf: tr.tex references.bib $(FIGURES)
 	pdflatex tr.tex
 	pdflatex tr.tex
 
-slides.pdf: slides.tex $(SLIDES_FIGURES)
+slides.pdf: slides.tex $(FIGURES)
 	pdflatex slides.tex
 	pdflatex slides.tex
 
