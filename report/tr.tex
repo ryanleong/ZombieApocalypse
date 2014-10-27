@@ -718,7 +718,7 @@ We evaluated weak scaling by taking the square of the side length of the grid us
 We then produced a plot with the cells per thread on the x axis, and the runtime on the y axis; each simulation run is represented by a single point on the plot.
 At first we tried using linear scales, but we found that a log-log scale best illustrates the results, shown in figure~\ref{weakscaling}.
 This makes sense upon considering that the world sizes that we used for the test runs were exponentially increasing, from 128, 256, 512 and so on, and a similar exponential growth in the number of threads; 1, 2, 4, 8 up to 64.
-It also makes sense that such exponential growth in the size of the world would also produce exponentially increasing runtimes, since in the ideal case the runtime is directly proportional to the number of threads.
+It makes sense that such exponential growth in the size of the world would also produce exponentially increasing runtimes, since in the ideal case the runtime is directly proportional to the number of threads.
 
 From the plot, we can see that when different simulation runs had the same number of cells per thread their runtimes were also very close together.
 Over a range of cells per thread, we can see a strong linear relationship with the runtime provided there is at least $2^{13}$ cells to a thread.
@@ -732,7 +732,7 @@ Over a range of cells per thread, we can see a strong linear relationship with t
 
 \subsubsection{Scaling with MPI}
 
-We used a similar technique to measure the scaling when MPI was used for communication between multiple nodes of the Avoca cluster. Instead of just the number of threads on one single node, we are now interested in the growth in the runtime as we run the simulation accross more nodes. The following plots show strong scaling as more nodes were used, with an additional bar for the total ammount of time that the simulation spent idle, waiting for network messages to be sent between nodes.
+We used a similar technique to measure the scaling when MPI was used for communication between multiple nodes of the Avoca cluster. Instead of just the number of threads on one single node, we are now interested in the growth in the runtime as we run the simulation accross more nodes. These plots show strong scaling as more nodes were used, with an additional bar for the total ammount of time that the simulation spent idle, waiting for network messages to be sent between nodes.
 
 \begin{figure}
     \centering
@@ -758,6 +758,9 @@ We used a similar technique to measure the scaling when MPI was used for communi
     \caption{Scaling using various number of nodes with world size $16384 \times 16384$}
 \end{figure}
 
+For weak scaling with MPI, we ran two separate test runs with 32 and then 64 threads on each node.
+In the analysis, we evaluated the number of cells that were processed by each node on the cluster, rather than each thread as was done previously.
+We created a plot of the simulation's wall time as the number of cells per node increased, which shows that our MPI based simulation is not affected by the number of threads used on each node, and above $2^{18}$ cells per node it seems to scale well as further nodes are added.
 
 \begin{figure}
     \centering
