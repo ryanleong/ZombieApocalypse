@@ -730,9 +730,9 @@ Over a range of cells per thread, we can see a strong linear relationship with t
 	\label{weakscaling}
 \end{figure}
 
-\subsubsection{Strong scaling using MPI}
+\subsubsection{Scaling with MPI}
 
-\todo{Write this part}
+We used a similar technique to measure the scaling when MPI was used for communication between multiple nodes of the Avoca cluster. Instead of just the number of threads on one single node, we are now interested in the growth in the runtime as we run the simulation accross more nodes. The following plots show strong scaling as more nodes were used, with an additional bar for the total ammount of time that the simulation spent idle, waiting for network messages to be sent between nodes.
 
 \begin{figure}
     \centering
@@ -758,9 +758,6 @@ Over a range of cells per thread, we can see a strong linear relationship with t
     \caption{Scaling using various number of nodes with world size $16384 \times 16384$}
 \end{figure}
 
-\subsubsection{Weak scaling using MPI}
-
-\todo{Write this part}
 
 \begin{figure}
     \centering
@@ -1036,7 +1033,7 @@ Humans should not behave according to their instinct and hide until the zombies 
 \begingroup
 \raggedright
 
-\bibliographystyle{IEEEtran}
+\bibliographystyle{plain}
 \bibliography{references}
 \endgroup
 
